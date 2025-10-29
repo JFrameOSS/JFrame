@@ -1,0 +1,26 @@
+.DS_Store
+.secrets
+.classpath
+.gradle
+.idea
+.claude
+.project
+.settings
+*.iml
+*.ipr
+*.iws
+
+bin/
+build/
+out/
+classes/
+lib/
+log/
+target/
+tmp/
+
+# Ignore unencrypted key ring
+secring.gpg
+
+/build/
+/CLAUDE.md

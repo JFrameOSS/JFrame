@@ -1,0 +1,130 @@
+# JFrame OpenTelemetry Default Configuration
+# This configuration provides sensible defaults and can be overridden by the consuming application
+jframe:
+  application:
+    name: --- UNSET ---
+    group: --- UNSET ---
+    version: --- UNSET ---
+    environment: dev
+    url: http://localhost:8080
+
+  logging:
+    disabled: false
+    response-length: -1
+    allowed-content-types:
+      - application/json
+      - application/graphql+json
+      - application/hal+json
+      - application/problem+json
+      - application/vnd.spring-boot.actuator.v1+json
+      - application/vnd.spring-boot.actuator.v3+json
+      - application/vnd.spring-cloud.config-server.v2+json
+      - application/x-www-form-urlencoded
+      - application/xml
+      - multipart/form-data
+      - text/plain
+      - text/xml
+    body-excluded-content-types:
+      - multipart/form-data
+    exclude-paths:
+      - /actuator/*
+    fields-to-mask:
+      - password
+      - keyPassphrase
+    filters:
+      request-duration:
+        enabled: true
+        order: -700
+      request-response:
+        enabled: true
+        order: -600
+      transaction-id:
+        enabled: true
+        order: -500
+      request-id:
+        enabled: true
+        order: -400
+      tracing-id:
+        enabled: true
+        order: -300
+
+  otlp:
+    disabled: true
+    url: http://localhost:4318
+    timeout: 10s
+    exporter: otlp
+    sampling-rate: 1.0
+    excluded-methods:
+      - "health"
+      - "actuator"
+      - "ping"
+      - "status"
+      - "info"
+      - "metrics"
+
+# ===================== DEPENDENCY CONFIGURATION =====================
+spring:
+  jackson:
+    date-format: com.fasterxml.jackson.databind.util.ISO8601DateFormat
+    serialization:
+      indent-output: false
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+
+otel:
+  sdk.disabled: ${jframe.otlp.disabled}
+  service.name: ${jframe.application.name}-${jframe.application.environment}
+  resource:
+    attributes:
+      service.name: ${jframe.application.name}
+      service.version: ${jframe.application.version}
+      service.namespace: ${jframe.application.group}
+      service.environment: ${jframe.application.environment}
+      deployment.environment: ${jframe.application.environment}
+
+  propagators:
+    - b3
+    - jaeger
+    - tracecontext
+
+  exporter:
+    otlp:
+      endpoint: ${jframe.otlp.url}
+      timeout: ${jframe.otlp.timeout}
+      protocol: http/protobuf
+      compression: gzip
+
+  traces:
+    exporter: ${jframe.otlp.exporter}
+    sampler:
+      arg: ${jframe.otlp.sampling-rate}
+
+  metrics:
+    exporter: ${jframe.otlp.exporter}
+
+  logs:
+    exporter: ${jframe.otlp.exporter}
+
+  # Instrumentation Control
+  # https://opentelemetry.io/docs/zero-code/java/spring-boot-starter/out-of-the-box-instrumentation/
+  instrumentation:
+    jdbc:
+      enabled: true
+    logback-appender:
+      enabled: false
+    logback-mdc:
+      enabled: true
+    spring-web:
+      enabled: true
+    spring-webmvc:
+      enabled: true
+    spring-webflux:
+      enabled: false
+    kafka:
+      enabled: true
+    mongo:
+      enabled: true
+    micrometer:
+      enabled: false
+    r2dbc:
+      enabled: true

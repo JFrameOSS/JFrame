@@ -1,0 +1,140 @@
+{
+  "groups": [
+    {
+      "name": "jframe.logging.filters.request-id",
+      "type": "io.github.jframe.logging.filter.config.RequestIdFilterConfiguration",
+      "sourceType": "io.github.jframe.logging.filter.config.RequestIdFilterConfiguration",
+      "description": "Configuration properties for the Request ID filter. This filter tracks HTTP requests through a unique request identifier."
+    },
+    {
+      "name": "jframe.logging.filters.transaction-id",
+      "type": "io.github.jframe.logging.filter.config.TransactionIdFilterConfiguration",
+      "sourceType": "io.github.jframe.logging.filter.config.TransactionIdFilterConfiguration",
+      "description": "Configuration properties for the Transaction ID filter. This filter tracks business transactions across multiple HTTP requests."
+    },
+    {
+      "name": "jframe.logging.filters.request-duration",
+      "type": "io.github.jframe.logging.filter.config.RequestDurationFilterConfiguration",
+      "sourceType": "io.github.jframe.logging.filter.config.RequestDurationFilterConfiguration",
+      "description": "Configuration properties for the Request Duration filter. This filter measures and logs HTTP request processing durations."
+    },
+    {
+      "name": "jframe.logging.filters.request-response",
+      "type": "io.github.jframe.logging.filter.config.RequestResponseLogFilterConfiguration",
+      "sourceType": "io.github.jframe.logging.filter.config.RequestResponseLogFilterConfiguration",
+      "description": "Configuration properties for the Request/Response Log filter. This filter logs HTTP request and response details including headers and bodies."
+    }
+  ],
+  "properties": [
+    {
+      "name": "jframe.logging.filters.request-id.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether the Request ID filter is enabled. When enabled, the filter extracts or generates a unique request ID from HTTP headers and makes it available via SLF4J MDC for request correlation.",
+      "sourceType": "io.github.jframe.logging.filter.config.RequestIdFilterConfiguration",
+      "defaultValue": true
+    },
+    {
+      "name": "jframe.logging.filters.request-id.order",
+      "type": "java.lang.Integer",
+      "description": "Filter execution order for the Request ID filter. Lower values execute earlier in the filter chain. The Request ID filter should execute early to ensure the ID is available for other filters.",
+      "sourceType": "io.github.jframe.logging.filter.config.RequestIdFilterConfiguration",
+      "defaultValue": -400
+    },
+    {
+      "name": "jframe.logging.filters.transaction-id.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether the Transaction ID filter is enabled. When enabled, the filter extracts or generates a unique transaction ID that spans multiple requests belonging to the same business transaction.",
+      "sourceType": "io.github.jframe.logging.filter.config.TransactionIdFilterConfiguration",
+      "defaultValue": true
+    },
+    {
+      "name": "jframe.logging.filters.transaction-id.order",
+      "type": "java.lang.Integer",
+      "description": "Filter execution order for the Transaction ID filter. Lower values execute earlier in the filter chain. The Transaction ID filter should execute early, before the Request ID filter.",
+      "sourceType": "io.github.jframe.logging.filter.config.TransactionIdFilterConfiguration",
+      "defaultValue": -500
+    },
+    {
+      "name": "jframe.logging.filters.request-duration.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether the Request Duration filter is enabled. When enabled, the filter measures the total processing time for each HTTP request and makes it available via SLF4J MDC.",
+      "sourceType": "io.github.jframe.logging.filter.config.RequestDurationFilterConfiguration",
+      "defaultValue": true
+    },
+    {
+      "name": "jframe.logging.filters.request-duration.order",
+      "type": "java.lang.Integer",
+      "description": "Filter execution order for the Request Duration filter. Lower values execute earlier in the filter chain. This filter should execute very early to capture the full request processing time.",
+      "sourceType": "io.github.jframe.logging.filter.config.RequestDurationFilterConfiguration",
+      "defaultValue": -17500
+    },
+    {
+      "name": "jframe.logging.filters.request-response.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether the Request/Response Log filter is enabled. When enabled, the filter logs comprehensive HTTP request and response details including headers, bodies, and status codes for debugging and auditing.",
+      "sourceType": "io.github.jframe.logging.filter.config.RequestResponseLogFilterConfiguration",
+      "defaultValue": true
+    },
+    {
+      "name": "jframe.logging.filters.request-response.order",
+      "type": "java.lang.Integer",
+      "description": "Filter execution order for the Request/Response Log filter. Lower values execute earlier in the filter chain. This filter should execute after ID filters but before application logic.",
+      "sourceType": "io.github.jframe.logging.filter.config.RequestResponseLogFilterConfiguration",
+      "defaultValue": -950
+    }
+  ],
+  "hints": [
+    {
+      "name": "jframe.logging.filters.request-id.enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable Request ID tracking for all HTTP requests."
+        },
+        {
+          "value": false,
+          "description": "Disable Request ID tracking. Not recommended for production."
+        }
+      ]
+    },
+    {
+      "name": "jframe.logging.filters.transaction-id.enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable Transaction ID tracking across multiple requests."
+        },
+        {
+          "value": false,
+          "description": "Disable Transaction ID tracking."
+        }
+      ]
+    },
+    {
+      "name": "jframe.logging.filters.request-duration.enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable request duration measurement and logging."
+        },
+        {
+          "value": false,
+          "description": "Disable request duration tracking. May impact observability."
+        }
+      ]
+    },
+    {
+      "name": "jframe.logging.filters.request-response.enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable detailed request/response logging. Useful for debugging but may impact performance."
+        },
+        {
+          "value": false,
+          "description": "Disable request/response body logging. Recommended for high-traffic production systems."
+        }
+      ]
+    }
+  ]
+}

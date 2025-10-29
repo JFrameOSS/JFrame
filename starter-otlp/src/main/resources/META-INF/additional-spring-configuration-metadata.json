@@ -1,0 +1,84 @@
+{
+  "groups": [
+    {
+      "name": "jframe.logging.filters.tracing-id",
+      "type": "io.github.jframe.logging.filter.config.TracingIdResponseFilterConfiguration",
+      "sourceType": "io.github.jframe.logging.filter.config.TracingIdResponseFilterConfiguration",
+      "description": "Configuration properties for the Tracing ID Response filter. This filter adds OpenTelemetry trace IDs to HTTP response headers for end-to-end observability."
+    }
+  ],
+  "properties": [
+    {
+      "name": "jframe.logging.filters.tracing-id.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether the Tracing ID Response filter is enabled. When enabled, the filter extracts the current OpenTelemetry trace ID and adds it to HTTP response headers, allowing clients to correlate requests with backend traces.",
+      "sourceType": "io.github.jframe.logging.filter.config.TracingIdResponseFilterConfiguration",
+      "defaultValue": true
+    },
+    {
+      "name": "jframe.logging.filters.tracing-id.order",
+      "type": "java.lang.Integer",
+      "description": "Filter execution order for the Tracing ID Response filter. Lower values execute earlier in the filter chain. This filter should execute very early to ensure the trace ID is captured before any errors occur.",
+      "sourceType": "io.github.jframe.logging.filter.config.TracingIdResponseFilterConfiguration",
+      "defaultValue": -1000
+    }
+  ],
+  "hints": [
+    {
+      "name": "jframe.logging.filters.tracing-id.enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable trace ID propagation in response headers. Recommended for distributed tracing."
+        },
+        {
+          "value": false,
+          "description": "Disable trace ID in response headers. May impact end-to-end observability."
+        }
+      ]
+    },
+    {
+      "name": "jframe.otlp.exporter",
+      "values": [
+        {
+          "value": "otlp",
+          "description": "Use OpenTelemetry Protocol (OTLP) exporter. Works with most modern observability backends."
+        },
+        {
+          "value": "jaeger",
+          "description": "Use Jaeger exporter. Compatible with Jaeger tracing backend."
+        },
+        {
+          "value": "zipkin",
+          "description": "Use Zipkin exporter. Compatible with Zipkin tracing backend."
+        }
+      ]
+    },
+    {
+      "name": "jframe.otlp.sampling-rate",
+      "values": [
+        {
+          "value": "1.0",
+          "description": "Sample 100% of traces. Recommended for development and testing."
+        },
+        {
+          "value": "0.1",
+          "description": "Sample 10% of traces. Good balance for production systems."
+        },
+        {
+          "value": "0.01",
+          "description": "Sample 1% of traces. Use for very high-traffic systems."
+        },
+        {
+          "value": "0.0",
+          "description": "Disable trace sampling. Not recommended."
+        }
+      ],
+      "providers": [
+        {
+          "name": "any"
+        }
+      ]
+    }
+  ]
+}
