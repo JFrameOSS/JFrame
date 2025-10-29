@@ -185,4 +185,6 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](src/di
 
 **[⭐ Star this repository](https://github.com/Jordi-Jaspers/JFrame) if you find it useful!**
 
+[![Stargazers over time](https://starchart.cc/Jordi-Jaspers/JFrame.svg?variant=adaptive)](https://starchart.cc/Jordi-Jaspers/JFrame)
+
 </div>
