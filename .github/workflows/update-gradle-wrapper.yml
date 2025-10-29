@@ -1,5 +1,4 @@
 name: Update Gradle Wrapper
-
 on:
   schedule:
     - cron: '0 6 * * *'
@@ -12,18 +11,16 @@ permissions:
 jobs:
   update-gradle-wrapper:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: develop
 
       - name: Read Java version from .tool-versions
         id: java-version
         run: |
           version=$(grep "^java" .tool-versions | awk '{print $2}' | sed 's/temurin-//')
           echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Java version: $version"
 
       - uses: actions/setup-java@v4
         with:
@@ -35,6 +32,7 @@ jobs:
         run: |
           version=$(./gradlew --version | grep "^Gradle" | awk '{print $2}')
           echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Current Gradle version: $version"
 
       - name: Update Gradle Wrapper
         run: ./gradlew wrapper --gradle-version=latest
@@ -44,8 +42,19 @@ jobs:
         run: |
           version=$(./gradlew --version | grep "^Gradle" | awk '{print $2}')
           echo "version=$version" >> $GITHUB_OUTPUT
+          echo "New Gradle version: $version"
+
+      - name: Show changes
+        run: |
+          echo "=== Gradle Wrapper Update Summary ==="
+          echo "Previous version: ${{ steps.current-version.outputs.version }}"
+          echo "New version: ${{ steps.new-version.outputs.version }}"
+          echo ""
+          echo "Modified files:"
+          git status --short
 
       - name: Create Pull Request
+        if: ${{ !env.ACT }}
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
