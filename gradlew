@@ -26,7 +26,7 @@
 #
 #   (1) You need a POSIX-compliant shell to run this script. If your /bin/sh is
 #       noncompliant, but you have some other compliant shell such as ksh or
-#       bash, then to run this script, factory that shell name before the whole
+#       bash, then to run this script, type that shell name before the whole
 #       command line, like:
 #
 #           ksh Gradle
