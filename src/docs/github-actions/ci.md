@@ -8,6 +8,7 @@ Main continuous integration pipeline for the JFrame framework that handles build
 ### Automatic
 - **Daily builds**: Runs at 2:00 AM UTC every day
 - **Push to master/develop**: Runs on every push to these branches
+- **Pull Requests**: Runs on PRs targeting master or develop branches
 - **Tags**: Runs when a semver tag is pushed (format: `1.2.3`)
 
 ### Manual
@@ -28,6 +29,7 @@ Runs for all triggers **except tags**.
 **When it runs:**
 - Daily at 2 AM UTC
 - Every push to master or develop
+- Every pull request to master or develop
 - Manual triggers
 
 **Output:**

@@ -78,3 +78,5 @@ jobs:
           branch: gradle-wrapper-update
           base: develop
           delete-branch: true
+          labels: Dependency Update
+          reviewers: jordi-jaspers
