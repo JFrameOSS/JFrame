@@ -99,7 +99,9 @@ jframe:
     environment: dev
 ```
 
-## 📦 Modules
+## 📚 Documentation
+
+### Framework Modules
 
 JFrame is organized into focused, reusable modules:
 
@@ -110,6 +112,12 @@ JFrame is organized into focused, reusable modules:
 | **starter-core** | Core utilities, JSON processing, and shared application properties | [📖 Documentation](./src/docs/starter-core.md) |
 | **starter-jpa** | JPA enhancements including advanced search, pagination, and query logging | [📖 Documentation](./src/docs/starter-jpa.md) |
 | **starter-otlp** | OpenTelemetry integration for distributed tracing and observability | [📖 Documentation](./src/docs/starter-otlp.md) |
+
+### CI/CD & Automation
+
+- **[GitHub Actions Workflows](./src/docs/github-actions/)** - CI/CD pipelines and automation
+  - [CI Pipeline](./src/docs/github-actions/ci.md) - Build, test, and publish to Maven Central
+  - [Gradle Wrapper Auto-Update](./src/docs/github-actions/gradle-wrapper-update.md) - Automated dependency management
 
 
 ## 🛠️ Building from Source

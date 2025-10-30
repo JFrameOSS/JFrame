@@ -22,6 +22,7 @@ plugins {
     id("org.cyclonedx.bom") apply true
     id("com.github.spotbugs") apply true
     id("maven-publish") apply true
+    id("signing") apply true
     id("com.github.ben-manes.versions") apply true
 }
 
@@ -42,6 +43,7 @@ subprojects {
     apply(plugin = "org.cyclonedx.bom")
     apply(plugin = "com.github.spotbugs")
     apply(plugin = "maven-publish")
+    apply(plugin = "signing")
     apply(plugin = "com.github.ben-manes.versions")
     apply(plugin = "project-report")
 
@@ -226,13 +228,21 @@ subprojects {
                             email.set("jordijaspers@gmail.com")
                         }
                     }
+
+                    scm {
+                        connection.set("scm:git:git://github.com/Jordi-Jaspers/JFrame.git")
+                        developerConnection.set("scm:git:ssh://github.com:Jordi-Jaspers/JFrame.git")
+                        url.set(retrieve("url"))
+                    }
                 }
             }
         }
         repositories {
             maven {
                 name = "MavenCentral"
-                url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+                val releasesRepoUrl = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+                val snapshotsRepoUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+                url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
                 credentials {
                     username = System.getenv("MAVEN_USERNAME")
                     password = System.getenv("MAVEN_PASSWORD")
@@ -241,6 +251,16 @@ subprojects {
                     create<BasicAuthentication>("basic")
                 }
             }
+        }
+    }
+
+    configure<SigningExtension> {
+        val signingKey = System.getenv("SIGNING_KEY")
+        val signingPassword = System.getenv("SIGNING_PASSWORD")
+
+        if (signingKey != null && signingPassword != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+            sign(extensions.getByType<PublishingExtension>().publications["java"])
         }
     }
 }
