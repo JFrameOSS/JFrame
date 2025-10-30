@@ -1,0 +1,110 @@
+name: CI
+on:
+  push:
+    branches:
+      - master
+      - develop
+    tags:
+      - '*.*.*'
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') == false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Java version
+        id: java-version
+        run: |
+          version=$(grep "^java" .tool-versions | awk '{print $2}' | sed 's/temurin-//')
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Java version: $version"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ steps.java-version.outputs.version }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Build
+        run: |
+          echo "=== Starting clean build ==="
+          echo "Branch: ${GITHUB_REF#refs/heads/}"
+          echo "Commit: ${GITHUB_SHA::7}"
+          ./gradlew clean build
+          echo "=== Build completed successfully ==="
+
+  publish:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Java version
+        id: java-version
+        run: |
+          version=$(grep "^java" .tool-versions | awk '{print $2}' | sed 's/temurin-//')
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Java version: $version"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ steps.java-version.outputs.version }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Verify version matches tag
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          PROPERTIES_VERSION=$(grep "^version=" gradle.properties | cut -d'=' -f2)
+
+          echo "=== Version Verification ==="
+          echo "Tag version: $TAG_VERSION"
+          echo "Properties version: $PROPERTIES_VERSION"
+
+          if [ "$TAG_VERSION" != "$PROPERTIES_VERSION" ]; then
+            echo "❌ Error: Tag version ($TAG_VERSION) does not match gradle.properties version ($PROPERTIES_VERSION)"
+            exit 1
+          fi
+
+          echo "✅ Version verification passed"
+
+      - name: Build
+        run: |
+          echo "=== Building release ${{ github.ref_name }} ==="
+          ./gradlew clean build
+          echo "=== Build completed successfully ==="
+
+      - name: Publish to Maven Central
+        run: |
+          echo "=== Publishing to Maven Central ==="
+          ./gradlew publish
+          echo "=== Publishing completed successfully ==="
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

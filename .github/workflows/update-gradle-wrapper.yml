@@ -1,0 +1,80 @@
+name: Update Gradle Wrapper
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-gradle-wrapper:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Java version from .tool-versions
+        id: java-version
+        run: |
+          version=$(grep "^java" .tool-versions | awk '{print $2}' | sed 's/temurin-//')
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Java version: $version"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ steps.java-version.outputs.version }}
+
+      - name: Get current Gradle version
+        id: current-version
+        run: |
+          version=$(./gradlew --version | grep "^Gradle" | awk '{print $2}')
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Current Gradle version: $version"
+
+      - name: Update Gradle Wrapper
+        run: ./gradlew wrapper --gradle-version=latest
+
+      - name: Get new Gradle version
+        id: new-version
+        run: |
+          version=$(./gradlew --version | grep "^Gradle" | awk '{print $2}')
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "New Gradle version: $version"
+
+      - name: Show changes
+        run: |
+          echo "=== Gradle Wrapper Update Summary ==="
+          echo "Previous version: ${{ steps.current-version.outputs.version }}"
+          echo "New version: ${{ steps.new-version.outputs.version }}"
+          echo ""
+          echo "Modified files:"
+          git status --short
+
+      - name: Create Pull Request
+        if: ${{ !env.ACT }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update Gradle wrapper to ${{ steps.new-version.outputs.version }}'
+          title: 'chore: update Gradle wrapper to ${{ steps.new-version.outputs.version }}'
+          body: |
+            ## Gradle Wrapper Update
+
+            This automated PR updates the Gradle wrapper to the latest version.
+
+            **Changes:**
+            - Previous version: `${{ steps.current-version.outputs.version }}`
+            - New version: `${{ steps.new-version.outputs.version }}`
+
+            **What's included:**
+            - Updated `gradle/wrapper/gradle-wrapper.properties`
+            - Updated `gradle/wrapper/gradle-wrapper.jar`
+            - Updated `gradlew` and `gradlew.bat` scripts
+
+            Please review the [Gradle release notes](https://docs.gradle.org/${{ steps.new-version.outputs.version }}/release-notes.html) for details on what's new.
+          branch: gradle-wrapper-update
+          base: develop
+          delete-branch: true
