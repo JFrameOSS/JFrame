@@ -34,13 +34,13 @@ Maven Central publishing requires:
 After signing in with GitHub:
 
 1. Navigate to **Namespaces** in the portal
-2. You should see `io.github.jordi-jaspers` automatically registered
-3. If not visible, click **Add Namespace** and request `io.github.jordi-jaspers`
+2. You should see `io.github.jordi-jaspers` automatically registered (your personal namespace)
+3. Additionally, `io.github.jframeoss` has been added for this project
 
-**Note:** Since your group ID is `io.github.jframe`, you may need to verify repository ownership:
-- The namespace system uses your GitHub username, not organization names
-- You might need to adjust the group ID in `gradle.properties` to match your username
-- Alternative: Use `io.github.jordi-jaspers` instead of `io.github.jframe`
+**Note:** The project uses `io.github.jframeoss` as the group ID:
+- This namespace has been configured in Sonatype Central Portal
+- If verification is required, you may need to create a verification repository
+- Once verified, you can publish under this namespace
 
 ## Step 2: Generate GPG Signing Keys
 
@@ -141,11 +141,14 @@ Your build configuration is already set up correctly, but verify:
 Edit `gradle.properties`:
 
 ```properties
-# Ensure this matches your verified namespace
-group=io.github.jordi-jaspers
-# Or if using organization:
-# group=io.github.jframe (requires additional verification)
+# Project uses the jframeoss namespace
+group=io.github.jframeoss
 ```
+
+**Verification Status:**
+- ✅ Namespace added to Sonatype Central Portal
+- ⏳ May require verification via GitHub repository
+- 🔄 Once verified, you can publish immediately
 
 ### 4.2 Verify POM Metadata
 
@@ -209,7 +212,7 @@ After the workflow completes:
 After 15-30 minutes:
 
 1. Go to [search.maven.org](https://search.maven.org/)
-2. Search for: `g:io.github.jordi-jaspers` (or your group ID)
+2. Search for: `g:io.github.jframeoss`
 3. Your artifacts should appear
 
 ### 6.2 Test Installation
@@ -218,7 +221,7 @@ Create a test project:
 
 ```kotlin
 dependencies {
-    implementation("io.github.jordi-jaspers:starter-core:0.1.0")
+    implementation("io.github.jframeoss:starter-core:0.1.0")
 }
 ```
 
@@ -256,8 +259,9 @@ dependencies {
 
 **Solution:**
 - Your group ID must be under a namespace you own
-- `io.github.jordi-jaspers` requires GitHub username `Jordi-Jaspers`
-- Organizations require additional verification
+- The project uses `io.github.jframeoss`
+- Verify this namespace is registered and verified in Sonatype Central Portal
+- If verification is pending, check Namespaces section in the portal
 
 ## Security Best Practices
 

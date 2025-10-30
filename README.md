@@ -4,11 +4,11 @@
 
 **A modern Java framework for building enterprise-grade Spring Boot applications**
 
-[![GitHub stars](https://img.shields.io/github/stars/Jordi-Jaspers/JFrame?style=social)](https://github.com/Jordi-Jaspers/JFrame/)
+[![GitHub stars](https://img.shields.io/github/stars/JFrameOSS/JFrame?style=social)](https://github.com/JFrameOSS/JFrame/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Spring Boot](https://img.shields.io/badge/spring--boot-3.5.3-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/java-25--temurin-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.java.net/projects/jdk/25/)
-[![Maven Central](https://img.shields.io/badge/maven--central-0.0.0--SNAPSHOT-blue.svg)](https://search.maven.org/search?q=g:io.github.jframe)
+[![Maven Central](https://img.shields.io/badge/maven--central-0.0.0--SNAPSHOT-blue.svg)](https://search.maven.org/search?q=g:io.github.jframeoss)
 
 [Features](#-features) •
 [Quick Start](#-quick-start) •
@@ -49,13 +49,13 @@ JFrame is a comprehensive Java framework providing enterprise-grade utilities, c
 ```kotlin
 dependencies {
     // Core utilities and shared configurations
-    implementation("io.github.jframe:starter-core:0.0.0-SNAPSHOT")
+    implementation("io.github.jframeoss:starter-core:0.0.0-SNAPSHOT")
 
     // JPA enhancements (optional)
-    implementation("io.github.jframe:starter-jpa:0.0.0-SNAPSHOT")
+    implementation("io.github.jframeoss:starter-jpa:0.0.0-SNAPSHOT")
 
     // OpenTelemetry integration (optional)
-    implementation("io.github.jframe:starter-otlp:0.0.0-SNAPSHOT")
+    implementation("io.github.jframeoss:starter-otlp:0.0.0-SNAPSHOT")
 }
 ```
 
@@ -65,21 +65,21 @@ dependencies {
 <dependencies>
     <!-- Core utilities and shared configurations -->
     <dependency>
-        <groupId>io.github.jframe</groupId>
+        <groupId>io.github.jframeoss</groupId>
         <artifactId>starter-core</artifactId>
         <version>0.0.0-SNAPSHOT</version>
     </dependency>
 
     <!-- JPA enhancements (optional) -->
     <dependency>
-        <groupId>io.github.jframe</groupId>
+        <groupId>io.github.jframeoss</groupId>
         <artifactId>starter-jpa</artifactId>
         <version>0.0.0-SNAPSHOT</version>
     </dependency>
 
     <!-- OpenTelemetry integration (optional) -->
     <dependency>
-        <groupId>io.github.jframe</groupId>
+        <groupId>io.github.jframeoss</groupId>
         <artifactId>starter-otlp</artifactId>
         <version>0.0.0-SNAPSHOT</version>
     </dependency>
@@ -124,7 +124,7 @@ JFrame is organized into focused, reusable modules:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Jordi-Jaspers/JFrame.git
+git clone https://github.com/JFrameOSS/JFrame.git
 cd JFrame
 
 # Build all modules
@@ -191,8 +191,8 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](src/di
 
 <div align="center">
 
-**[⭐ Star this repository](https://github.com/Jordi-Jaspers/JFrame) if you find it useful!**
+**[⭐ Star this repository](https://github.com/JFrameOSS/JFrame) if you find it useful!**
 
-[![Stargazers over time](https://starchart.cc/Jordi-Jaspers/JFrame.svg?variant=adaptive)](https://starchart.cc/Jordi-Jaspers/JFrame)
+[![Stargazers over time](https://starchart.cc/JFrameOSS/JFrame.svg?variant=adaptive)](https://starchart.cc/JFrameOSS/JFrame)
 
 </div>

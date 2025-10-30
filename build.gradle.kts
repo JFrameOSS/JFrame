@@ -230,8 +230,8 @@ subprojects {
                     }
 
                     scm {
-                        connection.set("scm:git:git://github.com/Jordi-Jaspers/JFrame.git")
-                        developerConnection.set("scm:git:ssh://github.com:Jordi-Jaspers/JFrame.git")
+                        connection.set("scm:git:git://github.com/JFrameOSS/JFrame.git")
+                        developerConnection.set("scm:git:ssh://github.com:JFrameOSS/JFrame.git")
                         url.set(retrieve("url"))
                     }
                 }
