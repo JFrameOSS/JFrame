@@ -38,7 +38,7 @@ JFrame is a comprehensive Java framework providing enterprise-grade utilities, c
 
 ### Prerequisites
 
-- Java 25 or higher (Temurin recommended)
+- Java 21 or higher (Temurin recommended)
 - Spring Boot 3.5.3+
 - Gradle 9.x
 
