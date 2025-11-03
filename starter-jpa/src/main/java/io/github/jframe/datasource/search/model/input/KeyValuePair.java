@@ -1,16 +1,14 @@
 package io.github.jframe.datasource.search.model.input;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 /**
  * key value pair for search input.
  */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class KeyValuePair {
 
     @Schema(
@@ -18,14 +16,14 @@ public class KeyValuePair {
         requiredMode = Schema.RequiredMode.REQUIRED,
         example = "status"
     )
-    private String key;
+    private final String key;
 
     @Schema(
         description = "Value of the key-value pair",
         requiredMode = Schema.RequiredMode.REQUIRED,
         example = "active"
     )
-    private String value;
+    private final String value;
 
     /**
      * A constructor that copies another KeyValuePair.

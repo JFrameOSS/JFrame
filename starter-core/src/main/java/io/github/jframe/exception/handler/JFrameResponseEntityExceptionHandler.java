@@ -12,11 +12,13 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
@@ -39,6 +41,7 @@ import static org.springframework.http.HttpStatus.*;
 @RestControllerAdvice
 @RequiredArgsConstructor
 @Order(Ordered.HIGHEST_PRECEDENCE)
+@SuppressWarnings("PMD.ExcessiveImports")
 public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final ErrorResponseEntityBuilder errorResponseEntityBuilder;
@@ -64,7 +67,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
             schema = @Schema(implementation = ApiErrorResponseResource.class)
         )
     )
-    public ResponseEntity<Object> handleHttpException(final HttpException exception, final WebRequest request) {
+    public ResponseEntity<ApiErrorResponseResource> handleHttpException(final HttpException exception, final WebRequest request) {
         final HttpStatus status = exception.getHttpStatus();
         return new ResponseEntity<>(buildErrorResponseBody(exception, status, request), EMPTY, status);
     }
@@ -89,31 +92,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
             schema = @Schema(implementation = ApiErrorResponseResource.class)
         )
     )
-    public ResponseEntity<Object> handleApiException(final ApiException exception, final WebRequest request) {
+    public ResponseEntity<ApiErrorResponseResource> handleApiException(final ApiException exception, final WebRequest request) {
         return new ResponseEntity<>(buildErrorResponseBody(exception, BAD_REQUEST, request), EMPTY, BAD_REQUEST);
     }
 
-    /**
-     * Handles {@code MethodArgumentNotValidException} instances.
-     *
-     * @param exception the exception
-     * @param request   the current request
-     * @return a response entity reflecting the current exception
-     */
-    @ResponseBody
-    @ResponseStatus(BAD_REQUEST)
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ApiResponse(
-        responseCode = "400 (Validation)",
-        description = "Input Validation Exception",
-        content = @Content(
-            mediaType = "application/json",
-            schema = @Schema(implementation = MethodArgumentNotValidResponseResource.class)
-        )
-    )
-    public ResponseEntity<Object> handleValidationException(final MethodArgumentNotValidException exception, final WebRequest request) {
-        return new ResponseEntity<>(buildErrorResponseBody(exception, BAD_REQUEST, request), EMPTY, BAD_REQUEST);
-    }
 
     /**
      * Handles {@code ValidationException} instances.
@@ -135,9 +117,9 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
             schema = @Schema(implementation = ValidationErrorResponseResource.class)
         )
     )
-    public ResponseEntity<Object> handleValidationException(final ValidationException exception, final WebRequest request) {
-        final HttpStatus status = BAD_REQUEST;
-        return new ResponseEntity<>(buildErrorResponseBody(exception, status, request), EMPTY, status);
+    public ResponseEntity<ValidationErrorResponseResource> handleJframeValidation(
+        final ValidationException exception, final WebRequest request) {
+        return new ResponseEntity<>(buildErrorResponseBody(exception, BAD_REQUEST, request), EMPTY, BAD_REQUEST);
     }
 
     /**
@@ -158,9 +140,8 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
             schema = @Schema(implementation = ErrorResponseResource.class)
         )
     )
-    public ResponseEntity<?> handleBadCredentialsException(final BadCredentialsException exception, final WebRequest request) {
-        final HttpStatus status = UNAUTHORIZED;
-        return ResponseEntity.status(status).body(buildErrorResponseBody(exception, status, request));
+    public ResponseEntity<ErrorResponseResource> handleBadCredentials(final BadCredentialsException exception, final WebRequest request) {
+        return ResponseEntity.status(UNAUTHORIZED).body(buildErrorResponseBody(exception, UNAUTHORIZED, request));
     }
 
     /**
@@ -182,32 +163,8 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
             schema = @Schema(implementation = ErrorResponseResource.class)
         )
     )
-    public ResponseEntity<?> handleAccessDeniedException(final AccessDeniedException exception, final WebRequest request) {
-        final HttpStatus status = FORBIDDEN;
-        return ResponseEntity.status(status).body(buildErrorResponseBody(exception, status, request));
-    }
-
-    /**
-     * Handles {@code NoResourceFoundException} errors.
-     *
-     * @param exception the exception
-     * @param request   the current request
-     * @return a response entity reflecting the current exception
-     */
-    @ResponseBody
-    @ResponseStatus(NOT_FOUND)
-    @ExceptionHandler(NoResourceFoundException.class)
-    @ApiResponse(
-        responseCode = "404",
-        description = "Resource Not Found",
-        content = @Content(
-            mediaType = "application/json",
-            schema = @Schema(implementation = ErrorResponseResource.class)
-        )
-    )
-    public ResponseEntity<?> handleNoResourceFoundException(final NoResourceFoundException exception, final WebRequest request) {
-        final HttpStatus status = NOT_FOUND;
-        return ResponseEntity.status(status).body(buildErrorResponseBody(exception, status, request));
+    public ResponseEntity<ErrorResponseResource> handleAccessDenied(final AccessDeniedException exception, final WebRequest request) {
+        return ResponseEntity.status(FORBIDDEN).body(buildErrorResponseBody(exception, FORBIDDEN, request));
     }
 
     /**
@@ -228,9 +185,61 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
             schema = @Schema(implementation = ErrorResponseResource.class)
         )
     )
-    public ResponseEntity<Object> handleThrowable(final Throwable throwable, final WebRequest request) {
+    public ResponseEntity<ErrorResponseResource> handleThrowable(final Throwable throwable, final WebRequest request) {
         return new ResponseEntity<>(buildErrorResponseBody(throwable, INTERNAL_SERVER_ERROR, request), EMPTY, INTERNAL_SERVER_ERROR);
     }
+
+    // =========================== OVERRIDES ===========================
+
+    /**
+     * Handles {@code MethodArgumentNotValidException} instances.
+     *
+     * @param exception the exception
+     * @param request   the current request
+     * @return a response entity reflecting the current exception
+     */
+    @Override
+    @ApiResponse(
+        responseCode = "400 (Validation)",
+        description = "Input Validation Exception",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = MethodArgumentNotValidResponseResource.class)
+        )
+    )
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+        @NonNull final MethodArgumentNotValidException exception,
+        @NonNull final HttpHeaders headers,
+        @NonNull final HttpStatusCode status,
+        @NonNull final WebRequest request) {
+        return new ResponseEntity<>(buildErrorResponseBody(exception, BAD_REQUEST, request), EMPTY, BAD_REQUEST);
+    }
+
+    /**
+     * Handles {@code NoResourceFoundException} errors.
+     *
+     * @param exception the exception
+     * @param request   the current request
+     * @return a response entity reflecting the current exception
+     */
+    @Override
+    @ApiResponse(
+        responseCode = "404",
+        description = "Resource Not Found",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = ErrorResponseResource.class)
+        )
+    )
+    public ResponseEntity<Object> handleNoResourceFoundException(
+        @NonNull final NoResourceFoundException exception,
+        @NonNull final HttpHeaders headers,
+        @NonNull final HttpStatusCode status,
+        @NonNull final WebRequest request) {
+        return ResponseEntity.status(NOT_FOUND).body(buildErrorResponseBody(exception, NOT_FOUND, request));
+    }
+
+    // =========================== PRIVATE METHODS ===========================
 
     /**
      * Builds the error response body based on the provided throwable, status, and request. And adds the details to the OTLP Tracing.
@@ -240,7 +249,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
      * @param request   the current web request
      * @return an {@link ErrorResponseResource} containing the error details
      */
-    private ErrorResponseResource buildErrorResponseBody(final Throwable throwable, final HttpStatus status, final WebRequest request) {
+    private <T extends ErrorResponseResource> T buildErrorResponseBody(
+        final Throwable throwable,
+        final HttpStatus status,
+        final WebRequest request) {
         return errorResponseEntityBuilder.buildErrorResponseBody(throwable, status, request);
     }
 }

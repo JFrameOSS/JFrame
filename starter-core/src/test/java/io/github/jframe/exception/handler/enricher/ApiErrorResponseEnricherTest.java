@@ -36,7 +36,7 @@ public class ApiErrorResponseEnricherTest extends UnitTest {
 
     @Test
     @DisplayName("Should enrich API error code and reason when throwable is ApiException")
-    public void shouldEnrichApiErrorCodeAndReasonWhenThrowableIsApiException() {
+    public void shouldEnrichApiErrorCodeAndGetReasonWhenThrowableIsApiException() {
         // Given: An API error response resource and an ApiException
         final ApiErrorResponseResource resource = new ApiErrorResponseResource();
         final TestApiError apiError = new TestApiError("INVALID_INPUT", "The input is invalid");

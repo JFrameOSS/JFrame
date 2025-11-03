@@ -6,7 +6,10 @@ import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.core.BadRequestException;
 import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.exception.factory.ErrorResponseEntityBuilder;
+import io.github.jframe.exception.resource.ApiErrorResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
+import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
+import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;
 import io.github.support.TestApiError;
@@ -26,15 +29,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.WebRequest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests for {@link JFrameResponseEntityExceptionHandler}.
@@ -62,13 +60,26 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
 
     private JFrameResponseEntityExceptionHandler exceptionHandler;
     private ErrorResponseResource mockErrorResponse;
+    private ApiErrorResponseResource mockApiErrorResponse;
+    private MethodArgumentNotValidResponseResource mockMethodArgumentNotValidResponse;
+    private ValidationErrorResponseResource mockValidationErrorResponse;
 
     @BeforeEach
     @Override
     public void setUp() {
         exceptionHandler = new JFrameResponseEntityExceptionHandler(errorResponseEntityBuilder);
+
         mockErrorResponse = new ErrorResponseResource();
         mockErrorResponse.setErrorMessage("Test error");
+
+        mockApiErrorResponse = new ApiErrorResponseResource();
+        mockApiErrorResponse.setErrorMessage("Test API error");
+
+        mockMethodArgumentNotValidResponse = new MethodArgumentNotValidResponseResource();
+        mockMethodArgumentNotValidResponse.setErrorMessage("Test validation error");
+
+        mockValidationErrorResponse = new ValidationErrorResponseResource();
+        mockValidationErrorResponse.setErrorMessage("Test validation error");
     }
 
     @Test
@@ -77,15 +88,15 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         // Given: An HttpException with BAD_REQUEST status
         final HttpException exception = new BadRequestException("Invalid input");
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.BAD_REQUEST), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
+            .thenReturn(mockApiErrorResponse);
 
         // When: Handling the HttpException
-        final ResponseEntity<Object> response = exceptionHandler.handleHttpException(exception, webRequest);
+        final ResponseEntity<ApiErrorResponseResource> response = exceptionHandler.handleHttpException(exception, webRequest);
 
         // Then: Response has correct status and body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
-        assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
+        assertThat(response.getBody(), is(sameInstance(mockApiErrorResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
     }
 
@@ -95,10 +106,10 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         // Given: An HttpException with NOT_FOUND status
         final HttpException exception = new HttpException(HttpStatus.NOT_FOUND);
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.NOT_FOUND), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
+            .thenReturn(mockApiErrorResponse);
 
         // When: Handling the HttpException
-        final ResponseEntity<Object> response = exceptionHandler.handleHttpException(exception, webRequest);
+        final ResponseEntity<ApiErrorResponseResource> response = exceptionHandler.handleHttpException(exception, webRequest);
 
         // Then: Response has correct status from exception
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.NOT_FOUND)));
@@ -112,15 +123,15 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         final ApiError apiError = new TestApiError("ERR001", "Test API error");
         final ApiException exception = new TestApiException(apiError);
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.BAD_REQUEST), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
+            .thenReturn(mockApiErrorResponse);
 
         // When: Handling the ApiException
-        final ResponseEntity<Object> response = exceptionHandler.handleApiException(exception, webRequest);
+        final ResponseEntity<ApiErrorResponseResource> response = exceptionHandler.handleApiException(exception, webRequest);
 
         // Then: Response has BAD_REQUEST status and correct body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
-        assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
+        assertThat(response.getBody(), is(sameInstance(mockApiErrorResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
     }
 
@@ -131,15 +142,20 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         final BindingResult bindingResult = mock(BindingResult.class);
         final MethodArgumentNotValidException exception = new MethodArgumentNotValidException(null, bindingResult);
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.BAD_REQUEST), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
+            .thenReturn(mockMethodArgumentNotValidResponse);
 
         // When: Handling the MethodArgumentNotValidException
-        final ResponseEntity<Object> response = exceptionHandler.handleValidationException(exception, webRequest);
+        final ResponseEntity<Object> response = exceptionHandler.handleMethodArgumentNotValid(
+            exception,
+            org.springframework.http.HttpHeaders.EMPTY,
+            HttpStatus.BAD_REQUEST,
+            webRequest
+        );
 
         // Then: Response has BAD_REQUEST status and correct body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
-        assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
+        assertThat(response.getBody(), is(sameInstance(mockMethodArgumentNotValidResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
     }
 
@@ -152,15 +168,15 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         validationResult.addError(new ValidationError("field2", "INVALID"));
         final ValidationException exception = new ValidationException(validationResult);
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.BAD_REQUEST), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
+            .thenReturn(mockValidationErrorResponse);
 
         // When: Handling the ValidationException
-        final ResponseEntity<Object> response = exceptionHandler.handleValidationException(exception, webRequest);
+        final ResponseEntity<ValidationErrorResponseResource> response = exceptionHandler.handleJframeValidation(exception, webRequest);
 
         // Then: Response has BAD_REQUEST status and correct body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
-        assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
+        assertThat(response.getBody(), is(sameInstance(mockValidationErrorResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
     }
 
@@ -173,7 +189,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
             .thenReturn(mockErrorResponse);
 
         // When: Handling the BadCredentialsException
-        final ResponseEntity<?> response = exceptionHandler.handleBadCredentialsException(exception, webRequest);
+        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleBadCredentials(exception, webRequest);
 
         // Then: Response has UNAUTHORIZED status and correct body
         assertThat(response, is(notNullValue()));
@@ -191,7 +207,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
             .thenReturn(mockErrorResponse);
 
         // When: Handling the AccessDeniedException
-        final ResponseEntity<?> response = exceptionHandler.handleAccessDeniedException(exception, webRequest);
+        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleAccessDenied(exception, webRequest);
 
         // Then: Response has FORBIDDEN status and correct body
         assertThat(response, is(notNullValue()));
@@ -209,7 +225,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
             .thenReturn(mockErrorResponse);
 
         // When: Handling the generic Throwable
-        final ResponseEntity<Object> response = exceptionHandler.handleThrowable(throwable, webRequest);
+        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleThrowable(throwable, webRequest);
 
         // Then: Response has INTERNAL_SERVER_ERROR status and correct body
         assertThat(response, is(notNullValue()));
@@ -227,7 +243,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
             .thenReturn(mockErrorResponse);
 
         // When: Handling the Error
-        final ResponseEntity<Object> response = exceptionHandler.handleThrowable(error, webRequest);
+        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleThrowable(error, webRequest);
 
         // Then: Response has INTERNAL_SERVER_ERROR status
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.INTERNAL_SERVER_ERROR)));
@@ -241,11 +257,11 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         final HttpException httpException = new BadRequestException();
         final ApiException apiException = new TestApiException(new TestApiError("ERR", "Error"));
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), any(), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
+            .thenReturn(mockApiErrorResponse);
 
         // When: Handling various exceptions
-        final ResponseEntity<Object> httpResponse = exceptionHandler.handleHttpException(httpException, webRequest);
-        final ResponseEntity<Object> apiResponse = exceptionHandler.handleApiException(apiException, webRequest);
+        final ResponseEntity<ApiErrorResponseResource> httpResponse = exceptionHandler.handleHttpException(httpException, webRequest);
+        final ResponseEntity<ApiErrorResponseResource> apiResponse = exceptionHandler.handleApiException(apiException, webRequest);
 
         // Then: All responses have empty headers
         assertThat(httpResponse.getHeaders().isEmpty(), is(true));
