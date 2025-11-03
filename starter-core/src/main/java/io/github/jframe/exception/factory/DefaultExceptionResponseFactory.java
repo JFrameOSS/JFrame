@@ -13,6 +13,8 @@ import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
+import static java.util.Objects.nonNull;
+
 /**
  * Default type of {@link ExceptionResponseFactory}.
  *
@@ -38,7 +40,7 @@ public class DefaultExceptionResponseFactory implements ExceptionResponseFactory
     @Override
     public ErrorResponseResource create(final Throwable throwable) {
         ErrorResponseResource result = null;
-        if (throwable != null) {
+        if (nonNull(throwable)) {
             result = getErrorResponseResource(throwable);
             if (result == null) {
                 final Throwable cause = getCausingJFrameException(throwable);

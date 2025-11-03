@@ -3,14 +3,12 @@ package io.github.jframe.logging.logger;
 import io.github.jframe.autoconfigure.properties.LoggingProperties;
 import io.github.jframe.logging.masker.type.PasswordMasker;
 import io.github.jframe.logging.util.HttpBodyUtil;
+import io.github.jframe.logging.wrapper.BufferedClientHttpResponse;
 import io.github.jframe.logging.wrapper.WrappedContentCachingResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpRetryException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,11 +18,9 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 
-import static io.github.jframe.util.constants.Constants.Characters.SYSTEM_NEW_LINE;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.nonNull;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 /**
@@ -52,7 +48,7 @@ public class HttpRequestResponseBodyLogger {
      * @throws IOException In case the body could not be read.
      */
     public String getTxRequestBody(final HttpServletRequest servletRequest) throws IOException {
-        return maskPasswords(getPostBody(servletRequest));
+        return passwordMasker.maskPasswordsIn(getPostBody(servletRequest));
     }
 
     /**
@@ -69,7 +65,7 @@ public class HttpRequestResponseBodyLogger {
         if (characterEncoding == null || characterEncoding.isEmpty()) {
             characterEncoding = Charset.defaultCharset().name();
         }
-        return maskPasswords(toString(servletResponse.getContentAsByteArray(), characterEncoding));
+        return passwordMasker.maskPasswordsIn(toString(servletResponse.getContentAsByteArray(), characterEncoding));
     }
 
     /**
@@ -79,7 +75,7 @@ public class HttpRequestResponseBodyLogger {
      * @return The body.
      */
     public String getCallRequestBody(final byte[] body) {
-        return maskPasswords(toString(body, Charset.defaultCharset()));
+        return passwordMasker.maskPasswordsIn(toString(body, Charset.defaultCharset()));
     }
 
     /**
@@ -88,9 +84,12 @@ public class HttpRequestResponseBodyLogger {
      * @param response The http response.
      * @return The body.
      */
-    public String getCallResponseBody(final ClientHttpResponse response) {
-        final StringBuilder inputStringBuilder = new StringBuilder();
-        return maskPasswords(getResponseBody(inputStringBuilder, response));
+    public String getCallResponseBody(final BufferedClientHttpResponse response) {
+        return HttpBodyUtil.compressAndMaskBody(
+            getResponseBody(response),
+            loggingProperties.getResponseLength(),
+            passwordMasker
+        );
     }
 
     private static String toString(final byte[] body, final String charset) {
@@ -124,7 +123,7 @@ public class HttpRequestResponseBodyLogger {
         Collections.sort(parameterNames);
         for (final String parameterName : parameterNames) {
             final String[] parameterValues = request.getParameterValues(parameterName);
-            if (parameterValues != null) {
+            if (nonNull(parameterValues)) {
                 for (final String value : parameterValues) {
                     stringBuilder.append(parameterName).append('=').append(value).append('\n');
                 }
@@ -133,29 +132,12 @@ public class HttpRequestResponseBodyLogger {
         return stringBuilder.toString();
     }
 
-    private String getResponseBody(final StringBuilder inputStringBuilder, final ClientHttpResponse response) {
-        try (InputStreamReader inputStreamReader = new InputStreamReader(response.getBody(), UTF_8);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
-            String line = bufferedReader.readLine();
-            while (line != null) {
-                inputStringBuilder.append(line).append(SYSTEM_NEW_LINE);
-                line = bufferedReader.readLine();
-            }
-        } catch (final HttpRetryException exception) {
-            log.warn("Got retry exception.");
-            log.trace("Stacktrace is: ", exception);
+    private String getResponseBody(final BufferedClientHttpResponse response) {
+        try {
+            return response.getBodyAsString();
         } catch (final IOException exception) {
             log.warn("Could not get response body.", exception);
+            return "";
         }
-
-        return HttpBodyUtil.compressAndMaskBody(
-            inputStringBuilder.toString(),
-            loggingProperties.getResponseLength(),
-            passwordMasker
-        );
-    }
-
-    private String maskPasswords(final String input) {
-        return passwordMasker.maskPasswordsIn(input);
     }
 }

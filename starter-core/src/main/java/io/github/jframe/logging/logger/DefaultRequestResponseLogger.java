@@ -4,6 +4,7 @@ import io.github.jframe.logging.kibana.KibanaLogFieldNames;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.kibana.KibanaLogTypeNames;
 import io.github.jframe.logging.voter.MediaTypeVoter;
+import io.github.jframe.logging.wrapper.BufferedClientHttpResponse;
 import io.github.jframe.logging.wrapper.ResettableHttpServletRequest;
 import io.github.jframe.logging.wrapper.WrappedContentCachingResponse;
 import lombok.RequiredArgsConstructor;
@@ -197,7 +198,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
     }
 
     @Override
-    public void logResponse(final ClientHttpResponse response) throws IOException {
+    public void logResponse(final BufferedClientHttpResponse response) throws IOException {
         try {
             KibanaLogFields.tag(LOG_TYPE, KibanaLogTypeNames.CALL_RESPONSE_BODY);
 
