@@ -20,6 +20,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 
+import static java.util.Objects.nonNull;
+
 /**
  * Abstract metadata class defining search and sorting capabilities for domain model objects.
  *
@@ -113,7 +115,7 @@ public abstract class AbstractSortSearchMetaData {
         if (!isCustomSearch) {
             searchTypes.put(field, searchType);
         }
-        if (column != null) {
+        if (nonNull(column)) {
             columnNames.put(field, column);
         }
         if (sortable) {
@@ -215,11 +217,11 @@ public abstract class AbstractSortSearchMetaData {
      */
     protected DateSearchField toDateSearchField(final String columnName, final SearchInput searchInput) {
         final DateSearchField result = new DateSearchField(columnName);
-        if (searchInput.getFromDateValue() != null) {
+        if (nonNull(searchInput.getFromDateValue())) {
             final LocalDateTime fromDate = LocalDateTime.parse(searchInput.getFromDateValue(), DateTimeFormatter.ISO_DATE_TIME);
             result.setFromDate(fromDate);
         }
-        if (searchInput.getToDateValue() != null) {
+        if (nonNull(searchInput.getToDateValue())) {
             final LocalDateTime toDate = LocalDateTime.parse(searchInput.getToDateValue(), DateTimeFormatter.ISO_DATE_TIME);
             result.setToDate(toDate);
         }
@@ -241,7 +243,7 @@ public abstract class AbstractSortSearchMetaData {
         final List<SearchCriterium> searchCriteria = new ArrayList<>();
         for (final SearchInput searchInput : inputs) {
             final SearchCriterium searchCriterium = getSearchCriterium(searchInput);
-            if (searchCriterium != null) {
+            if (nonNull(searchCriterium)) {
                 searchCriteria.add(searchCriterium);
             }
         }

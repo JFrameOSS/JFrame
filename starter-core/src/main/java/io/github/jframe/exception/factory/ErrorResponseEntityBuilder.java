@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
 
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -28,7 +29,7 @@ public class ErrorResponseEntityBuilder {
     public ErrorResponseEntityBuilder(final ExceptionResponseFactory exceptionResponseFactory,
                                       final List<ErrorResponseEnricher> errorResponseEnrichers) {
         this.exceptionResponseFactory = requireNonNull(exceptionResponseFactory);
-        if (errorResponseEnrichers != null) {
+        if (nonNull(errorResponseEnrichers)) {
             this.errorResponseEnrichers.addAll(errorResponseEnrichers);
         }
     }

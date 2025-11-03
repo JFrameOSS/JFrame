@@ -5,6 +5,8 @@ import java.util.Map;
 
 import org.slf4j.MDC;
 
+import static java.util.Objects.nonNull;
+
 /** Utility to copy the Kibana Log Fields. */
 public final class KibanaLogContext {
 
@@ -14,7 +16,7 @@ public final class KibanaLogContext {
     /** Create a new instance, copying the MDC (context map). */
     public KibanaLogContext() {
         final Map<String, String> copyContextMap = MDC.getCopyOfContextMap();
-        if (copyContextMap != null) {
+        if (nonNull(copyContextMap)) {
             contextMap.putAll(copyContextMap);
         }
     }

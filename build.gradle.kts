@@ -6,6 +6,7 @@ import org.springframework.boot.gradle.tasks.bundling.BootJar
 import ru.vyarus.gradle.plugin.quality.QualityExtension
 import java.util.*
 import java.util.Calendar.YEAR
+import java.util.Objects.nonNull
 
 // =============== PROJECT PROPERTIES =================
 plugins {
@@ -257,8 +258,7 @@ subprojects {
     configure<SigningExtension> {
         val signingKey = System.getenv("SIGNING_KEY")
         val signingPassword = System.getenv("SIGNING_PASSWORD")
-
-        if (signingKey != null && signingPassword != null) {
+        if (nonNull(signingKey) && nonNull(signingPassword)) {
             useInMemoryPgpKeys(signingKey, signingPassword)
             sign(extensions.getByType<PublishingExtension>().publications["java"])
         }

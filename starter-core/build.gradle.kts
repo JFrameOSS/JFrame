@@ -14,10 +14,12 @@ dependencies {
     api("org.springframework.boot", "spring-boot-starter-security")
     api("org.springdoc", "springdoc-openapi-starter-webmvc-ui", retrieve("springdocVersion"))
 
-    api("commons-io", "commons-io", retrieve("commonsIoVersion"))
     api("net.logstash.logback", "logstash-logback-encoder", retrieve("logstashEncoderVersion"))
     api("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
 
+    api("commons-io", "commons-io", retrieve("commonsIoVersion"))
+    api("org.apache.commons", "commons-collections4", retrieve("commonsCollectionVersion"))
+    api("org.apache.commons", "commons-lang3", retrieve("commonsLangVersion"))
     // ======= OTHER DEPENDENCIES =======
     implementation("org.mapstruct","mapstruct", retrieve("mapStructVersion"))
     implementation("com.fasterxml.jackson.datatype", "jackson-datatype-jsr310", retrieve("jacksonVersion"))
