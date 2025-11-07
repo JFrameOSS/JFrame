@@ -65,10 +65,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         description = "Default HTTP Exception",
         content = @Content(
             mediaType = "application/json",
-            schema = @Schema(implementation = ApiErrorResponseResource.class)
+            schema = @Schema(implementation = ErrorResponseResource.class)
         )
     )
-    public ResponseEntity<ApiErrorResponseResource> handleHttpException(final HttpException exception, final WebRequest request) {
+    public ResponseEntity<ErrorResponseResource> handleHttpException(final HttpException exception, final WebRequest request) {
         final HttpStatus status = exception.getHttpStatus();
         return new ResponseEntity<>(buildErrorResponseBody(exception, status, request), EMPTY, status);
     }

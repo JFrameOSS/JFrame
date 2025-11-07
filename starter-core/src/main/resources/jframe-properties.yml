@@ -32,21 +32,21 @@ jframe:
       - password
       - keyPassphrase
     filters:
-      request-duration:
-        enabled: true
-        order: -700
-      request-response:
-        enabled: true
-        order: -600
-      transaction-id:
-        enabled: true
-        order: -500
-      request-id:
-        enabled: true
-        order: -400
       tracing-id:
         enabled: true
-        order: -300
+        order: -1000
+      request-id:
+        enabled: true
+        order: -900
+      transaction-id:
+        enabled: true
+        order: -800
+      request-response:
+        enabled: true
+        order: -700
+      request-duration:
+        enabled: true
+        order: -600
 
   otlp:
     disabled: true

@@ -91,7 +91,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
             .thenReturn(mockApiErrorResponse);
 
         // When: Handling the HttpException
-        final ResponseEntity<ApiErrorResponseResource> response = exceptionHandler.handleHttpException(exception, webRequest);
+        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleHttpException(exception, webRequest);
 
         // Then: Response has correct status and body
         assertThat(response, is(notNullValue()));
@@ -109,7 +109,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
             .thenReturn(mockApiErrorResponse);
 
         // When: Handling the HttpException
-        final ResponseEntity<ApiErrorResponseResource> response = exceptionHandler.handleHttpException(exception, webRequest);
+        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleHttpException(exception, webRequest);
 
         // Then: Response has correct status from exception
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.NOT_FOUND)));
@@ -260,7 +260,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
             .thenReturn(mockApiErrorResponse);
 
         // When: Handling various exceptions
-        final ResponseEntity<ApiErrorResponseResource> httpResponse = exceptionHandler.handleHttpException(httpException, webRequest);
+        final ResponseEntity<ErrorResponseResource> httpResponse = exceptionHandler.handleHttpException(httpException, webRequest);
         final ResponseEntity<ApiErrorResponseResource> apiResponse = exceptionHandler.handleApiException(apiException, webRequest);
 
         // Then: All responses have empty headers
