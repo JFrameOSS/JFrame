@@ -342,11 +342,10 @@ configure<JReleaserExtension> {
         copyright = "2024-${Calendar.getInstance().get(YEAR)} Jordi Jaspers"
     }
 
-    // Signing configuration
+    // Signing is handled by Gradle signing plugin in subprojects
+    // No additional signing needed by JReleaser
     signing {
-        armored = true
-        active = org.jreleaser.model.Active.ALWAYS
-        mode = org.jreleaser.model.Signing.Mode.MEMORY
+        active = org.jreleaser.model.Active.NEVER
     }
 
     // Maven Central deployment
