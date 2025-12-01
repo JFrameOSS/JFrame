@@ -97,16 +97,25 @@ jobs:
           ./gradlew clean build
           echo "=== Build completed successfully ==="
 
-      - name: Publish to Maven Central
+      - name: Publish artifacts to staging directory
         run: |
-          echo "=== Publishing to Maven Central ==="
+          echo "=== Publishing artifacts to staging directory ==="
           ./gradlew publish
-          echo "=== Publishing completed successfully ==="
+          echo "=== Staging completed successfully ==="
         env:
-          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+
+      - name: Deploy to Maven Central via JReleaser
+        run: |
+          echo "=== Deploying to Maven Central via JReleaser ==="
+          ./gradlew jreleaserDeploy
+          echo "=== Deployment completed successfully ==="
+        env:
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.SIGNING_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.SIGNING_PASSWORD }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
