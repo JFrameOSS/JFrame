@@ -4,7 +4,6 @@ import org.cyclonedx.gradle.CyclonedxDirectTask
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import ru.vyarus.gradle.plugin.quality.QualityExtension
-import java.time.Duration
 import java.util.*
 import java.util.Calendar.YEAR
 import java.util.Objects.nonNull
@@ -26,7 +25,7 @@ plugins {
     id("maven-publish") apply true
     id("signing") apply true
     id("com.github.ben-manes.versions") apply true
-    id("io.github.gradle-nexus.publish-plugin") apply true
+    id("com.gradleup.nmcp.aggregation") apply true
 }
 
 repositories {
@@ -332,19 +331,13 @@ fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")
 
-// =============== NEXUS PUBLISH CONFIGURATION =================
-// This plugin enables publishing to Maven Central via the new Central Portal
-nexusPublishing {
-    repositories {
-        sonatype {
-            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots/"))
-            username.set(System.getenv("MAVEN_USERNAME"))
-            password.set(System.getenv("MAVEN_PASSWORD"))
-        }
-    }
 
-    // Configure timeouts for slow networks
-    connectTimeout.set(Duration.ofMinutes(3))
-    clientTimeout.set(Duration.ofMinutes(3))
+// =============== NEW CENTRAL PORTAL PUBLISHING =================
+nmcpAggregation {
+    centralPortal {
+        username = providers.environmentVariable("MAVEN_USERNAME")
+        password = providers.environmentVariable("MAVEN_PASSWORD")
+        publishingType = "AUTOMATIC"
+    }
+    publishAllProjectsProbablyBreakingProjectIsolation()
 }

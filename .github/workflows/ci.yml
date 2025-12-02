@@ -99,8 +99,8 @@ jobs:
 
       - name: Publish to Maven Central
         run: |
-          echo "=== Publishing to Maven Central ==="
-          ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
+          echo "=== Publishing to Maven Central via nmcp ==="
+          ./gradlew publishAggregationToCentralPortal
           echo "=== Publishing completed successfully ==="
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
