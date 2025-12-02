@@ -2,9 +2,9 @@ import com.diffplug.gradle.spotless.SpotlessExtension
 import org.cyclonedx.Version
 import org.cyclonedx.gradle.CyclonedxDirectTask
 import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.jreleaser.gradle.plugin.JReleaserExtension
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import ru.vyarus.gradle.plugin.quality.QualityExtension
+import java.time.Duration
 import java.util.*
 import java.util.Calendar.YEAR
 import java.util.Objects.nonNull
@@ -26,7 +26,7 @@ plugins {
     id("maven-publish") apply true
     id("signing") apply true
     id("com.github.ben-manes.versions") apply true
-    id("org.jreleaser") apply true
+    id("io.github.gradle-nexus.publish-plugin") apply true
 }
 
 repositories {
@@ -242,12 +242,13 @@ subprojects {
         }
         repositories {
             maven {
-                name = "StagingDeploy"
-                url = uri(layout.buildDirectory.dir("staging-deploy"))
+                name = "MavenLocal"
+                url = uri(mavenLocal().url)
             }
         }
     }
 
+    // Standard Gradle signing
     configure<SigningExtension> {
         val signingKey = System.getenv("SIGNING_KEY")
         val signingPassword = System.getenv("SIGNING_PASSWORD")
@@ -304,7 +305,7 @@ tasks.register("publishLocal") {
 
 tasks.register("publishMaven") {
     group = "publishing"
-    description = "Publishes all build modules to Maven Central via JReleaser"
+    description = "Publishes all build modules to the configured Maven repositories"
     doFirst {
         logger.lifecycle(
             "|ℹ️ Publishing artifacts: ${project.group}:${project.version}".trimMargin().replace("\"", "")
@@ -315,11 +316,10 @@ tasks.register("publishMaven") {
         dependsOn(":${subproject.name}:publish")
     }
 
-    dependsOn("jreleaserDeploy")
     doLast {
         logger.lifecycle("📦 Published artifacts:")
         subprojects.forEach { logger.lifecycle("   ✓ ${it.artifactCoordinates()}") }
-        logger.lifecycle("🎉 Successfully published all modules to Maven Central!")
+        logger.lifecycle("🎉 Successfully published all modules!")
     }
 }
 
@@ -332,38 +332,19 @@ fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")
 
-// =============== JRELEASER CONFIGURATION =================
-configure<JReleaserExtension> {
-    project {
-        name = rootProject.name
-        description = "JFrame - A multi-module Java library framework built with Gradle and Spring Boot"
-        authors = listOf("Jordi Jaspers")
-        license = "Apache-2.0"
-        copyright = "2024-${Calendar.getInstance().get(YEAR)} Jordi Jaspers"
-    }
-
-    // Signing is handled by Gradle signing plugin in subprojects
-    // No additional signing needed by JReleaser
-    signing {
-        active = org.jreleaser.model.Active.NEVER
-    }
-
-    // Maven Central deployment
-    deploy {
-        maven {
-            mavenCentral {
-                create("sonatype") {
-                    active = org.jreleaser.model.Active.ALWAYS
-                    url = "https://central.sonatype.com/api/v1/publisher"
-
-                    // Staging directory where artifacts are collected
-                    stagingRepository(layout.buildDirectory.dir("staging-deploy").get().toString())
-
-                    // Retry configuration
-                    retryDelay = 60
-                    maxRetries = 3
-                }
-            }
+// =============== NEXUS PUBLISH CONFIGURATION =================
+// This plugin enables publishing to Maven Central via the new Central Portal
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots/"))
+            username.set(System.getenv("MAVEN_USERNAME"))
+            password.set(System.getenv("MAVEN_PASSWORD"))
         }
     }
+
+    // Configure timeouts for slow networks
+    connectTimeout.set(Duration.ofMinutes(3))
+    clientTimeout.set(Duration.ofMinutes(3))
 }

@@ -16,7 +16,7 @@ pluginManagement {
     val spotlessPluginVersion: String by settings
     val dependencyUpdatesPluginVersion: String by settings
     val publishingVersion: String by settings
-    val jreleaserPluginVersion: String by settings
+    val nexusPublishPluginVersion: String by settings
 
     plugins {
         id("org.springframework.boot") version springBootPluginVersion
@@ -28,6 +28,6 @@ pluginManagement {
         id("com.diffplug.spotless") version spotlessPluginVersion
         id("com.github.ben-manes.versions") version dependencyUpdatesPluginVersion
         id("publishing") version publishingVersion
-        id("org.jreleaser") version jreleaserPluginVersion
+        id("io.github.gradle-nexus.publish-plugin") version nexusPublishPluginVersion
     }
 }
