@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
 
+import static java.util.Objects.nonNull;
+
 /**
  * This enricher adds api error information to the error response resource.
  *
@@ -33,7 +35,7 @@ public class ApiErrorResponseEnricher implements ErrorResponseEnricher {
             responseResource.setApiErrorCode(apiException.getErrorCode());
             responseResource.setApiErrorReason(apiException.getReason());
 
-            if (apiException.getMessage() != null) {
+            if (nonNull(apiException.getMessage())) {
                 responseResource.setErrorMessage(apiException.getMessage());
             } else {
                 responseResource.setErrorMessage("No error message available");

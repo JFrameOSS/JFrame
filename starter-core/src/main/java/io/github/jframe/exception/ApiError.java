@@ -16,12 +16,12 @@ public interface ApiError extends Serializable {
      *
      * @return the error code
      */
-    String errorCode();
+    String getErrorCode();
 
     /**
      * Get the error reason.
      *
      * @return the reason
      */
-    String reason();
+    String getReason();
 }

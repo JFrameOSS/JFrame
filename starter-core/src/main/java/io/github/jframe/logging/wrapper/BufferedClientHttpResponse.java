@@ -1,4 +1,4 @@
-package io.github.jframe.logging.model;
+package io.github.jframe.logging.wrapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

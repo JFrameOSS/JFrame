@@ -1,5 +1,7 @@
 package io.github.jframe.logging.kibana;
 
+import static java.util.Objects.nonNull;
+
 /**
  * Interface that allows client projects to use their own log fields.
  */
@@ -20,6 +22,6 @@ public interface KibanaLogField {
      * @return true if not null and if the supplied key equals this key.
      */
     default boolean matches(final String key) {
-        return key != null && key.equalsIgnoreCase(getLogName());
+        return nonNull(key) && key.equalsIgnoreCase(getLogName());
     }
 }

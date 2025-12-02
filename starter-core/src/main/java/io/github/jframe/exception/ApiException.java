@@ -73,7 +73,7 @@ public class ApiException extends JFrameException {
      * @return the error code
      */
     public String getErrorCode() {
-        return apiError == null ? null : apiError.errorCode();
+        return apiError == null ? null : apiError.getErrorCode();
     }
 
     /**
@@ -82,6 +82,6 @@ public class ApiException extends JFrameException {
      * @return the reason
      */
     public String getReason() {
-        return apiError == null ? null : apiError.reason();
+        return apiError == null ? null : apiError.getReason();
     }
 }

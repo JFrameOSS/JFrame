@@ -48,8 +48,8 @@ public class TransactionIdFilter extends AbstractGenericFilter {
      *
      * <p>If the value is not set in the {@code request} then a new UUID will be generated.
      *
-     * @param request    THe request to get a UUID value from.
-     * @param headerName THe header to get the UUID value from.
+     * @param request    The request to get a UUID value from.
+     * @param headerName The header to get the UUID value from.
      * @return The resolved UUID, or a new uuid.
      */
     public static UUID resolve(final HttpServletRequest request, final String headerName) {

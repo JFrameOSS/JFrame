@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 /**
  * This enricher adds validation errors to the error response resource.
@@ -33,8 +34,8 @@ public class ValidationErrorResponseEnricher implements ErrorResponseEnricher {
     /**
      * {@inheritDoc}
      *
-     * <p><strong>NOTE:</strong> This enricher only applies if throwable is a {@link
-     * ValidationException} and #errorResponseResource is a {@link ValidationErrorResponseResource}.
+     * <p><strong>NOTE:</strong> This enricher only applies if throwable is a {@link ValidationException} and #errorResponseResource is a
+     * {@link ValidationErrorResponseResource}.
      */
     @Override
     public void doEnrich(
@@ -45,7 +46,7 @@ public class ValidationErrorResponseEnricher implements ErrorResponseEnricher {
         if (throwable instanceof final ValidationException validationException
             && errorResponseResource instanceof final ValidationErrorResponseResource resource) {
             final List<ValidationError> errors = getErrors(validationException);
-            if (errors != null && !errors.isEmpty()) {
+            if (isNotEmpty(errors)) {
                 resource.setErrors(validationErrorResourceAssembler.convert(errors));
             }
         }

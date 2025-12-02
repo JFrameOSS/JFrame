@@ -2,6 +2,7 @@ package io.github.jframe.logging.interceptor;
 
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.logger.RequestResponseLogger;
+import io.github.jframe.logging.wrapper.BufferedClientHttpResponse;
 import io.github.jframe.util.HttpRequestLogging;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import static io.github.jframe.logging.kibana.KibanaLogCallResultTypes.FAILURE;
@@ -32,28 +34,30 @@ public class LoggingClientHttpRequestInterceptor implements ClientHttpRequestInt
 
     private final RequestResponseLogger requestResponseLogger;
 
+    @NonNull
     @Override
-    public ClientHttpResponse intercept(final HttpRequest request, final byte[] body, final ClientHttpRequestExecution execution)
-        throws IOException {
-        try {
+    public ClientHttpResponse intercept(
+        @NonNull final HttpRequest request,
+        @NonNull final byte[] body,
+        @NonNull final ClientHttpRequestExecution execution) throws IOException {
+        try (BufferedClientHttpResponse bufferedResponse = new BufferedClientHttpResponse(execution.execute(request, body))) {
             if (HttpRequestLogging.isEnabled()) {
                 requestResponseLogger.logRequest(request, body);
             }
-            final ClientHttpResponse response = execution.execute(request, body);
             if (HttpRequestLogging.isEnabled()) {
-                requestResponseLogger.logResponse(response);
+                requestResponseLogger.logResponse(bufferedResponse);
             }
-            return response;
+            return bufferedResponse;
         } catch (final IOException exception) {
             KibanaLogFields.tag(CALL_STATUS, TIMEOUT);
             KibanaLogFields.tag(LOG_TYPE, CALL_END);
             log.info("Got IO exception during call, most likely a timeout from backend.", exception);
             throw exception;
-        } catch (final Throwable throwable) {
+        } catch (final Exception exception) {
             KibanaLogFields.tag(CALL_STATUS, FAILURE);
             KibanaLogFields.tag(LOG_TYPE, CALL_END);
-            log.info("Got exception during call, most likely a configuration issue.", throwable);
-            throw throwable;
+            log.info("Got exception during call, most likely a configuration issue.", exception);
+            throw exception;
         } finally {
             KibanaLogFields.clear(CALL_STATUS, LOG_TYPE);
         }

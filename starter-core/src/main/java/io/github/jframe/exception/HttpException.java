@@ -1,5 +1,7 @@
 package io.github.jframe.exception;
 
+import lombok.Getter;
+
 import java.io.Serial;
 
 import org.springframework.http.HttpStatus;
@@ -9,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * An HTTP exception.
  */
+@Getter
 public class HttpException extends JFrameException {
 
     /** The serial version UID. */
@@ -43,9 +46,5 @@ public class HttpException extends JFrameException {
     public HttpException(final Throwable cause, final HttpStatus httpStatus) {
         super(cause);
         this.httpStatus = requireNonNull(httpStatus);
-    }
-
-    public HttpStatus getHttpStatus() {
-        return httpStatus;
     }
 }

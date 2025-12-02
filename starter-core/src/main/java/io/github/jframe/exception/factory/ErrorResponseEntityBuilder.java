@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
 
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -21,13 +22,14 @@ import static java.util.Objects.requireNonNull;
 public class ErrorResponseEntityBuilder {
 
     private final ExceptionResponseFactory exceptionResponseFactory;
+
     private final Set<ErrorResponseEnricher> errorResponseEnrichers = new HashSet<>();
 
     /** The constructor. */
     public ErrorResponseEntityBuilder(final ExceptionResponseFactory exceptionResponseFactory,
                                       final List<ErrorResponseEnricher> errorResponseEnrichers) {
         this.exceptionResponseFactory = requireNonNull(exceptionResponseFactory);
-        if (errorResponseEnrichers != null) {
+        if (nonNull(errorResponseEnrichers)) {
             this.errorResponseEnrichers.addAll(errorResponseEnrichers);
         }
     }
@@ -35,8 +37,8 @@ public class ErrorResponseEntityBuilder {
     /**
      * Builds a meaningful response body for the given throwable, HTTP status and request.
      *
-     * <p>This method constructs an {@link ErrorResponseResource} using {@link
-     * #exceptionResponseFactory} and then applies the error response enrichers returned from {@link #getResponseEnrichers()} to complete
+     * <p>This method constructs an {@link ErrorResponseResource} using {@link ExceptionResponseFactory} and then applies the error response
+     * enrichers returned from {@link #getResponseEnrichers()} to complete
      * the response.
      *
      * @param throwable the exception
@@ -44,11 +46,13 @@ public class ErrorResponseEntityBuilder {
      * @param request   the current request
      * @return an error response
      */
-    public ErrorResponseResource buildErrorResponseBody(
-        final Throwable throwable, final HttpStatus status, final WebRequest request) {
+    @SuppressWarnings("unchecked")
+    public <T extends ErrorResponseResource> T buildErrorResponseBody(final Throwable throwable,
+        final HttpStatus status,
+        final WebRequest request) {
         final ErrorResponseResource resource = exceptionResponseFactory.create(throwable);
         getResponseEnrichers().forEach(enricher -> enricher.enrich(resource, request, status));
-        return resource;
+        return (T) resource;
     }
 
     /**

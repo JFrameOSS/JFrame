@@ -1,5 +1,6 @@
 package io.github.jframe.logging.logger;
 
+import io.github.jframe.logging.wrapper.BufferedClientHttpResponse;
 import io.github.jframe.logging.wrapper.ResettableHttpServletRequest;
 import io.github.jframe.logging.wrapper.WrappedContentCachingResponse;
 
@@ -7,7 +8,6 @@ import java.io.IOException;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.http.HttpRequest;
-import org.springframework.http.client.ClientHttpResponse;
 
 /** Responsible for logging Http requests and responses. */
 public interface RequestResponseLogger {
@@ -34,7 +34,7 @@ public interface RequestResponseLogger {
      * @param response The response to log.
      * @throws IOException in case of an error.
      */
-    void logResponse(ClientHttpResponse response) throws IOException;
+    void logResponse(BufferedClientHttpResponse response) throws IOException;
 
     /**
      * Log the response.

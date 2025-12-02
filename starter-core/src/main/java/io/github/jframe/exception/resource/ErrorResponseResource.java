@@ -25,8 +25,10 @@ public class ErrorResponseResource {
     private int statusCode;
     private String statusMessage;
     private String errorMessage;
+    private String txId;
     private String traceId;
     private String spanId;
+
 
     /** The throwable this resource was created for. */
     @JsonIgnore

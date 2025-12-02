@@ -14,6 +14,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.lang.NonNull;
+
+import static java.util.Objects.nonNull;
+
 /**
  * Filter that logs the input and output of each HTTP request. It also logs the duration of the request.
  */
@@ -27,9 +31,10 @@ public class RequestResponseLogFilter extends AbstractGenericFilter {
     private final FilterVoter filterVoter;
 
     @Override
-    protected void doFilterInternal(final HttpServletRequest httpServletRequest,
-        final HttpServletResponse httpServletResponse,
-        final FilterChain filterChain)
+    protected void doFilterInternal(
+        @NonNull final HttpServletRequest httpServletRequest,
+        @NonNull final HttpServletResponse httpServletResponse,
+        @NonNull final FilterChain filterChain)
         throws ServletException, IOException {
         if (filterVoter.enabled(httpServletRequest)) {
             final WrappedHttpRequestResponse wrapped = getWrapped(httpServletRequest, httpServletResponse);
@@ -50,12 +55,13 @@ public class RequestResponseLogFilter extends AbstractGenericFilter {
     }
 
     private void logResponse(final WrappedHttpRequestResponse wrapped) throws IOException {
-        if (wrapped != null) {
+        if (nonNull(wrapped)) {
             final ResettableHttpServletRequest request = wrapped.getRequest();
             if (!isAsyncStarted(request) && filterVoter.enabled(request)) {
                 final WrappedContentCachingResponse response = wrapped.getResponse();
-                if (response != null) {
+                if (nonNull(response)) {
                     requestResponseLogger.logResponse(request, response);
+                    response.copyBodyToResponse();
                 }
             }
         }

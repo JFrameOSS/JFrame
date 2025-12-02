@@ -21,8 +21,5 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype", "jackson-datatype-json-org", retrieve("jacksonVersion"))
     implementation("com.fasterxml.jackson.datatype", "jackson-datatype-jsr310", retrieve("jacksonVersion"))
 
-    implementation("org.apache.commons", "commons-collections4", retrieve("commonsCollectionVersion"))
-    implementation("org.apache.commons", "commons-lang3", retrieve("commonsLangVersion"))
-    implementation("org.apache.commons", "commons-csv", retrieve("commonsCsvVersion"))
     implementation("org.apache.commons", "commons-text", retrieve("commonsTextVersion"))
 }

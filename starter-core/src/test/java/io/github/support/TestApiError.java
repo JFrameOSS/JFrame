@@ -8,8 +8,8 @@ import io.github.jframe.exception.ApiError;
  * <p>This class provides a simple implementation of the ApiError interface
  * that can be used across multiple test classes.
  *
- * @param errorCode the error code
- * @param reason    the error reason
+ * @param getErrorCode the error code
+ * @param getReason    the error reason
  */
-public record TestApiError(String errorCode, String reason) implements ApiError {
+public record TestApiError(String getErrorCode, String getReason) implements ApiError {
 }

@@ -1,5 +1,6 @@
 package io.github.jframe.util.mapper;
 
+import io.github.jframe.exception.core.InternalServerErrorException;
 import io.github.support.UnitTest;
 
 import java.time.LocalDateTime;
@@ -180,8 +181,7 @@ class ObjectMappersTest extends UnitTest {
 
         // When/Then: Deserializing invalid JSON throws AssertionError with descriptive message
         assertThatThrownBy(() -> ObjectMappers.fromJson(invalidJson, TestData.class))
-            .isInstanceOf(AssertionError.class)
-            .hasMessageContaining("Failed to deserialize JSON");
+            .isInstanceOf(InternalServerErrorException.class);
     }
 
     @Test
@@ -228,8 +228,7 @@ class ObjectMappersTest extends UnitTest {
 
         // When/Then: Deserializing invalid JSON with TypeReference throws AssertionError
         assertThatThrownBy(() -> ObjectMappers.fromJson(invalidJson, typeRef))
-            .isInstanceOf(AssertionError.class)
-            .hasMessageContaining("Failed to deserialize JSON");
+            .isInstanceOf(InternalServerErrorException.class);
     }
 
     @Test

@@ -2,8 +2,8 @@ package io.github.jframe.tracing;
 
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.masker.type.PasswordMasker;
-import io.github.jframe.logging.model.BufferedClientHttpResponse;
 import io.github.jframe.logging.util.HttpBodyUtil;
+import io.github.jframe.logging.wrapper.BufferedClientHttpResponse;
 import io.opentelemetry.api.trace.Span;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

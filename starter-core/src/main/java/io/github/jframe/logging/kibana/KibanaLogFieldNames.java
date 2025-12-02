@@ -2,6 +2,8 @@ package io.github.jframe.logging.kibana;
 
 import java.util.Arrays;
 
+import static java.util.Objects.nonNull;
+
 /**
  * This enum represents keys for data that is stored in the logging MDC.
  */
@@ -158,12 +160,11 @@ public enum KibanaLogFieldNames implements KibanaLogField {
      */
     public static KibanaLogFieldNames fromKey(final String key) {
         KibanaLogFieldNames result = null;
-        if (key != null) {
-            result =
-                Arrays.stream(values())
-                    .filter(fieldName -> fieldName.matches(key))
-                    .findAny()
-                    .orElse(null);
+        if (nonNull(key)) {
+            result = Arrays.stream(values())
+                .filter(fieldName -> fieldName.matches(key))
+                .findAny()
+                .orElse(null);
         }
         return result;
     }

@@ -7,6 +7,7 @@ import java.util.Collection;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.joining;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -193,7 +194,7 @@ public class KibanaLogFields {
      * @param logContext The context to copy.
      */
     public static void populateFromContext(final KibanaLogContext logContext) {
-        if (logContext != null) {
+        if (nonNull(logContext)) {
             MDC.setContextMap(logContext.getContextMap());
         }
     }
