@@ -25,6 +25,7 @@ plugins {
     id("maven-publish") apply true
     id("signing") apply true
     id("com.github.ben-manes.versions") apply true
+    id("com.gradleup.nmcp.aggregation") apply true
 }
 
 repositories {
@@ -240,21 +241,13 @@ subprojects {
         }
         repositories {
             maven {
-                name = "MavenCentral"
-                val releasesRepoUrl = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-                val snapshotsRepoUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-                url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
-                credentials {
-                    username = System.getenv("MAVEN_USERNAME")
-                    password = System.getenv("MAVEN_PASSWORD")
-                }
-                authentication {
-                    create<BasicAuthentication>("basic")
-                }
+                name = "MavenLocal"
+                url = uri(mavenLocal().url)
             }
         }
     }
 
+    // Standard Gradle signing
     configure<SigningExtension> {
         val signingKey = System.getenv("SIGNING_KEY")
         val signingPassword = System.getenv("SIGNING_PASSWORD")
@@ -337,3 +330,14 @@ fun RepositoryHandler.configureRepositories() {
 fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")
+
+
+// =============== NEW CENTRAL PORTAL PUBLISHING =================
+nmcpAggregation {
+    centralPortal {
+        username = providers.environmentVariable("MAVEN_USERNAME")
+        password = providers.environmentVariable("MAVEN_PASSWORD")
+        publishingType = "AUTOMATIC"
+    }
+    publishAllProjectsProbablyBreakingProjectIsolation()
+}
