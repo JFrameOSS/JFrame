@@ -65,11 +65,12 @@ jframe:
 # ===================== DEPENDENCY CONFIGURATION =====================
 spring:
   jackson:
-    date-format: com.fasterxml.jackson.databind.util.ISO8601DateFormat
+    default-property-inclusion: non_null
     serialization:
       indent-output: false
-      write-dates-as-timestamps: false
-      write-date-timestamps-as-nanoseconds: false
+    deserialization:
+      fail-on-unknown-properties: false
+    property-naming-strategy: SNAKE_CASE
 
 otel:
   sdk.disabled: ${jframe.otlp.disabled}

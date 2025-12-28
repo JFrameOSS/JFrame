@@ -113,7 +113,7 @@ public class HttpRequestResponseHeadersLogger {
     }
 
     private static void appendHeaders(final StringBuilder builder, final HttpHeaders headers) {
-        final List<String> headerNames = new ArrayList<>(headers.keySet());
+        final List<String> headerNames = new ArrayList<>(headers.headerNames());
         Collections.sort(headerNames);
 
         for (final String headerName : headerNames) {

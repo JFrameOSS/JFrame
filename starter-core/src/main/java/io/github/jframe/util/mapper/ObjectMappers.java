@@ -4,13 +4,11 @@ package io.github.jframe.util.mapper;
 import io.github.jframe.exception.core.InternalServerErrorException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import static java.util.Objects.isNull;
 
@@ -29,11 +27,11 @@ public class ObjectMappers {
      * @return a configured ObjectMapper instance
      */
     private static ObjectMapper createObjectMapper() {
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        return mapper;
+        return JsonMapper.builder()
+            // .addModule(new JavaTimeModule())
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            // .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS) // Not found in Jackson 3
+            .build();
     }
 
     /**
@@ -47,7 +45,7 @@ public class ObjectMappers {
             return isNull(object)
                 ? ""
                 : MAPPER.writeValueAsString(object);
-        } catch (final JsonProcessingException exception) {
+        } catch (final JacksonException exception) {
             log.error("Failed to serialize object to JSON: {}", object.getClass().getSimpleName(), exception);
             return "";
         }
@@ -64,7 +62,7 @@ public class ObjectMappers {
     public static <T> T fromJson(final String json, final Class<T> targetClass) {
         try {
             return MAPPER.readValue(json, targetClass);
-        } catch (final JsonProcessingException exception) {
+        } catch (final JacksonException exception) {
             throw new InternalServerErrorException("Failed to deserialize JSON to class " + targetClass.getSimpleName(), exception);
         }
     }
@@ -80,7 +78,7 @@ public class ObjectMappers {
     public static <T> T fromJson(final String json, final TypeReference<T> typeRef) {
         try {
             return MAPPER.readValue(json, typeRef);
-        } catch (final JsonProcessingException exception) {
+        } catch (final JacksonException exception) {
             throw new InternalServerErrorException("Failed to deserialize JSON to reference " + typeRef.getType(), exception);
         }
     }

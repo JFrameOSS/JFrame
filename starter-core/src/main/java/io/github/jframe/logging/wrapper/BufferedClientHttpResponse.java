@@ -4,11 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StreamUtils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -21,7 +20,6 @@ public final class BufferedClientHttpResponse implements ClientHttpResponse {
 
     private final ClientHttpResponse delegate;
 
-    @Nullable
     private byte[] body;
 
     /**

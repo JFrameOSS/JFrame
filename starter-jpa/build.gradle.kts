@@ -18,8 +18,5 @@ dependencies {
     implementation("org.glassfish.jaxb", "jaxb-runtime", retrieve("jaxbVersion"))
     implementation("jakarta.xml.bind", "jakarta.xml.bind-api", retrieve("jakartaXmlBindVersion"))
 
-    implementation("com.fasterxml.jackson.datatype", "jackson-datatype-json-org", retrieve("jacksonVersion"))
-    implementation("com.fasterxml.jackson.datatype", "jackson-datatype-jsr310", retrieve("jacksonVersion"))
-
     implementation("org.apache.commons", "commons-text", retrieve("commonsTextVersion"))
 }

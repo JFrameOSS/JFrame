@@ -2,11 +2,10 @@ package io.github.jframe.exception.resource;
 
 import io.github.jframe.util.converter.AbstractModelConverter;
 import io.github.jframe.validation.ValidationError;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategy;
 
 import org.springframework.stereotype.Component;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
 import static java.util.Objects.requireNonNull;
 
@@ -57,7 +56,7 @@ public class ValidationErrorResourceAssembler extends AbstractModelConverter<Val
             // retrieve the application defined property naming strategy from the object mapper's
             // serialization config
             final PropertyNamingStrategy propertyNamingStrategy =
-                objectMapper.getSerializationConfig().getPropertyNamingStrategy();
+                objectMapper.serializationConfig().getPropertyNamingStrategy();
             if (propertyNamingStrategy == null) {
                 name = propertyName;
             } else {
