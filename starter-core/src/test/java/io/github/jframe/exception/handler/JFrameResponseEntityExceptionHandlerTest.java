@@ -21,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -113,6 +114,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
 
         // Then: Response has correct status from exception
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.NOT_FOUND)));
+        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.NOT_FOUND, webRequest);
     }
 
@@ -131,6 +133,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         // Then: Response has BAD_REQUEST status and correct body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
+        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
         assertThat(response.getBody(), is(sameInstance(mockApiErrorResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
     }
@@ -155,6 +158,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         // Then: Response has BAD_REQUEST status and correct body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
+        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
         assertThat(response.getBody(), is(sameInstance(mockMethodArgumentNotValidResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
     }
@@ -176,6 +180,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         // Then: Response has BAD_REQUEST status and correct body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
+        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
         assertThat(response.getBody(), is(sameInstance(mockValidationErrorResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
     }
@@ -194,6 +199,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         // Then: Response has UNAUTHORIZED status and correct body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.UNAUTHORIZED)));
+        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
         assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.UNAUTHORIZED, webRequest);
     }
@@ -212,6 +218,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         // Then: Response has FORBIDDEN status and correct body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.FORBIDDEN)));
+        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
         assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.FORBIDDEN, webRequest);
     }
@@ -230,6 +237,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         // Then: Response has INTERNAL_SERVER_ERROR status and correct body
         assertThat(response, is(notNullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpStatus.INTERNAL_SERVER_ERROR)));
+        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
         assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(throwable, HttpStatus.INTERNAL_SERVER_ERROR, webRequest);
     }
@@ -251,7 +259,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should return empty headers in all responses")
+    @DisplayName("Should return correct headers in all responses")
     public void shouldReturnEmptyHeaders() {
         // Given: Various exceptions
         final HttpException httpException = new BadRequestException();
@@ -263,8 +271,8 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         final ResponseEntity<ErrorResponseResource> httpResponse = exceptionHandler.handleHttpException(httpException, webRequest);
         final ResponseEntity<ApiErrorResponseResource> apiResponse = exceptionHandler.handleApiException(apiException, webRequest);
 
-        // Then: All responses have empty headers
-        assertThat(httpResponse.getHeaders().isEmpty(), is(true));
-        assertThat(apiResponse.getHeaders().isEmpty(), is(true));
+        // Then: All responses have correct content type header
+        assertThat(httpResponse.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
+        assertThat(apiResponse.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
     }
 }

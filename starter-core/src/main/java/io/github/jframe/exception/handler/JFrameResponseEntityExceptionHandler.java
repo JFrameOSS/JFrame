@@ -32,8 +32,8 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import static org.springframework.http.HttpHeaders.EMPTY;
 import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 /**
  * This class creates proper HTTP response bodies for exceptions.
@@ -70,7 +70,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
     )
     public ResponseEntity<ErrorResponseResource> handleHttpException(final HttpException exception, final WebRequest request) {
         final HttpStatus status = exception.getHttpStatus();
-        return new ResponseEntity<>(buildErrorResponseBody(exception, status, request), EMPTY, status);
+        return ResponseEntity
+            .status(status)
+            .contentType(APPLICATION_JSON)
+            .body(buildErrorResponseBody(exception, status, request));
     }
 
     /**
@@ -94,7 +97,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         )
     )
     public ResponseEntity<ApiErrorResponseResource> handleApiException(final ApiException exception, final WebRequest request) {
-        return new ResponseEntity<>(buildErrorResponseBody(exception, BAD_REQUEST, request), EMPTY, BAD_REQUEST);
+        return ResponseEntity
+            .status(BAD_REQUEST)
+            .contentType(APPLICATION_JSON)
+            .body(buildErrorResponseBody(exception, BAD_REQUEST, request));
     }
 
 
@@ -120,7 +126,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
     )
     public ResponseEntity<ValidationErrorResponseResource> handleJframeValidation(
         final ValidationException exception, final WebRequest request) {
-        return new ResponseEntity<>(buildErrorResponseBody(exception, BAD_REQUEST, request), EMPTY, BAD_REQUEST);
+        return ResponseEntity
+            .status(BAD_REQUEST)
+            .contentType(APPLICATION_JSON)
+            .body(buildErrorResponseBody(exception, BAD_REQUEST, request));
     }
 
     /**
@@ -142,7 +151,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         )
     )
     public ResponseEntity<ErrorResponseResource> handleBadCredentials(final BadCredentialsException exception, final WebRequest request) {
-        return ResponseEntity.status(UNAUTHORIZED).body(buildErrorResponseBody(exception, UNAUTHORIZED, request));
+        return ResponseEntity
+            .status(UNAUTHORIZED)
+            .contentType(APPLICATION_JSON)
+            .body(buildErrorResponseBody(exception, UNAUTHORIZED, request));
     }
 
     /**
@@ -165,7 +177,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         )
     )
     public ResponseEntity<ErrorResponseResource> handleAccessDenied(final AccessDeniedException exception, final WebRequest request) {
-        return ResponseEntity.status(FORBIDDEN).body(buildErrorResponseBody(exception, FORBIDDEN, request));
+        return ResponseEntity
+            .status(FORBIDDEN)
+            .contentType(APPLICATION_JSON)
+            .body(buildErrorResponseBody(exception, FORBIDDEN, request));
     }
 
     /**
@@ -187,7 +202,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         )
     )
     public ResponseEntity<ErrorResponseResource> handleThrowable(final Throwable throwable, final WebRequest request) {
-        return new ResponseEntity<>(buildErrorResponseBody(throwable, INTERNAL_SERVER_ERROR, request), EMPTY, INTERNAL_SERVER_ERROR);
+        return ResponseEntity
+            .status(INTERNAL_SERVER_ERROR)
+            .contentType(APPLICATION_JSON)
+            .body(buildErrorResponseBody(throwable, INTERNAL_SERVER_ERROR, request));
     }
 
     // =========================== OVERRIDES ===========================
@@ -213,7 +231,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         @NonNull final HttpHeaders headers,
         @NonNull final HttpStatusCode status,
         @NonNull final WebRequest request) {
-        return new ResponseEntity<>(buildErrorResponseBody(exception, BAD_REQUEST, request), EMPTY, BAD_REQUEST);
+        return ResponseEntity
+            .status(BAD_REQUEST)
+            .contentType(APPLICATION_JSON)
+            .body(buildErrorResponseBody(exception, BAD_REQUEST, request));
     }
 
     /**
@@ -237,7 +258,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         @NonNull final HttpHeaders headers,
         @NonNull final HttpStatusCode status,
         @NonNull final WebRequest request) {
-        return ResponseEntity.status(NOT_FOUND).body(buildErrorResponseBody(exception, NOT_FOUND, request));
+        return ResponseEntity
+            .status(NOT_FOUND)
+            .contentType(APPLICATION_JSON)
+            .body(buildErrorResponseBody(exception, NOT_FOUND, request));
     }
 
     // =========================== PRIVATE METHODS ===========================
