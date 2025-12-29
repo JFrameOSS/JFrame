@@ -10,8 +10,9 @@ dependencies {
 
     // ======= NECESSARY SPRING DEPENDENCIES =======
     api("org.springframework.boot", "spring-boot-starter")
-    api("org.springframework.boot", "spring-boot-starter-aop")
+    api("org.springframework.boot", "spring-boot-starter-json")
     api("org.springframework.boot", "spring-boot-starter-security")
+    api("org.springframework.boot", "spring-boot-starter-aop", retrieve("springAopVersion"))
     api("org.springdoc", "springdoc-openapi-starter-webmvc-ui", retrieve("springdocVersion"))
 
     api("net.logstash.logback", "logstash-logback-encoder", retrieve("logstashEncoderVersion"))
@@ -20,7 +21,7 @@ dependencies {
     api("commons-io", "commons-io", retrieve("commonsIoVersion"))
     api("org.apache.commons", "commons-collections4", retrieve("commonsCollectionVersion"))
     api("org.apache.commons", "commons-lang3", retrieve("commonsLangVersion"))
+
     // ======= OTHER DEPENDENCIES =======
     implementation("org.mapstruct","mapstruct", retrieve("mapStructVersion"))
-    implementation("com.fasterxml.jackson.datatype", "jackson-datatype-jsr310", retrieve("jacksonVersion"))
 }

@@ -63,14 +63,6 @@ jframe:
       - "metrics"
 
 # ===================== DEPENDENCY CONFIGURATION =====================
-spring:
-  jackson:
-    date-format: com.fasterxml.jackson.databind.util.ISO8601DateFormat
-    serialization:
-      indent-output: false
-      write-dates-as-timestamps: false
-      write-date-timestamps-as-nanoseconds: false
-
 otel:
   sdk.disabled: ${jframe.otlp.disabled}
   service.name: ${jframe.application.name}-${jframe.application.environment}

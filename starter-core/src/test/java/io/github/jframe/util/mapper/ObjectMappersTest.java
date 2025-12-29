@@ -2,6 +2,7 @@ package io.github.jframe.util.mapper;
 
 import io.github.jframe.exception.core.InternalServerErrorException;
 import io.github.support.UnitTest;
+import tools.jackson.core.type.TypeReference;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -11,8 +12,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

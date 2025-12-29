@@ -23,7 +23,12 @@ import org.springframework.context.annotation.PropertySource;
  * Main autoconfiguration for JFrame integration.
  */
 @AutoConfiguration
-@Import(FilterConfiguration.class)
+@Import(
+    {
+        FilterConfiguration.class,
+        JacksonConfig.class
+    }
+)
 @EnableConfigurationProperties(
     {
         ApplicationProperties.class,

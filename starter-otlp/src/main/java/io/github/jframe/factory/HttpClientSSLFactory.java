@@ -84,7 +84,7 @@ public class HttpClientSSLFactory {
 
             final HttpComponentsClientHttpRequestFactory requestFactory =
                 new HttpComponentsClientHttpRequestFactory(builder.build());
-            requestFactory.setConnectTimeout(Duration.ofSeconds(connectTimeoutSeconds));
+            requestFactory.setConnectionRequestTimeout(Duration.ofSeconds(connectTimeoutSeconds));
             requestFactory.setReadTimeout(Duration.ofSeconds(readTimeoutSeconds));
 
             return requestFactory;

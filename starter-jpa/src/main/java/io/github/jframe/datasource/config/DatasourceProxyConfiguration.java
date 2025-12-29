@@ -6,10 +6,10 @@ import net.ttddyy.dsproxy.support.ProxyDataSource;
 
 import javax.sql.DataSource;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.lang.NonNull;
 
 import static net.ttddyy.dsproxy.support.ProxyDataSourceBuilder.create;
 
