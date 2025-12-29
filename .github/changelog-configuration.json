@@ -1,0 +1,39 @@
+{
+  "categories": [
+    {
+      "title": "## 🚀 Features",
+      "labels": ["feat", "feature"]
+    },
+    {
+      "title": "## 🐛 Bug Fixes",
+      "labels": ["fix", "bug"]
+    },
+    {
+      "title": "## ⚡ Performance",
+      "labels": ["perf"]
+    },
+    {
+      "title": "## ♻️ Refactoring",
+      "labels": ["refactor"]
+    },
+    {
+      "title": "## 📚 Documentation",
+      "labels": ["docs", "doc"]
+    },
+    {
+      "title": "## 👷 CI/CD",
+      "labels": ["ci", "build"]
+    },
+    {
+      "title": "## 🔧 Chores",
+      "labels": ["chore"]
+    }
+  ],
+  "sort": {
+    "order": "ASC",
+    "on": "date"
+  },
+  "template": "# ${{TO_TAG}}\n\n${{CHANGELOG}}",
+  "pr_template": "- ${{TITLE}} (${{author}})",
+  "empty_template": "- No changes found"
+}
