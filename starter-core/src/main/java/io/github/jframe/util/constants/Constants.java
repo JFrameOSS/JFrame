@@ -62,7 +62,11 @@ public final class Constants {
     @UtilityClass
     public static class Characters {
 
-        public static final Character EQUALS = '=';
+        public static final String SYSTEM_NEW_LINE = System.lineSeparator();
+
+        public static final Character HYPHEN = '-';
+
+        public static final Character EQUAL = '=';
 
         public static final Character AMPERSAND = '&';
 
@@ -71,8 +75,6 @@ public final class Constants {
         public static final Character LT = '<';
 
         public static final Character NEW_LINE = '\n';
-
-        public static final String SYSTEM_NEW_LINE = System.lineSeparator();
 
         public static final Character CARRIAGE_RETURN = '\r';
 
