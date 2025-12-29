@@ -5,8 +5,12 @@ import io.github.jframe.datasource.search.fields.*;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
 import io.github.jframe.datasource.search.model.input.SortablePageInput;
+import jakarta.persistence.criteria.Predicate;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,11 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import jakarta.persistence.criteria.Predicate;
-
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.domain.Sort;
 
 import static java.util.Objects.nonNull;
 
@@ -92,8 +91,8 @@ public abstract class AbstractSortSearchMetaData {
      * @param isCustomSearch whether this field uses custom search logic
      * @throws IllegalArgumentException if searchType is not ENUM or MULTIPLE_ENUM
      */
-    protected void addField(final String field, final String column, final SearchType searchType,
-        final boolean sortable, final Class<?> enumClass, final boolean isCustomSearch) {
+    protected void addField(final String field, final String column, final SearchType searchType, final Class<?> enumClass,
+                            final boolean sortable, final boolean isCustomSearch) {
         if (searchType != SearchType.ENUM && searchType != SearchType.MULTIPLE_ENUM) {
             throw new IllegalArgumentException("SearchType must be ENUM in order to use this method");
         }
@@ -111,7 +110,7 @@ public abstract class AbstractSortSearchMetaData {
      * @param isCustomSearch whether this field uses custom search logic (bypasses standard search type mapping)
      */
     protected void addField(final String field, final String column, final SearchType searchType,
-        final boolean sortable, final boolean isCustomSearch) {
+                            final boolean sortable, final boolean isCustomSearch) {
         if (!isCustomSearch) {
             searchTypes.put(field, searchType);
         }
@@ -274,7 +273,7 @@ public abstract class AbstractSortSearchMetaData {
         if (sortOrders.size() != sortList.size()) {
             throw new IllegalArgumentException(
                 "Attempted to sort on " + sortOrders
-                    + ", which contain non-sortable fields"
+                + ", which contain non-sortable fields"
             );
         }
 
