@@ -8,6 +8,8 @@ import lombok.Setter;
 
 import java.io.Serial;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Indicates the search criterium is free text field.
  */
@@ -26,7 +28,8 @@ public class TextField extends SearchCriterium {
      *
      * @param columnName connected database column name.
      */
-    public TextField(final String columnName) {
+    public TextField(final String columnName, final String value) {
         super(columnName, SearchType.TEXT);
+        this.value = StringUtils.isNotBlank(value) ? value : null;
     }
 }

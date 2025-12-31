@@ -8,6 +8,9 @@ import lombok.Setter;
 
 import java.io.Serial;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import static java.util.Objects.nonNull;
 
 /**
  * Indicates the search criterium is a date field.
@@ -29,7 +32,13 @@ public class DateField extends SearchCriterium {
      *
      * @param columnName connected database column name.
      */
-    public DateField(final String columnName) {
+    public DateField(final String columnName, final String fromDate, final String toDate) {
         super(columnName, SearchType.DATE);
+        if (nonNull(fromDate)) {
+            this.fromDate = LocalDateTime.parse(fromDate, DateTimeFormatter.ISO_DATE_TIME);
+        }
+        if (nonNull(toDate)) {
+            this.toDate = LocalDateTime.parse(toDate, DateTimeFormatter.ISO_DATE_TIME);
+        }
     }
 }

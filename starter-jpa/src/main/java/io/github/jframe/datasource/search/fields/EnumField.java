@@ -8,6 +8,8 @@ import lombok.Setter;
 
 import java.io.Serial;
 
+import org.apache.commons.lang3.StringUtils;
+
 import static java.util.Arrays.stream;
 
 /**
@@ -31,9 +33,10 @@ public class EnumField extends SearchCriterium {
      * @param columnName connected database column name.
      * @param enumClass  the enum class to search on.
      */
-    public EnumField(final String columnName, final Class<?> enumClass) {
+    public EnumField(final String columnName, final Class<?> enumClass, final String value) {
         super(columnName, SearchType.ENUM);
         this.enumClass = enumClass;
+        this.value = StringUtils.isNotBlank(value) ? value : null;
     }
 
     /**

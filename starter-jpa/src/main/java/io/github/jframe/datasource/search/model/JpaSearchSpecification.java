@@ -1,5 +1,6 @@
 package io.github.jframe.datasource.search.model;
 
+import io.github.jframe.datasource.search.SearchType;
 import io.github.jframe.datasource.search.fields.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import static io.github.jframe.util.constants.Constants.Characters.PERCENTAGE;
  */
 @Slf4j
 @RequiredArgsConstructor
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class JpaSearchSpecification<T> implements Specification<T> {
 
     @Serial
@@ -55,9 +57,19 @@ public class JpaSearchSpecification<T> implements Specification<T> {
         return builder.and(searchPredicates.toArray(new Predicate[0]));
     }
 
-    @SuppressWarnings("CyclomaticComplexity")
+    @SuppressWarnings(
+        {
+            "CyclomaticComplexity",
+            "ExecutableStatementCount",
+            "PMD.NcssCount"
+        }
+    )
     private void addPredicates(final Root<T> root, final CriteriaBuilder cb, final List<Predicate> predicates, final SearchCriterium crit) {
-        final Path<String> path = getColumnPath(root, crit);
+        Path<String> path = null;
+        if (crit.getSearchType() != SearchType.MULTI_COLUMN_FUZZY) {
+            path = getColumnPath(root, crit.getColumnName());
+        }
+
         switch (crit.getSearchType()) {
             case NONE -> {
                 // no-op
@@ -98,10 +110,11 @@ public class JpaSearchSpecification<T> implements Specification<T> {
             }
             case MULTI_FUZZY -> {
                 final MultiFuzzyField f = (MultiFuzzyField) crit;
+                final Path<String> finalPath = path;
                 final List<Predicate> likes = f.getSearchTerms().stream()
                     .map(
                         term -> cb.like(
-                            cb.lower(path),
+                            cb.lower(finalPath),
                             PERCENTAGE + term.toLowerCase() + PERCENTAGE
                         )
                     )
@@ -113,14 +126,35 @@ public class JpaSearchSpecification<T> implements Specification<T> {
                 };
                 predicates.add(combined);
             }
+            case MULTI_COLUMN_FUZZY -> {
+                final MultiColumnFuzzyField f = (MultiColumnFuzzyField) crit;
+                final List<String> terms = f.getSearchTerms();
+                final List<String> columns = f.getColumnNames();
+
+                final List<Predicate> termPredicates = new ArrayList<>();
+                for (final String term : terms) {
+                    final List<Predicate> columnPredicates = new ArrayList<>();
+                    for (final String colName : columns) {
+                        final Path<String> colPath = getColumnPath(root, colName);
+                        columnPredicates.add(
+                            cb.like(
+                                cb.lower(colPath),
+                                PERCENTAGE + term.toLowerCase() + PERCENTAGE
+                            )
+                        );
+                    }
+                    termPredicates.add(cb.or(columnPredicates.toArray(new Predicate[0])));
+                }
+
+                predicates.add(cb.and(termPredicates.toArray(new Predicate[0])));
+            }
         }
     }
 
     /**
      * Method that performs the necessary joins when searching in related entities.
      */
-    private <Y> Path<Y> getColumnPath(final Root<T> root, final SearchCriterium crit) {
-        final String columnName = crit.getColumnName();
+    private <Y> Path<Y> getColumnPath(final Root<T> root, final String columnName) {
         if (columnName.contains(".")) {
             final String[] columnNameParts = columnName.split("\\.");
             Join<Object, Object> joined = root.join(columnNameParts[0], JoinType.LEFT);
@@ -134,7 +168,7 @@ public class JpaSearchSpecification<T> implements Specification<T> {
     }
 
     private void addDateCriteria(final Root<T> root, final CriteriaBuilder cb, final List<Predicate> predicates, final DateField date) {
-        final Path<LocalDateTime> columnPath = getColumnPath(root, date);
+        final Path<LocalDateTime> columnPath = getColumnPath(root, date.getColumnName());
         if (date.getFromDate() != null) {
             final Predicate predicate = cb.greaterThanOrEqualTo(columnPath, date.getFromDate());
             predicates.add(predicate);

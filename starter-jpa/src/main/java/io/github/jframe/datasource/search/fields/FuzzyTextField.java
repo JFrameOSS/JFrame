@@ -8,6 +8,8 @@ import lombok.Setter;
 
 import java.io.Serial;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Indicates the search criterium is a fuzzy text field.
  */
@@ -26,7 +28,8 @@ public class FuzzyTextField extends SearchCriterium {
      *
      * @param columnName connected database column name.
      */
-    public FuzzyTextField(final String columnName) {
+    public FuzzyTextField(final String columnName, final String value) {
         super(columnName, SearchType.FUZZY_TEXT);
+        this.value = StringUtils.isNotBlank(value) ? value : null;
     }
 }

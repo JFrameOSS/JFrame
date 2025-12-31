@@ -21,7 +21,8 @@ public enum SearchType {
     TEXT("For use by an equal-operator on a single string value"),
     MULTI_TEXT("For use by an in-operator on a set of string values"),
     FUZZY_TEXT("For use by a like-operator on a single string value"),
-    MULTI_FUZZY("For use by multiple like-operators on strings, which are combined depending on operator");
+    MULTI_FUZZY("For use by multiple like-operators on strings, which are combined depending on operator"),
+    MULTI_COLUMN_FUZZY("For use by multiple like-operators on multiple columns, which are combined depending on operator");
 
     private final String description;
 

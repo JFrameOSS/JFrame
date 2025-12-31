@@ -7,8 +7,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serial;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import org.apache.commons.collections4.CollectionUtils;
 
 import static java.util.Arrays.stream;
 
@@ -23,7 +25,7 @@ public class MultiEnumField extends SearchCriterium {
     @Serial
     private static final long serialVersionUID = 482074504831496597L;
 
-    private List<String> values = new ArrayList<>();
+    private List<String> values;
 
     private Class<?> enumClass;
 
@@ -33,9 +35,10 @@ public class MultiEnumField extends SearchCriterium {
      * @param columnName connected database column name.A
      * @param enumClass  the enum class to search on.
      */
-    public MultiEnumField(final String columnName, final Class<?> enumClass) {
+    public MultiEnumField(final String columnName, final Class<?> enumClass, final List<String> values) {
         super(columnName, SearchType.MULTI_ENUM);
         this.enumClass = enumClass;
+        this.values = CollectionUtils.isEmpty(values) ? Collections.emptyList() : values;
     }
 
     /**

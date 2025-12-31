@@ -8,6 +8,8 @@ import lombok.Setter;
 
 import java.io.Serial;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Indicates the search criterium is a numeric field.
  */
@@ -26,8 +28,16 @@ public class NumericField extends SearchCriterium {
      *
      * @param columnName connected database column name.
      */
-    public NumericField(final String columnName) {
+    @SuppressWarnings("PMD.EmptyCatchBlock")
+    public NumericField(final String columnName, final String value) {
         super(columnName, SearchType.NUMERIC);
+        if (StringUtils.isNotBlank(value)) {
+            try {
+                this.value = Integer.parseInt(value);
+            } catch (final NumberFormatException exception) {
+                // ignore invalid number format, default to 0
+            }
+        }
     }
 
 }

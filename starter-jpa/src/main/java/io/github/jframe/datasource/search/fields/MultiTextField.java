@@ -7,7 +7,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serial;
+import java.util.Collections;
 import java.util.List;
+
+import org.apache.commons.collections4.CollectionUtils;
 
 /**
  * Indicates the search criterium is a multiple select field with a list of fixed strings value to match exactly.
@@ -27,7 +30,8 @@ public class MultiTextField extends SearchCriterium {
      *
      * @param columnName connected database column name.
      */
-    public MultiTextField(final String columnName) {
+    public MultiTextField(final String columnName, final List<String> values) {
         super(columnName, SearchType.MULTI_TEXT);
+        this.values = CollectionUtils.isEmpty(values) ? Collections.emptyList() : values;
     }
 }

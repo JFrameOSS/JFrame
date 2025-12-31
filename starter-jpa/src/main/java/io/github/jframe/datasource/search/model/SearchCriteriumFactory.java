@@ -2,6 +2,8 @@ package io.github.jframe.datasource.search.model;
 
 import io.github.jframe.datasource.search.model.input.SearchInput;
 
+import java.util.List;
+
 /**
  * Factory interface for creating SearchCriterium instances based on column names and search inputs.
  */
@@ -11,9 +13,9 @@ public interface SearchCriteriumFactory {
     /**
      * Creates a SearchCriterium based on the provided column name and search input.
      *
-     * @param column the name of the column to search.
-     * @param input  the search input containing criteria details.
+     * @param columns the name of the columns to search on.
+     * @param input   the search input containing criteria details.
      * @return a SearchCriterium instance representing the search criteria.
      */
-    SearchCriterium create(String column, SearchInput input);
+    SearchCriterium create(List<String> columns, SearchInput input);
 }

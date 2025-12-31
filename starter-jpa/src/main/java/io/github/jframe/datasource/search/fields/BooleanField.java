@@ -8,6 +8,8 @@ import lombok.Setter;
 
 import java.io.Serial;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Indicates the search criterium is a boolean field.
  */
@@ -19,15 +21,16 @@ public class BooleanField extends SearchCriterium {
     @Serial
     private static final long serialVersionUID = 482074504831496597L;
 
-    private Boolean value;
+    private boolean value;
 
     /**
      * default constructor.
      *
      * @param columnName connected database column name.
      */
-    public BooleanField(final String columnName) {
+    public BooleanField(final String columnName, final String value) {
         super(columnName, SearchType.BOOLEAN);
+        this.value = StringUtils.isNotBlank(value) && Boolean.parseBoolean(value);
     }
 
     /**

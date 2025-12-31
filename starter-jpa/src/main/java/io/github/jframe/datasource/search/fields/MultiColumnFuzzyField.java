@@ -1,6 +1,5 @@
 package io.github.jframe.datasource.search.fields;
 
-import io.github.jframe.datasource.search.SearchOperator;
 import io.github.jframe.datasource.search.SearchType;
 import io.github.jframe.datasource.search.model.SearchCriterium;
 import lombok.EqualsAndHashCode;
@@ -13,31 +12,26 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
-import static java.util.Objects.nonNull;
-
 /**
- * Indicates the search criterium is a space separated multiple words fuzzy and field.
+ * Indicates the search criterium is a multi-column fuzzy text field.
  */
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class MultiFuzzyField extends SearchCriterium {
+public class MultiColumnFuzzyField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 4790820671565424226L;
 
     private String value;
 
-    private SearchOperator operator;
-
     /**
      * default constructor.
      *
-     * @param columnName connected database column name.
+     * @param columnNames connected database column names.
      */
-    public MultiFuzzyField(final String columnName, final SearchOperator operator, final String value) {
-        super(columnName, SearchType.MULTI_FUZZY);
-        this.operator = nonNull(operator) ? operator : SearchOperator.AND;
+    public MultiColumnFuzzyField(final List<String> columnNames, final String value) {
+        super(columnNames, SearchType.MULTI_COLUMN_FUZZY);
         this.value = StringUtils.isNotBlank(value) ? value : null;
     }
 

@@ -7,14 +7,11 @@ import io.github.jframe.datasource.search.model.input.SortableColumn;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import jakarta.persistence.criteria.Predicate;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 
 import static java.util.Objects.nonNull;
@@ -33,97 +30,64 @@ import static java.util.Objects.nonNull;
  */
 @Slf4j
 @Getter
-@SuppressWarnings(
-    {
-        "ClassDataAbstractionCoupling",
-        "PMD.CouplingBetweenObjects"
-    }
-)
+@SuppressWarnings("ClassDataAbstractionCoupling")
 public abstract class AbstractSortSearchMetaData {
 
     private final Map<String, SearchType> searchTypes = new ConcurrentHashMap<>();
-    private final Map<String, String> columnNames = new ConcurrentHashMap<>();
+    private final Map<String, List<String>> columnNames = new ConcurrentHashMap<>();
     private final List<String> sortableFields = new ArrayList<>();
     private final Map<String, Class<?>> enumClasses = new ConcurrentHashMap<>();
-    private final Map<SearchType, SearchCriteriumFactory> factories = Map.of(
-        SearchType.NONE,
-        (c, i) -> null,
-        SearchType.DATE,
-        this::toDateSearchField,
-        SearchType.NUMERIC,
-        (c, i) -> {
-            if (StringUtils.isBlank(i.getTextValue())) {
-                return null;
-            }
-            final NumericField f = new NumericField(c);
-            f.setValue(Integer.parseInt(i.getTextValue()));
-            return f;
-        },
-        SearchType.BOOLEAN,
-        (c, i) -> {
-            if (StringUtils.isBlank(i.getTextValue())) {
-                return null;
-            }
-            final BooleanField f = new BooleanField(c);
-            f.setValue(Boolean.parseBoolean(i.getTextValue()));
-            return f;
-        },
-        SearchType.ENUM,
-        (c, i) -> {
-            if (StringUtils.isBlank(i.getTextValue())) {
-                return null;
-            }
-            final EnumField f = new EnumField(c, enumClasses.get(i.getFieldName()));
-            f.setValue(i.getTextValue());
-            return f;
-        },
-        SearchType.MULTI_ENUM,
-        (c, i) -> {
-            if (CollectionUtils.isEmpty(i.getTextValueList())) {
-                return null;
-            }
-            final MultiEnumField f = new MultiEnumField(c, enumClasses.get(i.getFieldName()));
-            f.setValues(i.getTextValueList());
-            return f;
-        },
-        SearchType.TEXT,
-        (c, i) -> {
-            if (StringUtils.isBlank(i.getTextValue())) {
-                return null;
-            }
-            final TextField f = new TextField(c);
-            f.setValue(i.getTextValue());
-            return f;
-        },
-        SearchType.MULTI_TEXT,
-        (c, i) -> {
-            if (CollectionUtils.isEmpty(i.getTextValueList())) {
-                return null;
-            }
-            final MultiTextField f = new MultiTextField(c);
-            f.setValues(i.getTextValueList());
-            return f;
-        },
-        SearchType.FUZZY_TEXT,
-        (c, i) -> {
-            if (StringUtils.isBlank(i.getTextValue())) {
-                return null;
-            }
-            final FuzzyTextField f = new FuzzyTextField(c);
-            f.setValue(i.getTextValue());
-            return f;
-        },
-        SearchType.MULTI_FUZZY,
-        (c, i) -> {
-            if (StringUtils.isBlank(i.getTextValue())) {
-                return null;
-            }
-            final MultiFuzzyField f = new MultiFuzzyField(c);
-            f.setValue(i.getTextValue());
-            f.setOperator(i.getOperator());
-            return f;
-        }
-    );
+    private final EnumMap<SearchType, SearchCriteriumFactory> factories = new EnumMap<>(SearchType.class);
+
+    /**
+     * Constructor initializes default search criterium factories for each SearchType.
+     */
+    protected AbstractSortSearchMetaData() {
+        factories.put(
+            SearchType.NONE,
+            (c, i) -> null
+        );
+        factories.put(
+            SearchType.DATE,
+            (c, i) -> new DateField(c.getFirst(), i.getFromDateValue(), i.getToDateValue())
+        );
+        factories.put(
+            SearchType.NUMERIC,
+            (c, i) -> new NumericField(c.getFirst(), i.getTextValue())
+        );
+        factories.put(
+            SearchType.BOOLEAN,
+            (c, i) -> new BooleanField(c.getFirst(), i.getTextValue())
+        );
+        factories.put(
+            SearchType.ENUM,
+            (c, i) -> new EnumField(c.getFirst(), enumClasses.get(i.getFieldName()), i.getTextValue())
+        );
+        factories.put(
+            SearchType.MULTI_ENUM,
+            (c, i) -> new MultiEnumField(c.getFirst(), enumClasses.get(i.getFieldName()), i.getTextValueList())
+        );
+        factories.put(
+            SearchType.TEXT,
+            (c, i) -> new TextField(c.getFirst(), i.getTextValue())
+        );
+        factories.put(
+            SearchType.MULTI_TEXT,
+            (c, i) -> new MultiTextField(c.getFirst(), i.getTextValueList())
+        );
+        factories.put(
+            SearchType.FUZZY_TEXT,
+            (c, i) -> new FuzzyTextField(c.getFirst(), i.getTextValue())
+        );
+        factories.put(
+            SearchType.MULTI_FUZZY,
+            (c, i) -> new MultiFuzzyField(c.getFirst(), i.getOperator(), i.getTextValue())
+        );
+        factories.put(
+            SearchType.MULTI_COLUMN_FUZZY,
+            (c, i) -> new MultiColumnFuzzyField(c, i.getTextValue())
+        );
+    }
 
     /* -------------------------------------------------
      *  Search & sorting helpers
@@ -204,7 +168,21 @@ public abstract class AbstractSortSearchMetaData {
         final String column,
         final SearchType searchType,
         final boolean sortable) {
-        addField(field, column, searchType, sortable, false);
+        addField(field, List.of(column), searchType, sortable, false);
+    }
+
+    /**
+     * Register a searchable and/or sortable field with the custom search logic.
+     *
+     * @param field    the frontend field name.
+     * @param column   the database column name.
+     * @param sortable whether the field is sortable.
+     */
+    protected void addField(
+        final String field,
+        final String column,
+        final boolean sortable) {
+        addField(field, List.of(column), SearchType.NONE, sortable, true);
     }
 
     /**
@@ -221,35 +199,52 @@ public abstract class AbstractSortSearchMetaData {
         final String column,
         final SearchType searchType,
         final Class<?> enumClass,
-        final boolean sortable,
-        final boolean isCustomSearch) {
+        final boolean sortable) {
         if (searchType != SearchType.ENUM && searchType != SearchType.MULTI_ENUM) {
             throw new IllegalArgumentException("SearchType must be ENUM or MULTI_ENUM");
         }
         enumClasses.put(field, enumClass);
-        addField(field, column, searchType, sortable, isCustomSearch);
+        addField(field, List.of(column), searchType, sortable, false);
+    }
+
+    /**
+     * Register a searchable and/or sortable enum field with the metadata.
+     *
+     * @param field      the frontend field name.
+     * @param columns    the database column names.
+     * @param searchType the type of search to be performed on this field (must be ENUM or MULTI_ENUM).
+     * @param sortable   whether the field is sortable.
+     */
+    protected void addField(
+        final String field,
+        final List<String> columns,
+        final SearchType searchType,
+        final boolean sortable) {
+        if (searchType != SearchType.MULTI_COLUMN_FUZZY) {
+            throw new IllegalArgumentException("SearchType must be MULTI_COLUMN_FUZZY");
+        }
+        addField(field, columns, searchType, sortable, false);
     }
 
     /**
      * Internal method to register a searchable and/or sortable field with the metadata.
      *
-     * @param field          the frontend field name.
-     * @param column         the database column name.
-     * @param searchType     the type of search to be performed on this field.
-     * @param sortable       whether the field is sortable.
-     * @param isCustomSearch whether the field uses custom search logic (not registered in searchTypes).
+     * @param field      the frontend field name.
+     * @param columns    the database column names.
+     * @param searchType the type of search to be performed on this field.
+     * @param sortable   whether the field is sortable.
      */
     protected void addField(
         final String field,
-        final String column,
+        final List<String> columns,
         final SearchType searchType,
         final boolean sortable,
         final boolean isCustomSearch) {
         if (!isCustomSearch) {
             searchTypes.put(field, searchType);
         }
-        if (nonNull(column)) {
-            columnNames.put(field, column);
+        if (nonNull(columns)) {
+            columnNames.put(field, columns);
         }
         if (sortable) {
             sortableFields.add(field);
@@ -268,44 +263,14 @@ public abstract class AbstractSortSearchMetaData {
      */
     protected SearchCriterium getSearchCriterium(final SearchInput input) {
         final String field = input.getFieldName();
-        final String column = columnNames.get(field);
+        final List<String> columns = columnNames.get(field);
         final SearchType type = searchTypes.get(field);
 
-        if (StringUtils.isBlank(column) || type == null) {
+        if (CollectionUtils.isEmpty(columns)) {
             log.info("No definition for search field '{}'", field);
             return null;
         }
 
-        return factories.getOrDefault(type, (c, i) -> null).create(column, input);
-    }
-
-    /**
-     * Convert SearchInput into a DateField SearchCriterium.
-     *
-     * @param column the database column name.
-     * @param input  the SearchInput containing date range values.
-     * @return the DateField SearchCriterium.
-     */
-    protected DateField toDateSearchField(final String column, final SearchInput input) {
-        final DateField field = new DateField(column);
-        if (nonNull(input.getFromDateValue())) {
-            field.setFromDate(
-                LocalDateTime.parse(
-                    input.getFromDateValue(),
-                    DateTimeFormatter.ISO_DATE_TIME
-                )
-            );
-        }
-
-        if (nonNull(input.getToDateValue())) {
-            field.setToDate(
-                LocalDateTime.parse(
-                    input.getToDateValue(),
-                    DateTimeFormatter.ISO_DATE_TIME
-                )
-            );
-        }
-
-        return field;
+        return factories.getOrDefault(type, (c, i) -> null).create(columns, input);
     }
 }
