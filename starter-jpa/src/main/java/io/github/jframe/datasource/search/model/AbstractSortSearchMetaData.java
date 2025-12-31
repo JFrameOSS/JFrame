@@ -4,15 +4,12 @@ import io.github.jframe.datasource.search.SearchType;
 import io.github.jframe.datasource.search.fields.*;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
-import io.github.jframe.datasource.search.model.input.SortablePageInput;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import jakarta.persistence.criteria.Predicate;
 
@@ -36,82 +33,218 @@ import static java.util.Objects.nonNull;
  */
 @Slf4j
 @Getter
-@SuppressWarnings("ClassDataAbstractionCoupling")
+@SuppressWarnings(
+    {
+        "ClassDataAbstractionCoupling",
+        "PMD.CouplingBetweenObjects"
+    }
+)
 public abstract class AbstractSortSearchMetaData {
 
-    /**
-     * Sort order ascending.
-     */
-    protected static final String ASC = "ASC";
-
-    /**
-     * Sort order descending.
-     */
-    protected static final String DESC = "DESC";
-
-    /**
-     * Map of SearchType per fieldname.
-     */
     private final Map<String, SearchType> searchTypes = new ConcurrentHashMap<>();
-
-    /**
-     * Map of database column name per fieldname.
-     */
     private final Map<String, String> columnNames = new ConcurrentHashMap<>();
-
-    /**
-     * List of fields on which sorting is allowed.
-     */
     private final List<String> sortableFields = new ArrayList<>();
-
-    /**
-     * Map of Enum classes per field name.
-     */
     private final Map<String, Class<?>> enumClasses = new ConcurrentHashMap<>();
+    private final Map<SearchType, SearchCriteriumFactory> factories = Map.of(
+        SearchType.NONE,
+        (c, i) -> null,
+        SearchType.DATE,
+        this::toDateSearchField,
+        SearchType.NUMERIC,
+        (c, i) -> {
+            if (StringUtils.isBlank(i.getTextValue())) {
+                return null;
+            }
+            final NumericField f = new NumericField(c);
+            f.setValue(Integer.parseInt(i.getTextValue()));
+            return f;
+        },
+        SearchType.BOOLEAN,
+        (c, i) -> {
+            if (StringUtils.isBlank(i.getTextValue())) {
+                return null;
+            }
+            final BooleanField f = new BooleanField(c);
+            f.setValue(Boolean.parseBoolean(i.getTextValue()));
+            return f;
+        },
+        SearchType.ENUM,
+        (c, i) -> {
+            if (StringUtils.isBlank(i.getTextValue())) {
+                return null;
+            }
+            final EnumField f = new EnumField(c, enumClasses.get(i.getFieldName()));
+            f.setValue(i.getTextValue());
+            return f;
+        },
+        SearchType.MULTI_ENUM,
+        (c, i) -> {
+            if (CollectionUtils.isEmpty(i.getTextValueList())) {
+                return null;
+            }
+            final MultiEnumField f = new MultiEnumField(c, enumClasses.get(i.getFieldName()));
+            f.setValues(i.getTextValueList());
+            return f;
+        },
+        SearchType.TEXT,
+        (c, i) -> {
+            if (StringUtils.isBlank(i.getTextValue())) {
+                return null;
+            }
+            final TextField f = new TextField(c);
+            f.setValue(i.getTextValue());
+            return f;
+        },
+        SearchType.MULTI_TEXT,
+        (c, i) -> {
+            if (CollectionUtils.isEmpty(i.getTextValueList())) {
+                return null;
+            }
+            final MultiTextField f = new MultiTextField(c);
+            f.setValues(i.getTextValueList());
+            return f;
+        },
+        SearchType.FUZZY_TEXT,
+        (c, i) -> {
+            if (StringUtils.isBlank(i.getTextValue())) {
+                return null;
+            }
+            final FuzzyTextField f = new FuzzyTextField(c);
+            f.setValue(i.getTextValue());
+            return f;
+        },
+        SearchType.MULTI_FUZZY,
+        (c, i) -> {
+            if (StringUtils.isBlank(i.getTextValue())) {
+                return null;
+            }
+            final MultiFuzzyField f = new MultiFuzzyField(c);
+            f.setValue(i.getTextValue());
+            f.setOperator(i.getOperator());
+            return f;
+        }
+    );
+
+    /* -------------------------------------------------
+     *  Search & sorting helpers
+     * ------------------------------------------------- */
 
     /**
-     * Adds a field to the searchable/sortable field configuration.
+     * Convert a list of SearchInput objects into a list of SearchCriterium objects based on the defined metadata.
      *
-     * @param field      frontend field name
-     * @param column     associated database column name
-     * @param searchType type of search operation for this field
-     * @param sortable   whether this field supports sorting
+     * @param inputs List of SearchInput objects representing user search criteria.
+     * @return List of SearchCriterium objects for querying the database.
      */
-    protected void addField(final String field, final String column, final SearchType searchType, final boolean sortable) {
+    public List<SearchCriterium> toSearchCriteria(final List<SearchInput> inputs) {
+        if (CollectionUtils.isEmpty(inputs)) {
+            return Collections.emptyList();
+        }
+
+        return inputs.stream()
+            .map(this::getSearchCriterium)
+            .filter(Objects::nonNull)
+            .toList();
+    }
+
+    /**
+     * Convert a list of SortableColumn objects into a Spring Data Sort object based on the defined sortable fields.
+     *
+     * @param sortOrders List of SortableColumn objects representing user-defined sort orders.
+     * @return Spring Data Sort object for querying the database.
+     * @throws IllegalArgumentException if any requested sort field is not defined as sortable.
+     */
+    public Sort toSort(final List<SortableColumn> sortOrders) {
+        if (CollectionUtils.isEmpty(sortOrders)) {
+            return Sort.unsorted();
+        }
+
+        final List<Sort.Order> orders = sortOrders.stream()
+            .filter(o -> sortableFields.contains(o.getName()))
+            .map(
+                o -> new Sort.Order(
+                    Sort.Direction.fromString(o.getDirection()),
+                    o.getName()
+                )
+            )
+            .toList();
+
+        if (orders.size() != sortOrders.size()) {
+            throw new IllegalArgumentException("Attempted to sort on non-sortable fields: " + sortOrders);
+        }
+
+        return Sort.by(orders);
+    }
+
+    /**
+     * Check if a given Predicate is empty (null or has no expressions).
+     *
+     * @param predicate the Predicate to check.
+     * @return true if the predicate is null or has no expressions; false otherwise.
+     */
+    public static boolean isEmptyPredicate(final Predicate predicate) {
+        return predicate == null
+            || predicate.getExpressions() == null
+            || predicate.getExpressions().isEmpty();
+    }
+
+    /* -------------------------------------------------
+     *  Search field registration
+     * ------------------------------------------------- */
+
+    /**
+     * Register a searchable and/or sortable field with the metadata.
+     *
+     * @param field      the frontend field name.
+     * @param column     the database column name.
+     * @param searchType the type of search to be performed on this field.
+     * @param sortable   whether the field is sortable.
+     */
+    protected void addField(
+        final String field,
+        final String column,
+        final SearchType searchType,
+        final boolean sortable) {
         addField(field, column, searchType, sortable, false);
     }
 
     /**
-     * Adds an enum field to the searchable/sortable field configuration.
+     * Register a searchable and/or sortable enum field with the metadata.
      *
-     * @param field          frontend field name
-     * @param column         associated database column name
-     * @param searchType     must be {@link SearchType#ENUM} or {@link SearchType#MULTIPLE_ENUM}
-     * @param sortable       whether this field supports sorting
-     * @param enumClass      enum class for value validation and conversion
-     * @param isCustomSearch whether this field uses custom search logic
-     * @throws IllegalArgumentException if searchType is not ENUM or MULTIPLE_ENUM
+     * @param field      the frontend field name.
+     * @param column     the database column name.
+     * @param searchType the type of search to be performed on this field (must be ENUM or MULTI_ENUM).
+     * @param enumClass  the enum class associated with this field.
+     * @param sortable   whether the field is sortable.
      */
-    protected void addField(final String field, final String column, final SearchType searchType, final Class<?> enumClass,
-        final boolean sortable, final boolean isCustomSearch) {
-        if (searchType != SearchType.ENUM && searchType != SearchType.MULTIPLE_ENUM) {
-            throw new IllegalArgumentException("SearchType must be ENUM in order to use this method");
+    protected void addField(
+        final String field,
+        final String column,
+        final SearchType searchType,
+        final Class<?> enumClass,
+        final boolean sortable,
+        final boolean isCustomSearch) {
+        if (searchType != SearchType.ENUM && searchType != SearchType.MULTI_ENUM) {
+            throw new IllegalArgumentException("SearchType must be ENUM or MULTI_ENUM");
         }
         enumClasses.put(field, enumClass);
         addField(field, column, searchType, sortable, isCustomSearch);
     }
 
     /**
-     * Adds a field to the searchable/sortable field configuration with custom search support.
+     * Internal method to register a searchable and/or sortable field with the metadata.
      *
-     * @param field          frontend field name
-     * @param column         associated database column name. May be {@code null} for custom searches.
-     * @param searchType     type of search operation for this field
-     * @param sortable       whether this field supports sorting
-     * @param isCustomSearch whether this field uses custom search logic (bypasses standard search type mapping)
+     * @param field          the frontend field name.
+     * @param column         the database column name.
+     * @param searchType     the type of search to be performed on this field.
+     * @param sortable       whether the field is sortable.
+     * @param isCustomSearch whether the field uses custom search logic (not registered in searchTypes).
      */
-    protected void addField(final String field, final String column, final SearchType searchType,
-        final boolean sortable, final boolean isCustomSearch) {
+    protected void addField(
+        final String field,
+        final String column,
+        final SearchType searchType,
+        final boolean sortable,
+        final boolean isCustomSearch) {
         if (!isCustomSearch) {
             searchTypes.put(field, searchType);
         }
@@ -123,191 +256,56 @@ public abstract class AbstractSortSearchMetaData {
         }
     }
 
-    /**
-     * Creates a typed search criterium from the given search input.
-     *
-     * @param searchInput input containing field name and search value
-     * @return typed search criterium or {@code null} if field is not configured or value is empty
-     */
-    protected SearchCriterium getSearchCriterium(final SearchInput searchInput) {
-        final String columnName = columnNames.get(searchInput.getFieldName());
-        final SearchType searchType = searchTypes.get(searchInput.getFieldName());
-
-        if (StringUtils.isBlank(columnName) || searchType == null) {
-            log.info("No definition for search field '{}'.", searchInput.getFieldName());
-            return null;
-        }
-        return toSearchCriterium(searchInput, columnName, searchType);
-    }
+    /* -------------------------------------------------
+     *  Search criterium creation
+     * ------------------------------------------------- */
 
     /**
-     * Converts search input to appropriate search criterium based on search type.
+     * Create a SearchCriterium based on the SearchInput and defined metadata.
      *
-     * @param searchInput input containing search values
-     * @param columnName  database column name
-     * @param searchType  type of search operation
-     * @return typed search criterium or {@code null} if no valid value provided
+     * @param input the SearchInput containing user search criteria.
+     * @return the corresponding SearchCriterium, or null if no definition exists.
      */
-    @SuppressWarnings("cyclomaticcomplexity")
-    private SearchCriterium toSearchCriterium(final SearchInput searchInput, final String columnName, final SearchType searchType) {
-        SearchCriterium result = null;
-        switch (searchType) {
-            case TEXT -> {
-                if (StringUtils.isNotBlank(searchInput.getTextValue())) {
-                    result = new TextSearchField(columnName);
-                    ((TextSearchField) result).setValue(searchInput.getTextValue());
-                }
-            }
-            case NUMBER -> {
-                if (StringUtils.isNotBlank(searchInput.getTextValue())) {
-                    result = new NumberSearchField(columnName);
-                    ((NumberSearchField) result).setValue(Integer.parseInt(searchInput.getTextValue()));
-                }
-            }
-            case DROPDOWN_BOOLEAN -> {
-                if (StringUtils.isNotBlank(searchInput.getTextValue())) {
-                    result = new DropdownBooleanSearchField(columnName);
-                    ((DropdownBooleanSearchField) result).setValue(Boolean.parseBoolean(searchInput.getTextValue()));
-                }
-            }
-            case DROPDOWN_STRING -> {
-                if (StringUtils.isNotBlank(searchInput.getTextValue())) {
-                    result = new DropdownStringSearchField(columnName);
-                    ((DropdownStringSearchField) result).setValue(searchInput.getTextValue());
-                }
-            }
-            case MULTIPLE_SELECT -> {
-                if (!searchInput.getTextValueList().isEmpty()) {
-                    result = new MultipleSelectSearchField(columnName);
-                    ((MultipleSelectSearchField) result).setValues(searchInput.getTextValueList());
-                }
-            }
-            case MULTI_WORD -> {
-                result = new MultiWordSearchField(columnName);
-                ((MultiWordSearchField) result).setValue(searchInput.getTextValue());
-            }
-            case ENUM -> {
-                if (StringUtils.isNotBlank(searchInput.getTextValue())) {
-                    result = new EnumSearchField(columnName, enumClasses.get(columnName));
-                    ((EnumSearchField) result).setValue(searchInput.getTextValue());
-                }
-            }
-            case MULTIPLE_ENUM -> {
-                if (CollectionUtils.isNotEmpty(searchInput.getTextValueList())) {
-                    result = new MultipleEnumSearchField(columnName, enumClasses.get(columnName));
-                    ((MultipleEnumSearchField) result).setValues(searchInput.getTextValueList());
-                }
-            }
-            case DATE -> {
-                result = toDateSearchField(columnName, searchInput);
-            }
-            default -> {
-                // do nothing
-            }
-        }
-        return result;
-    }
+    protected SearchCriterium getSearchCriterium(final SearchInput input) {
+        final String field = input.getFieldName();
+        final String column = columnNames.get(field);
+        final SearchType type = searchTypes.get(field);
 
-    /**
-     * Creates a date search field from search input with null-safe date parsing.
-     *
-     * @param columnName  database column name
-     * @param searchInput input containing date values
-     * @return configured date search field
-     */
-    protected DateSearchField toDateSearchField(final String columnName, final SearchInput searchInput) {
-        final DateSearchField result = new DateSearchField(columnName);
-        if (nonNull(searchInput.getFromDateValue())) {
-            final LocalDateTime fromDate = LocalDateTime.parse(searchInput.getFromDateValue(), DateTimeFormatter.ISO_DATE_TIME);
-            result.setFromDate(fromDate);
-        }
-        if (nonNull(searchInput.getToDateValue())) {
-            final LocalDateTime toDate = LocalDateTime.parse(searchInput.getToDateValue(), DateTimeFormatter.ISO_DATE_TIME);
-            result.setToDate(toDate);
-        }
-        return result;
-    }
-
-    /**
-     * Converts search inputs to search criteria objects based on configured metadata.
-     *
-     * @param inputs list of search inputs from the client
-     * @return list of search criteria for database querying, or {@code null} if inputs are empty
-     */
-    @SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
-    public List<SearchCriterium> toSearchCriteria(final List<SearchInput> inputs) {
-        if (inputs == null || inputs.isEmpty()) {
+        if (StringUtils.isBlank(column) || type == null) {
+            log.info("No definition for search field '{}'", field);
             return null;
         }
 
-        final List<SearchCriterium> searchCriteria = new ArrayList<>();
-        for (final SearchInput searchInput : inputs) {
-            final SearchCriterium searchCriterium = getSearchCriterium(searchInput);
-            if (nonNull(searchCriterium)) {
-                searchCriteria.add(searchCriterium);
-            }
-        }
-        return searchCriteria;
+        return factories.getOrDefault(type, (c, i) -> null).create(column, input);
     }
 
     /**
-     * Converts sorting configuration to Spring Data Sort object.
+     * Convert SearchInput into a DateField SearchCriterium.
      *
-     * @param sortOrders list of sortable fields and directions
-     * @return Sort object for database queries
-     * @throws IllegalArgumentException if any field is not configured as sortable
+     * @param column the database column name.
+     * @param input  the SearchInput containing date range values.
+     * @return the DateField SearchCriterium.
      */
-    public Sort toSort(final List<SortableColumn> sortOrders) {
-
-        if (sortOrders == null || sortOrders.isEmpty()) {
-            return Sort.unsorted();
-        }
-
-        final List<Sort.Order> sortList = sortOrders.stream().filter(sortOrder -> sortableFields.contains(sortOrder.getName()))
-            .map(
-                sortOrder -> new Sort.Order(
-                    Sort.Direction.fromString(sortOrder.getDirection()),
-                    sortOrder.getName()
+    protected DateField toDateSearchField(final String column, final SearchInput input) {
+        final DateField field = new DateField(column);
+        if (nonNull(input.getFromDateValue())) {
+            field.setFromDate(
+                LocalDateTime.parse(
+                    input.getFromDateValue(),
+                    DateTimeFormatter.ISO_DATE_TIME
                 )
-            ).toList();
-
-        if (sortOrders.size() != sortList.size()) {
-            throw new IllegalArgumentException(
-                "Attempted to sort on " + sortOrders
-                    + ", which contain non-sortable fields"
             );
         }
 
-        return Sort.by(sortList);
+        if (nonNull(input.getToDateValue())) {
+            field.setToDate(
+                LocalDateTime.parse(
+                    input.getToDateValue(),
+                    DateTimeFormatter.ISO_DATE_TIME
+                )
+            );
+        }
 
+        return field;
     }
-
-    /**
-     * Checks whether a JPA predicate is null or contains no expressions.
-     *
-     * @param predicate JPA predicate to check
-     * @return {@code true} if predicate is null, has null expressions, or empty expressions
-     */
-    public static boolean isEmptyPredicate(final Predicate predicate) {
-        return predicate == null || predicate.getExpressions() == null || predicate.getExpressions().isEmpty();
-    }
-
-    /**
-     * Extracts an integer value from search inputs for the specified field name.
-     *
-     * @param pageInput page input containing search inputs
-     * @param fieldName field name to extract value for
-     * @return integer value of the field or {@code null} if not found or not parseable
-     * @throws NumberFormatException if the field value cannot be parsed as integer
-     */
-    public Integer extractSearchInputAsInteger(final SortablePageInput pageInput, final String fieldName) {
-        return pageInput.getSearchInputs().stream()
-            .filter(searchInput -> searchInput.getFieldName().equals(fieldName))
-            .findFirst()
-            .map(SearchInput::getTextValue)
-            .map(Integer::valueOf)
-            .orElse(null);
-    }
-
-
 }

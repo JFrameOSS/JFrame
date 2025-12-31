@@ -1,7 +1,7 @@
 package io.github.jframe.datasource.search.model;
 
 /**
- * superclass for domain objects for which paging is possible.
+ * Marker interface to indicate an item can be used in pagination.
  */
 public interface PageableItem {
 

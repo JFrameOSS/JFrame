@@ -7,26 +7,27 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serial;
+import java.util.List;
 
 /**
- * describes a search from a dropdown i.e. with a fixed string value to match exactly.
+ * Indicates the search criterium is a multiple select field with a list of fixed strings value to match exactly.
  */
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class DropdownStringSearchField extends SearchCriterium {
+public class MultiTextField extends SearchCriterium {
 
     @Serial
-    private static final long serialVersionUID = 482074504831496597L;
+    private static final long serialVersionUID = 4790820671565424226L;
 
-    private String value;
+    private List<String> values;
 
     /**
      * default constructor.
      *
      * @param columnName connected database column name.
      */
-    public DropdownStringSearchField(final String columnName) {
-        super(columnName, SearchType.DROPDOWN_STRING);
+    public MultiTextField(final String columnName) {
+        super(columnName, SearchType.MULTI_TEXT);
     }
 }

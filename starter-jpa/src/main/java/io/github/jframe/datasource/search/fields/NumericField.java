@@ -7,29 +7,27 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serial;
-import java.time.LocalDateTime;
 
 /**
- * Describes a free text search field.
+ * Indicates the search criterium is a numeric field.
  */
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class DateSearchField extends SearchCriterium {
+public class NumericField extends SearchCriterium {
 
     @Serial
-    private static final long serialVersionUID = 8496928048956001967L;
+    private static final long serialVersionUID = 2309426883656091433L;
 
-    private LocalDateTime fromDate;
-
-    private LocalDateTime toDate;
+    private int value;
 
     /**
      * default constructor.
      *
      * @param columnName connected database column name.
      */
-    public DateSearchField(final String columnName) {
-        super(columnName, SearchType.DATE);
+    public NumericField(final String columnName) {
+        super(columnName, SearchType.NUMERIC);
     }
+
 }

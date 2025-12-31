@@ -9,12 +9,12 @@ import lombok.Setter;
 import java.io.Serial;
 
 /**
- * Describes a free text search field.
+ * Indicates the search criterium is a fuzzy text field.
  */
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class TextSearchField extends SearchCriterium {
+public class FuzzyTextField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 2309426883656091433L;
@@ -26,7 +26,7 @@ public class TextSearchField extends SearchCriterium {
      *
      * @param columnName connected database column name.
      */
-    public TextSearchField(final String columnName) {
-        super(columnName, SearchType.TEXT);
+    public FuzzyTextField(final String columnName) {
+        super(columnName, SearchType.FUZZY_TEXT);
     }
 }

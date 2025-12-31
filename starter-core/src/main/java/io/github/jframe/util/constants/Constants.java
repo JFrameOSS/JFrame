@@ -81,6 +81,8 @@ public final class Constants {
         public static final Character JSON_ESCAPE = '\\';
 
         public static final Character COLON = ':';
+
+        public static final Character PERCENTAGE = '%';
     }
 
 

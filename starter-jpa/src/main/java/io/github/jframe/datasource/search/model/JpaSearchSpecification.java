@@ -11,9 +11,10 @@ import java.util.List;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.criteria.*;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 
-import static io.github.jframe.datasource.search.model.SearchConstants.Character.PERCENTAGE;
+import static io.github.jframe.util.constants.Constants.Characters.PERCENTAGE;
 
 /**
  * Defines a search specification for a given domain model object.
@@ -29,97 +30,89 @@ public class JpaSearchSpecification<T> implements Specification<T> {
 
     private final List<SearchCriterium> searchCriteria;
 
-    private final boolean includeNullDates;
-
-    /**
-     * Constructor.
-     *
-     * @param searchCriteria list of search criteria to create predicates for.
-     */
-    public JpaSearchSpecification(final List<SearchCriterium> searchCriteria) {
-        this(searchCriteria, false);
-    }
-
     /**
      * {@inheritDoc}
      *
-     * @param root            must not be {@literal null}.
-     * @param query           can be {@literal null} to allow overrides that accept {@link jakarta.persistence.criteria.CriteriaDelete}
-     *                        which is an {@link jakarta.persistence.criteria.AbstractQuery} but no {@link CriteriaQuery}.
-     * @param criteriaBuilder must not be {@literal null}.
+     * @param root    must not be {@literal null}.
+     * @param query   can be {@literal null} to allow overrides that accept {@link jakarta.persistence.criteria.CriteriaDelete} which is an
+     *                {@link jakarta.persistence.criteria.AbstractQuery} but no {@link CriteriaQuery}.
+     * @param builder must not be {@literal null}.
      * @return a {@link Predicate} that can be used to filter the results of a query based on the provided search criteria.
      */
     @Override
     public Predicate toPredicate(@Nonnull final Root<T> root,
-        final CriteriaQuery<?> query,
-        @Nonnull final CriteriaBuilder criteriaBuilder) {
+        @NonNull final CriteriaQuery<?> query,
+        @Nonnull final CriteriaBuilder builder) {
         if (searchCriteria == null || searchCriteria.isEmpty()) {
             return null;
         }
 
         final List<Predicate> searchPredicates = new ArrayList<>();
         for (final SearchCriterium crit : searchCriteria) {
-            addPredicates(root, criteriaBuilder, searchPredicates, crit);
+            addPredicates(root, builder, searchPredicates, crit);
         }
 
-        return criteriaBuilder.and(searchPredicates.toArray(new Predicate[0]));
+        return builder.and(searchPredicates.toArray(new Predicate[0]));
     }
 
     @SuppressWarnings("CyclomaticComplexity")
-    private void addPredicates(final Root<T> root, final CriteriaBuilder criteriaBuilder, final List<Predicate> searchPredicates,
-        final SearchCriterium crit) {
-
-        final Path<String> columnPath = getColumnPath(root, crit);
+    private void addPredicates(final Root<T> root, final CriteriaBuilder cb, final List<Predicate> predicates, final SearchCriterium crit) {
+        final Path<String> path = getColumnPath(root, crit);
         switch (crit.getSearchType()) {
+            case NONE -> {
+                // no-op
+            }
+            case DATE -> addDateCriteria(root, cb, predicates, (DateField) crit);
+            case NUMERIC -> {
+                final NumericField f = (NumericField) crit;
+                predicates.add(cb.equal(path, f.getValue()));
+            }
+            case BOOLEAN -> {
+                final BooleanField f = (BooleanField) crit;
+                predicates.add(cb.equal(path, f.isValue()));
+            }
+            case ENUM -> {
+                final EnumField f = (EnumField) crit;
+                predicates.add(cb.equal(path, f.getEnum()));
+            }
+            case MULTI_ENUM -> {
+                final MultiEnumField f = (MultiEnumField) crit;
+                predicates.add(path.in(f.getEnums()));
+            }
             case TEXT -> {
-                final TextSearchField textCrit = (TextSearchField) crit;
-                searchPredicates.add(
-                    criteriaBuilder.like(
-                        criteriaBuilder.lower(columnPath),
-                        PERCENTAGE + textCrit.getValue().toLowerCase() + PERCENTAGE
+                final TextField f = (TextField) crit;
+                predicates.add(cb.equal(path, f.getValue()));
+            }
+            case MULTI_TEXT -> {
+                final MultiTextField f = (MultiTextField) crit;
+                predicates.add(path.in(f.getValues()));
+            }
+            case FUZZY_TEXT -> {
+                final FuzzyTextField f = (FuzzyTextField) crit;
+                predicates.add(
+                    cb.like(
+                        cb.lower(path),
+                        PERCENTAGE + f.getValue().toLowerCase() + PERCENTAGE
                     )
                 );
             }
-            case NUMBER -> {
-                final NumberSearchField numberCrit = (NumberSearchField) crit;
-                searchPredicates.add(criteriaBuilder.equal(columnPath, numberCrit.getValue()));
-            }
-            case DROPDOWN_BOOLEAN -> {
-                final DropdownBooleanSearchField dropdownBooleanCriteria = (DropdownBooleanSearchField) crit;
-                searchPredicates.add(criteriaBuilder.equal(columnPath, dropdownBooleanCriteria.isValue()));
-            }
-            case DROPDOWN_STRING -> {
-                final DropdownStringSearchField dropdownStringCriteria = (DropdownStringSearchField) crit;
-                searchPredicates.add(criteriaBuilder.equal(columnPath, dropdownStringCriteria.getValue()));
-            }
-            case MULTIPLE_SELECT -> {
-                final MultipleSelectSearchField multipleSelectCrit = (MultipleSelectSearchField) crit;
-                searchPredicates.add(columnPath.in(multipleSelectCrit.getValues()));
-            }
-            case DATE -> {
-                final DateSearchField dateField = (DateSearchField) crit;
-                addDateCriteria(root, criteriaBuilder, searchPredicates, dateField);
-            }
-            case MULTI_WORD -> {
-                final MultiWordSearchField multiWordField = (MultiWordSearchField) crit;
-                for (final String word : multiWordField.getValues()) {
-                    searchPredicates.add(
-                        criteriaBuilder.like(
-                            criteriaBuilder.lower(columnPath),
-                            PERCENTAGE + word.toLowerCase() + PERCENTAGE
+            case MULTI_FUZZY -> {
+                final MultiFuzzyField f = (MultiFuzzyField) crit;
+                final List<Predicate> likes = f.getSearchTerms().stream()
+                    .map(
+                        term -> cb.like(
+                            cb.lower(path),
+                            PERCENTAGE + term.toLowerCase() + PERCENTAGE
                         )
-                    );
-                }
+                    )
+                    .toList();
+
+                final Predicate combined = switch (f.getOperator()) {
+                    case AND -> cb.and(likes.toArray(Predicate[]::new));
+                    case OR -> cb.or(likes.toArray(Predicate[]::new));
+                };
+                predicates.add(combined);
             }
-            case ENUM -> {
-                final EnumSearchField enumField = (EnumSearchField) crit;
-                searchPredicates.add(criteriaBuilder.equal(columnPath, enumField.getEnum()));
-            }
-            case MULTIPLE_ENUM -> {
-                final MultipleEnumSearchField enumField = (MultipleEnumSearchField) crit;
-                searchPredicates.add(columnPath.in(enumField.getEnums()));
-            }
-            default -> log.error("Cannot search for criterium without valid search type");
         }
     }
 
@@ -140,22 +133,15 @@ public class JpaSearchSpecification<T> implements Specification<T> {
         }
     }
 
-    private void addDateCriteria(final Root<T> root, final CriteriaBuilder criteriaBuilder, final List<Predicate> searchPredicates,
-        final DateSearchField dateField) {
-        final Path<LocalDateTime> columnPath = getColumnPath(root, dateField);
-        if (dateField.getFromDate() != null) {
-            Predicate predicate = criteriaBuilder.greaterThanOrEqualTo(columnPath, dateField.getFromDate());
-            if (includeNullDates) {
-                predicate = criteriaBuilder.or(predicate, criteriaBuilder.isNull(columnPath));
-            }
-            searchPredicates.add(predicate);
+    private void addDateCriteria(final Root<T> root, final CriteriaBuilder cb, final List<Predicate> predicates, final DateField date) {
+        final Path<LocalDateTime> columnPath = getColumnPath(root, date);
+        if (date.getFromDate() != null) {
+            final Predicate predicate = cb.greaterThanOrEqualTo(columnPath, date.getFromDate());
+            predicates.add(predicate);
         }
-        if (dateField.getToDate() != null) {
-            Predicate predicate = criteriaBuilder.lessThanOrEqualTo(columnPath, dateField.getToDate());
-            if (includeNullDates) {
-                predicate = criteriaBuilder.or(predicate, criteriaBuilder.isNull(columnPath));
-            }
-            searchPredicates.add(predicate);
+        if (date.getToDate() != null) {
+            final Predicate predicate = cb.lessThanOrEqualTo(columnPath, date.getToDate());
+            predicates.add(predicate);
         }
     }
 }

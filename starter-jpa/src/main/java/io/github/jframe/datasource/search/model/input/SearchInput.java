@@ -1,5 +1,6 @@
 package io.github.jframe.datasource.search.model.input;
 
+import io.github.jframe.datasource.search.SearchOperator;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,8 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Input class describing field name and search value associated with it.
@@ -24,6 +23,13 @@ public class SearchInput {
         example = "name"
     )
     private String fieldName;
+
+    @Schema(
+        description = "Indicates the search operation of a multi-value search (e.g., AND, OR) - Default is AND",
+        requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+        example = "AND"
+    )
+    private SearchOperator operator = SearchOperator.AND;
 
     @Schema(
         description = "Text value to search for",
@@ -53,30 +59,28 @@ public class SearchInput {
     )
     private List<String> textValueList = new ArrayList<>();
 
-    @Schema(
-        description = "List of key-value pairs to search for",
-        requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    private List<KeyValuePair> objectValueList = new ArrayList<>();
-
     /**
-     * A constructor that copies another SearchInput.
+     * A copy constructor that copies another SearchInput.
      */
     public SearchInput(final SearchInput other) {
         this.fieldName = other.fieldName;
+        this.operator = other.operator;
         this.textValue = other.textValue;
         this.fromDateValue = other.fromDateValue;
         this.toDateValue = other.toDateValue;
         this.textValueList = new ArrayList<>(other.textValueList);
-        for (final KeyValuePair pair : other.objectValueList) {
-            this.objectValueList.add(new KeyValuePair(pair));
-        }
     }
 
     /**
-     * Check if this input is for a given field and is not blank.
+     * A method to extract the text value as an integer.
+     *
+     * @return the integer value of textValue, or null if it cannot be parsed.
      */
-    public boolean isFilledSearchField(final String fieldName) {
-        return fieldName.equals(getFieldName()) && StringUtils.isNotBlank(getTextValue());
+    public Integer getTextValueAsInteger() {
+        try {
+            return Integer.valueOf(this.textValue);
+        } catch (final NumberFormatException extract) {
+            return null;
+        }
     }
 }

@@ -9,25 +9,24 @@ import lombok.Setter;
 import java.io.Serial;
 
 /**
- * Describes a free text search field.
+ * Indicates the search criterium is free text field.
  */
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class NumberSearchField extends SearchCriterium {
+public class TextField extends SearchCriterium {
 
     @Serial
-    private static final long serialVersionUID = 2309426883656091433L;
+    private static final long serialVersionUID = 482074504831496597L;
 
-    private int value;
+    private String value;
 
     /**
      * default constructor.
      *
      * @param columnName connected database column name.
      */
-    public NumberSearchField(final String columnName) {
-        super(columnName, SearchType.NUMBER);
+    public TextField(final String columnName) {
+        super(columnName, SearchType.TEXT);
     }
-
 }

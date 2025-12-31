@@ -7,27 +7,29 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serial;
-import java.util.List;
+import java.time.LocalDateTime;
 
 /**
- * describes a search from a multiple select i.e. with a list of fixed strings value to match exactly.
+ * Indicates the search criterium is a date field.
  */
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class MultipleSelectSearchField extends SearchCriterium {
+public class DateField extends SearchCriterium {
 
     @Serial
-    private static final long serialVersionUID = 4790820671565424226L;
+    private static final long serialVersionUID = 8496928048956001967L;
 
-    private List<String> values;
+    private LocalDateTime fromDate;
+
+    private LocalDateTime toDate;
 
     /**
      * default constructor.
      *
      * @param columnName connected database column name.
      */
-    public MultipleSelectSearchField(final String columnName) {
-        super(columnName, SearchType.MULTIPLE_SELECT);
+    public DateField(final String columnName) {
+        super(columnName, SearchType.DATE);
     }
 }

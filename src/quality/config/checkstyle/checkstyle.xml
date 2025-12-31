@@ -81,17 +81,17 @@
         <module name="ExplicitInitialization"/>
         <module name="FallThrough"/>
         <module name="FinalLocalVariable"/>
-        <!--<module name="HiddenField"/>-->
-        <!--<module name="IllegalCatch"/>-->
+        <!--        <module name="HiddenField"/>-->
+        <!--        <module name="IllegalCatch"/>-->
         <module name="IllegalInstantiation"/>
-        <!--<module name="IllegalThrows"/>-->
-        <!--<module name="IllegalToken"/>-->
+        <!--        <module name="IllegalThrows"/>-->
+        <!--        <module name="IllegalToken"/>-->
         <module name="IllegalTokenText"/>
-        <!--<module name="IllegalType"/>-->
+        <!--        <module name="IllegalType"/>-->
         <module name="InnerAssignment"/>
         <!--        <module name="MagicNumber"/>-->
-        <!--<module name="MissingCtor"/>-->
-        <module name="MissingSwitchDefault"/>
+        <!--        <module name="MissingCtor"/>-->
+        <!--        <module name="MissingSwitchDefault"/>-->
         <module name="ModifiedControlVariable"/>
         <module name="MultipleStringLiterals"/>
         <module name="MultipleVariableDeclarations"/>
@@ -260,6 +260,6 @@
         <module name="SingleSpaceSeparator"/>
         <module name="TypecastParenPad"/>
         <module name="WhitespaceAfter"/>
-<!--        <module name="WhitespaceAround"/>-->
+        <!--        <module name="WhitespaceAround"/>-->
     </module>
 </module>

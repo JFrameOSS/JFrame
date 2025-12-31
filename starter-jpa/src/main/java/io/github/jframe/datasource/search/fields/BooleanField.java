@@ -9,12 +9,12 @@ import lombok.Setter;
 import java.io.Serial;
 
 /**
- * describes a search from a dropdown i.e. with a fixed string value to match exactly.
+ * Indicates the search criterium is a boolean field.
  */
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class DropdownBooleanSearchField extends SearchCriterium {
+public class BooleanField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 482074504831496597L;
@@ -26,8 +26,8 @@ public class DropdownBooleanSearchField extends SearchCriterium {
      *
      * @param columnName connected database column name.
      */
-    public DropdownBooleanSearchField(final String columnName) {
-        super(columnName, SearchType.DROPDOWN_BOOLEAN);
+    public BooleanField(final String columnName) {
+        super(columnName, SearchType.BOOLEAN);
     }
 
     /**

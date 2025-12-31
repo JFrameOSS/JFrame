@@ -1,5 +1,6 @@
 package io.github.jframe.datasource.search.fields;
 
+import io.github.jframe.datasource.search.SearchOperator;
 import io.github.jframe.datasource.search.SearchType;
 import io.github.jframe.datasource.search.model.SearchCriterium;
 import lombok.EqualsAndHashCode;
@@ -11,32 +12,35 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * describes a search from a multiword search text.
+ * Indicates the search criterium is a space separated multiple words fuzzy and field.
  */
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class MultiWordSearchField extends SearchCriterium {
+public class MultiFuzzyField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 4790820671565424226L;
 
     private String value;
 
+    private SearchOperator operator = SearchOperator.AND;
+
     /**
      * default constructor.
      *
      * @param columnName connected database column name.
      */
-    public MultiWordSearchField(final String columnName) {
-        super(columnName, SearchType.MULTI_WORD);
+    public MultiFuzzyField(final String columnName) {
+        super(columnName, SearchType.MULTI_FUZZY);
     }
 
     /**
-     * return multi words split on space character.
+     * Retrieve the search terms by splitting the value by spaces.
+     *
+     * @return list of search terms.
      */
-    public List<String> getValues() {
-        return Arrays.asList(value.split(" "));
+    public List<String> getSearchTerms() {
+        return Arrays.asList(this.value.split("\\s+"));
     }
-
 }

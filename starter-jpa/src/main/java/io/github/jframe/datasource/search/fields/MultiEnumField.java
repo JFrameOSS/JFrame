@@ -7,32 +7,34 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serial;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.util.Arrays.stream;
 
 /**
- * Describes a search on an enumeration of fixed values.
+ * Indicates the search criterium is an enum field for searching multiple enum values.
  */
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class EnumSearchField extends SearchCriterium {
+public class MultiEnumField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 482074504831496597L;
 
-    private String value;
+    private List<String> values = new ArrayList<>();
 
     private Class<?> enumClass;
 
     /**
      * default constructor.
      *
-     * @param columnName connected database column name.
+     * @param columnName connected database column name.A
      * @param enumClass  the enum class to search on.
      */
-    public EnumSearchField(final String columnName, final Class<?> enumClass) {
-        super(columnName, SearchType.ENUM);
+    public MultiEnumField(final String columnName, final Class<?> enumClass) {
+        super(columnName, SearchType.MULTI_ENUM);
         this.enumClass = enumClass;
     }
 
@@ -41,8 +43,8 @@ public class EnumSearchField extends SearchCriterium {
      *
      * @return the enum value.
      */
-    public Object getEnum() {
+    public List<?> getEnums() {
         return stream(enumClass.getEnumConstants())
-            .filter(enumValue -> enumValue.toString().equals(getValue())).findFirst().orElse(null);
+            .filter(enumValue -> getValues().contains(enumValue.toString())).toList();
     }
 }
