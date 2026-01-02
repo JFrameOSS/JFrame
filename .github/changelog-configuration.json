@@ -31,8 +31,8 @@
   ],
   "transformers": [
     {
-      "pattern": "^(feat|fix|perf|refactor|docs|ci|chore)(?:\\([^)]+\\))?: (.*)$",
-      "target": "$2"
+      "pattern": "^(?:feat|fix|perf|refactor|docs|ci|chore)(?:\\([^)]+\\))?: (.*)$",
+      "target": "$1"
     }
   ],
   "sort": {
