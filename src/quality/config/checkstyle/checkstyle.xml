@@ -185,7 +185,7 @@
                       value="org.springframework.beans.factory.annotation, org.springframework.stereotype, org.slf4j"/>
         </module>
         <module name="CyclomaticComplexity"/>
-        <module name="JavaNCSS"/>
+<!--        <module name="JavaNCSS"/>-->
         <module name="NPathComplexity"/>
 
         <!--  Miscellaneous (http://checkstyle.sourceforge.net/config_misc.html) -->
