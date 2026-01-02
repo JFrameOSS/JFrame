@@ -25,14 +25,43 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Determine Tags
+        id: tags
+        run: |
+          # Fetch all tags to ensure we have the complete history
+          git fetch --tags --force
+
+          # Default TO_TAG to the latest tag if input is empty
+          if [ -n "${{ inputs.to_tag }}" ]; then
+            TO="${{ inputs.to_tag }}"
+          else
+            TO=$(git describe --tags --abbrev=0)
+          fi
+          
+          # Default FROM_TAG to the previous tag if input is empty
+          if [ -n "${{ inputs.from_tag }}" ]; then
+            FROM="${{ inputs.from_tag }}"
+          else
+            # Get the tag before the TO tag
+            # We look for the closest tag reachable from TO's parent
+            FROM=$(git describe --tags --abbrev=0 "$TO^" 2>/dev/null || echo "")
+          fi
+
+          echo "Resolving changelog range:"
+          echo "FROM: $FROM"
+          echo "TO: $TO"
+
+          echo "from_tag=$FROM" >> $GITHUB_OUTPUT
+          echo "to_tag=$TO" >> $GITHUB_OUTPUT
+
       - name: Generate Changelog
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v4
         with:
           configuration: ".github/changelog-configuration.json"
           commitMode: true
-          fromTag: ${{ inputs.from_tag }}
-          toTag: ${{ inputs.to_tag }}
+          fromTag: ${{ steps.tags.outputs.from_tag }}
+          toTag: ${{ steps.tags.outputs.to_tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
