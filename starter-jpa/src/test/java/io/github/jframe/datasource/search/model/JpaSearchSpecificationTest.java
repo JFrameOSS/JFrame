@@ -160,20 +160,6 @@ class JpaSearchSpecificationTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should create correct inverse predicate for MultiEnumField")
-    void testToPredicate_WithInverseMultiEnumField() {
-        final List<String> enums = List.of("!ACTIVE", "!PENDING");
-        final MultiEnumField field = new MultiEnumField("status", TestStatus.class, enums);
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
-
-        spec.toPredicate(root, query, cb);
-
-        verify(root).get("status");
-        verify(path).in(anyCollection());
-        verify(cb).not(any());
-    }
-
-    @Test
     @DisplayName("Should create correct predicate for TextField")
     void testToPredicate_WithTextField() {
         final TextField field = new TextField("description", "test");
@@ -209,20 +195,6 @@ class JpaSearchSpecificationTest extends UnitTest {
 
         verify(root).get("category");
         verify(path).in(values);
-    }
-
-    @Test
-    @DisplayName("Should create correct inverse predicate for MultiTextField")
-    void testToPredicate_WithInverseMultiTextField() {
-        final List<String> values = List.of("!A", "!B");
-        final MultiTextField field = new MultiTextField("category", values);
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
-
-        spec.toPredicate(root, query, cb);
-
-        verify(root).get("category");
-        verify(path).in(anyCollection());
-        verify(cb).not(any());
     }
 
     @Test

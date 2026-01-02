@@ -38,18 +38,7 @@ public class MultiEnumField extends SearchCriterium {
     public MultiEnumField(final String columnName, final Class<?> enumClass, final List<String> values) {
         super(columnName, SearchType.MULTI_ENUM);
         this.enumClass = enumClass;
-        if (CollectionUtils.isNotEmpty(values)) {
-            if (values.get(0).startsWith("!")) {
-                setInverse(true);
-                this.values = values.stream()
-                    .map(val -> val.startsWith("!") ? val.substring(1) : val)
-                    .toList();
-            } else {
-                this.values = values;
-            }
-        } else {
-            this.values = Collections.emptyList();
-        }
+        this.values = CollectionUtils.isEmpty(values) ? Collections.emptyList() : values;
     }
 
     /**

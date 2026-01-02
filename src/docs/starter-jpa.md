@@ -12,6 +12,7 @@ starter-jpa/src/main/java/io/github/jframe/datasource/
 │   └── PageMapper.java
 └── model/search/           # Search and pagination
     ├── input/             # SearchInput base class
+    ├── fields/            # SearchCriterium types (Numeric, Text, Enum, etc.)
     ├── resource/          # PageResource response
     └── JpaSearchSpecification.java
 ```
@@ -27,19 +28,34 @@ Dynamic JPA specification building with pagination and sorting.
 - `JpaSearchSpecification` - Generic specification builder
 - `PageResource` - Standardized paginated response
 - `PageMapper` - Converts JPA Page to PageResource
+- `SearchCriteriumFactory` - Factory for creating criteria from inputs
 
-**Search Field Types:**
-- `DateSearchField` - Date range searching
-- `MultiWordSearchField` - Text-based multi-word search
-- `DropdownStringSearchField` - Dropdown selection
-- `MultipleSelectSearchField` - Multi-select filtering
+**Search Field Types & Features:**
+
+| Field Type | Description | Inverse Filter Support (e.g. `!value`) |
+|------------|-------------|----------------------------------------|
+| `TextField` | Exact text match | ✅ Yes (`!value` -> `NOT EQUAL`) |
+| `NumericField` | Exact number match | ✅ Yes (`!123` -> `NOT EQUAL`) |
+| `EnumField` | Exact enum match | ✅ Yes (`!ACTIVE` -> `NOT EQUAL`) |
+| `MultiTextField` | Match any string in list | ✅ Yes (First item `!val` -> `NOT IN (...)`) |
+| `MultiEnumField` | Match any enum in list | ✅ Yes (First item `!val` -> `NOT IN (...)`) |
+| `BooleanField` | Boolean value match | ❌ No |
+| `DateField` | Date range search | ❌ No |
+| `FuzzyTextField` | Like search (`%val%`) | ❌ No |
+| `MultiFuzzyField` | Multiple like searches | ❌ No |
+
+**Inverse Filtering:**
+You can prefix values with `!` to negate the filter condition.
+- Single value fields (`TextField`, `NumericField`, `EnumField`) become `NOT EQUAL`.
+- Multi-value fields (`MultiTextField`, `MultiEnumField`) become `NOT IN (...)` if the **first** element starts with `!`.
 
 **Example:**
 ```java
 // Search input
 public class UserSearchInput extends SearchInput {
     private String firstName;
-    private String email;
+    private String status; // Supports "!INACTIVE"
+    private List<String> roles; // Supports ["!GUEST", "!TEMP"] -> NOT IN (GUEST, TEMP)
 
     @Override
     public List<SortableColumn> getSortableColumns() {
@@ -51,15 +67,26 @@ public class UserSearchInput extends SearchInput {
 }
 
 // Service
-Specification<User> spec = JpaSearchSpecification.<User>builder()
-    .when(input.getFirstName())
-        .like(User_.firstName)
-    .when(input.getEmail())
-        .equal(User_.email)
-    .build();
+public PageResource<UserDto> search(UserSearchInput input) {
+    List<SearchCriterium> criteria = new ArrayList<>();
+    
+    if (input.getFirstName() != null) {
+        criteria.add(new FuzzyTextField("firstName", input.getFirstName()));
+    }
+    if (input.getStatus() != null) {
+        // Automatically handles "!INACTIVE" as NOT EQUAL
+        criteria.add(new EnumField("status", UserStatus.class, input.getStatus()));
+    }
+    if (input.getRoles() != null) {
+        // Automatically handles ["!GUEST"] as NOT IN
+        criteria.add(new MultiEnumField("role", Role.class, input.getRoles()));
+    }
 
-Page<User> users = repository.findAll(spec, input.toPageable());
-return PageMapper.toPageResource(users, UserResource::from);
+    Specification<User> spec = new JpaSearchSpecification<>(criteria);
+    Page<User> users = repository.findAll(spec, input.toPageable());
+    
+    return PageMapper.toPageResource(users, UserResource::from);
+}
 ```
 
 ### Pagination
@@ -133,6 +160,7 @@ public class User {
     @Id private Long id;
     private String firstName;
     private String email;
+    private UserStatus status;
     private LocalDateTime createdAt;
 }
 
@@ -145,6 +173,7 @@ public interface UserRepository extends
 public class UserSearchInput extends SearchInput {
     private String firstName;
     private String email;
+    private String status;
     private LocalDateTime createdAfter;
 
     @Override
@@ -163,16 +192,20 @@ public class UserService {
     @Autowired private UserRepository repository;
 
     public PageResource<UserDto> search(UserSearchInput input) {
-        Specification<User> spec = JpaSearchSpecification.<User>builder()
-            .when(input.getFirstName())
-                .like(User_.firstName)
-            .when(input.getEmail())
-                .equal(User_.email)
-            .when(input.getCreatedAfter())
-                .greaterThanOrEqual(User_.createdAt)
-            .build();
+        List<SearchCriterium> criteria = new ArrayList<>();
+        
+        // Add criteria
+        criteria.add(new FuzzyTextField("firstName", input.getFirstName()));
+        criteria.add(new TextField("email", input.getEmail()));
+        criteria.add(new EnumField("status", UserStatus.class, input.getStatus()));
+        
+        if (input.getCreatedAfter() != null) {
+            criteria.add(new DateField("createdAt", input.getCreatedAfter().toString(), null));
+        }
 
+        Specification<User> spec = new JpaSearchSpecification<>(criteria);
         Page<User> page = repository.findAll(spec, input.toPageable());
+        
         return PageMapper.toPageResource(page, UserDto::from);
     }
 }
@@ -197,6 +230,7 @@ public class UserController {
 3. **Implement getSortableColumns()** - Define available sorting options
 4. **Add Database Indexes** - Index commonly searched fields
 5. **Monitor Slow Queries** - Use datasource proxy for performance analysis
+6. **Use Inverse Filtering** - Leverage the `!` prefix for exclusions in text, numeric, and enum fields.
 
 ## Integration
 

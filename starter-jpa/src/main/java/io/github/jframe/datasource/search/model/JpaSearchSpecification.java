@@ -91,8 +91,7 @@ public class JpaSearchSpecification<T> implements Specification<T> {
             }
             case MULTI_ENUM -> {
                 final MultiEnumField f = (MultiEnumField) crit;
-                final Predicate in = path.in(f.getEnums());
-                predicates.add(f.isInverse() ? cb.not(in) : in);
+                predicates.add(path.in(f.getEnums()));
             }
             case TEXT -> {
                 final TextField f = (TextField) crit;
@@ -101,8 +100,7 @@ public class JpaSearchSpecification<T> implements Specification<T> {
             }
             case MULTI_TEXT -> {
                 final MultiTextField f = (MultiTextField) crit;
-                final Predicate in = path.in(f.getValues());
-                predicates.add(f.isInverse() ? cb.not(in) : in);
+                predicates.add(path.in(f.getValues()));
             }
             case FUZZY_TEXT -> {
                 final FuzzyTextField f = (FuzzyTextField) crit;
