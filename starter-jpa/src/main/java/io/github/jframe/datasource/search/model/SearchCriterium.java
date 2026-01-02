@@ -25,6 +25,8 @@ public class SearchCriterium implements Serializable {
 
     private final SearchType searchType;
 
+    private boolean inverse;
+
     /**
      * Constructor for a single column search criterium.
      *

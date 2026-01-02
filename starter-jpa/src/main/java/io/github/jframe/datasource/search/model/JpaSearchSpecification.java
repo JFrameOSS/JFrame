@@ -77,7 +77,8 @@ public class JpaSearchSpecification<T> implements Specification<T> {
             case DATE -> addDateCriteria(root, cb, predicates, (DateField) crit);
             case NUMERIC -> {
                 final NumericField f = (NumericField) crit;
-                predicates.add(cb.equal(path, f.getValue()));
+                final Predicate equal = cb.equal(path, f.getValue());
+                predicates.add(f.isInverse() ? cb.not(equal) : equal);
             }
             case BOOLEAN -> {
                 final BooleanField f = (BooleanField) crit;
@@ -85,19 +86,23 @@ public class JpaSearchSpecification<T> implements Specification<T> {
             }
             case ENUM -> {
                 final EnumField f = (EnumField) crit;
-                predicates.add(cb.equal(path, f.getEnum()));
+                final Predicate equal = cb.equal(path, f.getEnum());
+                predicates.add(f.isInverse() ? cb.not(equal) : equal);
             }
             case MULTI_ENUM -> {
                 final MultiEnumField f = (MultiEnumField) crit;
-                predicates.add(path.in(f.getEnums()));
+                final Predicate in = path.in(f.getEnums());
+                predicates.add(f.isInverse() ? cb.not(in) : in);
             }
             case TEXT -> {
                 final TextField f = (TextField) crit;
-                predicates.add(cb.equal(path, f.getValue()));
+                final Predicate equal = cb.equal(path, f.getValue());
+                predicates.add(f.isInverse() ? cb.not(equal) : equal);
             }
             case MULTI_TEXT -> {
                 final MultiTextField f = (MultiTextField) crit;
-                predicates.add(path.in(f.getValues()));
+                final Predicate in = path.in(f.getValues());
+                predicates.add(f.isInverse() ? cb.not(in) : in);
             }
             case FUZZY_TEXT -> {
                 final FuzzyTextField f = (FuzzyTextField) crit;

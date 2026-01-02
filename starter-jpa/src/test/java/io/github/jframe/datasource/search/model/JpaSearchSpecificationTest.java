@@ -34,6 +34,8 @@ class JpaSearchSpecificationTest extends UnitTest {
     private Expression<String> lowerPath;
     @Mock
     private Predicate predicate;
+    @Mock
+    private Predicate notPredicate;
 
     @BeforeEach
     public void setUp() {
@@ -47,6 +49,7 @@ class JpaSearchSpecificationTest extends UnitTest {
 
         lenient().when(cb.and(any(Predicate[].class))).thenReturn(predicate);
         lenient().when(cb.or(any(Predicate[].class))).thenReturn(predicate);
+        lenient().when(cb.not(any(Predicate.class))).thenReturn(notPredicate);
     }
 
     @Test
@@ -71,6 +74,19 @@ class JpaSearchSpecificationTest extends UnitTest {
 
         verify(root).get("age");
         verify(cb).equal(path, 25);
+    }
+
+    @Test
+    @DisplayName("Should create correct inverse predicate for NumericField")
+    void testToPredicate_WithInverseNumericField() {
+        final NumericField field = new NumericField("age", "!25");
+        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+
+        spec.toPredicate(root, query, cb);
+
+        verify(root).get("age");
+        verify(cb).equal(path, 25);
+        verify(cb).not(any());
     }
 
     @Test
@@ -118,6 +134,19 @@ class JpaSearchSpecificationTest extends UnitTest {
     }
 
     @Test
+    @DisplayName("Should create correct inverse predicate for EnumField")
+    void testToPredicate_WithInverseEnumField() {
+        final EnumField field = new EnumField("status", TestStatus.class, "!ACTIVE");
+        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+
+        spec.toPredicate(root, query, cb);
+
+        verify(root).get("status");
+        verify(cb).equal(path, TestStatus.ACTIVE);
+        verify(cb).not(any());
+    }
+
+    @Test
     @DisplayName("Should create correct predicate for MultiEnumField")
     void testToPredicate_WithMultiEnumField() {
         final List<String> enums = List.of("ACTIVE", "PENDING");
@@ -128,6 +157,20 @@ class JpaSearchSpecificationTest extends UnitTest {
 
         verify(root).get("status");
         verify(path).in(anyCollection());
+    }
+
+    @Test
+    @DisplayName("Should create correct inverse predicate for MultiEnumField")
+    void testToPredicate_WithInverseMultiEnumField() {
+        final List<String> enums = List.of("!ACTIVE", "!PENDING");
+        final MultiEnumField field = new MultiEnumField("status", TestStatus.class, enums);
+        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+
+        spec.toPredicate(root, query, cb);
+
+        verify(root).get("status");
+        verify(path).in(anyCollection());
+        verify(cb).not(any());
     }
 
     @Test
@@ -143,6 +186,19 @@ class JpaSearchSpecificationTest extends UnitTest {
     }
 
     @Test
+    @DisplayName("Should create correct inverse predicate for TextField")
+    void testToPredicate_WithInverseTextField() {
+        final TextField field = new TextField("description", "!test");
+        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+
+        spec.toPredicate(root, query, cb);
+
+        verify(root).get("description");
+        verify(cb).equal(path, "test");
+        verify(cb).not(any());
+    }
+
+    @Test
     @DisplayName("Should create correct predicate for MultiTextField")
     void testToPredicate_WithMultiTextField() {
         final List<String> values = List.of("A", "B");
@@ -153,6 +209,20 @@ class JpaSearchSpecificationTest extends UnitTest {
 
         verify(root).get("category");
         verify(path).in(values);
+    }
+
+    @Test
+    @DisplayName("Should create correct inverse predicate for MultiTextField")
+    void testToPredicate_WithInverseMultiTextField() {
+        final List<String> values = List.of("!A", "!B");
+        final MultiTextField field = new MultiTextField("category", values);
+        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+
+        spec.toPredicate(root, query, cb);
+
+        verify(root).get("category");
+        verify(path).in(anyCollection());
+        verify(cb).not(any());
     }
 
     @Test

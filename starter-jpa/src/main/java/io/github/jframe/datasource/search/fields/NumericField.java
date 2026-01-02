@@ -32,10 +32,19 @@ public class NumericField extends SearchCriterium {
     public NumericField(final String columnName, final String value) {
         super(columnName, SearchType.NUMERIC);
         if (StringUtils.isNotBlank(value)) {
-            try {
-                this.value = Integer.parseInt(value);
-            } catch (final NumberFormatException exception) {
-                // ignore invalid number format, default to 0
+            if (value.startsWith("!")) {
+                setInverse(true);
+                try {
+                    this.value = Integer.parseInt(value.substring(1));
+                } catch (final NumberFormatException exception) {
+                    // ignore invalid number format, default to 0
+                }
+            } else {
+                try {
+                    this.value = Integer.parseInt(value);
+                } catch (final NumberFormatException exception) {
+                    // ignore invalid number format, default to 0
+                }
             }
         }
     }

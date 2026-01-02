@@ -36,7 +36,16 @@ public class EnumField extends SearchCriterium {
     public EnumField(final String columnName, final Class<?> enumClass, final String value) {
         super(columnName, SearchType.ENUM);
         this.enumClass = enumClass;
-        this.value = StringUtils.isNotBlank(value) ? value : null;
+        if (StringUtils.isNotBlank(value)) {
+            if (value.startsWith("!")) {
+                setInverse(true);
+                this.value = value.substring(1);
+            } else {
+                this.value = value;
+            }
+        } else {
+            this.value = null;
+        }
     }
 
     /**

@@ -30,6 +30,15 @@ public class TextField extends SearchCriterium {
      */
     public TextField(final String columnName, final String value) {
         super(columnName, SearchType.TEXT);
-        this.value = StringUtils.isNotBlank(value) ? value : null;
+        if (StringUtils.isNotBlank(value)) {
+            if (value.startsWith("!")) {
+                setInverse(true);
+                this.value = value.substring(1);
+            } else {
+                this.value = value;
+            }
+        } else {
+            this.value = null;
+        }
     }
 }
