@@ -29,11 +29,23 @@
       "labels": ["chore"]
     }
   ],
+  "transformers": [
+    {
+      "pattern": "^(feat|fix|perf|refactor|docs|ci|chore)(?:\\(([^)]+)\\))?: (.*)$",
+      "target": "- $3"
+    }
+  ],
   "sort": {
     "order": "ASC",
     "on": "date"
   },
   "template": "# ${{TO_TAG}}\n\n${{CHANGELOG}}",
   "pr_template": "- ${{TITLE}} (${{author}})",
-  "empty_template": "- No changes found"
+  "empty_template": "- No changes found",
+  "label_extractor": [
+    {
+      "pattern": "^(feat|fix|perf|refactor|docs|ci|chore).*",
+      "target": "$1"
+    }
+  ]
 }
