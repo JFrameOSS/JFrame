@@ -78,7 +78,11 @@ public class JpaSearchSpecification<T> implements Specification<T> {
             case NUMERIC -> {
                 final NumericField f = (NumericField) crit;
                 final Predicate equal = cb.equal(path, f.getValue());
-                predicates.add(f.isInverse() ? cb.not(equal) : equal);
+                if (f.isInverse()) {
+                    predicates.add(cb.or(cb.not(equal), cb.isNull(path)));
+                } else {
+                    predicates.add(equal);
+                }
             }
             case BOOLEAN -> {
                 final BooleanField f = (BooleanField) crit;
@@ -87,7 +91,11 @@ public class JpaSearchSpecification<T> implements Specification<T> {
             case ENUM -> {
                 final EnumField f = (EnumField) crit;
                 final Predicate equal = cb.equal(path, f.getEnum());
-                predicates.add(f.isInverse() ? cb.not(equal) : equal);
+                if (f.isInverse()) {
+                    predicates.add(cb.or(cb.not(equal), cb.isNull(path)));
+                } else {
+                    predicates.add(equal);
+                }
             }
             case MULTI_ENUM -> {
                 final MultiEnumField f = (MultiEnumField) crit;
@@ -96,7 +104,11 @@ public class JpaSearchSpecification<T> implements Specification<T> {
             case TEXT -> {
                 final TextField f = (TextField) crit;
                 final Predicate equal = cb.equal(path, f.getValue());
-                predicates.add(f.isInverse() ? cb.not(equal) : equal);
+                if (f.isInverse()) {
+                    predicates.add(cb.or(cb.not(equal), cb.isNull(path)));
+                } else {
+                    predicates.add(equal);
+                }
             }
             case MULTI_TEXT -> {
                 final MultiTextField f = (MultiTextField) crit;
