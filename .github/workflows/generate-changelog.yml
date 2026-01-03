@@ -56,17 +56,15 @@ jobs:
 
       - name: Generate Changelog
         id: changelog
-        uses: mikepenz/release-changelog-builder-action@v4
+        uses: requarks/changelog-action@v1
         with:
-          configuration: ".github/changelog-configuration.json"
-          commitMode: true
-          fromTag: ${{ steps.tags.outputs.from_tag }}
-          toTag: ${{ steps.tags.outputs.to_tag }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fromTag: ${{ steps.tags.outputs.to_tag }}
+          toTag: ${{ steps.tags.outputs.from_tag }}
+          writeToFile: false
 
       - name: Output Changelog
         run: |
           echo "================ CHANGELOG ================"
-          echo "${{ steps.changelog.outputs.changelog }}"
+          echo "${{ steps.changelog.outputs.changes }}"
           echo "==========================================="
