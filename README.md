@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Spring Boot](https://img.shields.io/badge/spring--boot-3.5.3-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/java-25--temurin-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.java.net/projects/jdk/25/)
-[![Maven Central](https://img.shields.io/badge/maven--central-0.7.0-SNAPSHOT-blue.svg)](https://search.maven.org/search?q=g:io.github.jframeoss)
+[![Maven Central](https://img.shields.io/badge/maven--central--0.7.0-SNAPSHOT-blue.svg)](https://search.maven.org/search?q=g:io.github.jframeoss)
 
 [Features](#-features) •
 [Quick Start](#-quick-start) •

@@ -127,7 +127,7 @@ public abstract class AbstractSortSearchMetaData {
             .map(
                 o -> new Sort.Order(
                     Sort.Direction.fromString(o.getDirection()),
-                    o.getName()
+                    columnNames.get(o.getName()).getFirst()
                 )
             )
             .toList();
