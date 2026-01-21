@@ -35,6 +35,7 @@ starter-jpa ───┘
 - Exception handling framework
 - HTTP logging infrastructure
 - Validation framework
+- Request-scoped caching
 - Utilities (JSON, MapStruct, converters)
 
 **Configuration:** `jframe-properties.yml`
@@ -116,11 +117,12 @@ Each module provides Spring Boot auto-configuration:
 ```
 1. HTTP Request → Logging Filters (correlation IDs, logging)
 2. → Spring Web Controller
-3. → Service Layer (with validation, custom tracing)
+3. → Service Layer (with validation, request-scoped caching, custom tracing)
 4. → Repository Layer (JPA with auto-instrumentation)
 5. → Database (with query logging)
 6. → Response mapping (ObjectMappers)
 7. → Trace export to observability backend
+8. → Request scope cleanup (cache eviction)
 ```
 
 ### Search Operation
@@ -206,6 +208,18 @@ public class EmailValidator implements Validator<String> {
     @Override
     public void validate(String email, ValidationResult result) {
         // Reusable validation logic
+    }
+}
+```
+
+**Request-Scoped Caches:**
+```java
+@Component
+@RequestScope
+public class UserCache extends RequestScopedCache<Long, User> {
+    @Override
+    protected Long getId(User entity) {
+        return entity.getId();
     }
 }
 ```

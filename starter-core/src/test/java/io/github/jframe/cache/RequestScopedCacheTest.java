@@ -18,6 +18,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 
+/**
+ * Unit tests for {@link RequestScopedCache}.
+ *
+ * <p>Verifies the functionality of the request-scoped cache including:
+ * <ul>
+ * <li>Basic put and get operations</li>
+ * <li>Bulk putAll and getAll operations</li>
+ * <li>getOrLoad and getAllOrLoad with loader functions</li>
+ * <li>Handling of nulls and edge cases</li>
+ * <li>Remove and clear operations</li>
+ * </ul>
+ */
 @DisplayName("Unit Test - Request Scoped Cache")
 class RequestScopedCacheTest extends UnitTest {
 

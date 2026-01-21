@@ -1,6 +1,6 @@
 # starter-core
 
-Foundation module providing core utilities, exception handling, logging, validation, and shared configuration.
+Foundation module providing core utilities, exception handling, logging, validation, caching, and shared configuration.
 
 ## Location
 
@@ -8,6 +8,7 @@ Foundation module providing core utilities, exception handling, logging, validat
 starter-core/src/main/java/io/github/jframe/
 ├── autoconfigure/          # Auto-configuration and properties
 │   └── properties/         # ApplicationProperties, LoggingProperties
+├── cache/                  # Request-scoped caching infrastructure
 ├── exception/              # Exception hierarchy and handlers
 │   ├── core/              # HTTP exceptions (400, 401, 404, 500)
 │   └── handler/           # Exception handlers and enrichers
@@ -128,6 +129,49 @@ if (result.hasErrors()) {
 
 **Features:** Fluent API, error accumulation, nested paths, Hamcrest matchers, Spring-independent
 
+### Request-Scoped Caching
+
+Generic request-scoped cache for eliminating duplicate database queries within a single HTTP request. See [detailed docs](./core/caching.md).
+
+**Key Classes:**
+- `RequestScopedCache<K, V>` - Abstract base class for entity caching
+
+**Example:**
+```java
+@Component
+@RequestScope
+public class UserCache extends RequestScopedCache<Long, User> {
+    @Override
+    protected Long getId(User entity) {
+        return entity.getId();
+    }
+}
+
+// Usage in service
+@Service
+@RequiredArgsConstructor
+public class OrderService {
+    private final UserCache userCache;
+    private final UserRepository userRepository;
+
+    public void processOrder(Order order) {
+        // Cache hit or load from DB (single item)
+        User user = userCache.getOrLoad(order.getUserId(), 
+            id -> userRepository.findById(id)).orElseThrow();
+        
+        // Batch loading for multiple IDs
+        Map<Long, User> users = userCache.getAllOrLoad(userIds, 
+            ids -> userRepository.findAllById(ids));
+    }
+}
+```
+
+**Features:**
+- Automatic cache eviction at request end
+- Single and batch entity loading
+- Thread-safe (ConcurrentHashMap backing)
+- Zero configuration required
+
 ### Utilities
 
 **ObjectMappers** - Pre-configured Jackson utilities:
@@ -200,5 +244,6 @@ jframe:
 - [Exception Handling](./core/exception-handling.md)
 - [Logging Framework](./core/logging.md)
 - [Validation Framework](./core/validation.md)
+- [Request-Scoped Caching](./core/caching.md)
 - [starter-jpa](./starter-jpa.md)
 - [starter-otlp](./starter-otlp.md)
