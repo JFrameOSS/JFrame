@@ -19,7 +19,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests for {@link RequestInfoErrorResponseEnricher}.
+ * Tests for {@link RequestInfoResponseEnricher}.
  *
  * <p>Verifies the RequestInfoErrorResponseEnricher functionality including:
  * <ul>
@@ -32,9 +32,9 @@ import static org.mockito.Mockito.when;
  * </ul>
  */
 @DisplayName("Exception Response Enrichers - Request Info Error Response Enricher")
-public class RequestInfoErrorResponseEnricherTest extends UnitTest {
+public class RequestInfoResponseEnricherTest extends UnitTest {
 
-    private final RequestInfoErrorResponseEnricher enricher = new RequestInfoErrorResponseEnricher();
+    private final RequestInfoResponseEnricher enricher = new RequestInfoResponseEnricher();
 
     @Test
     @DisplayName("Should enrich request info when request is ServletWebRequest")

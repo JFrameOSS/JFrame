@@ -12,17 +12,10 @@ import org.springframework.web.context.request.WebRequest;
 /**
  * This enricher copies information from the original web request onto the error response resource.
  *
- * <p>The enricher captures the following request information:
- *
- * <ul>
- * <li>The request uri
- * <li>Query parameters
- * <li>The request method
- * <li>The requested content factory
- * </ul>
+ * <p>It only applies to a {@link ServletWebRequest}.</p>
  */
 @Component
-public class RequestInfoErrorResponseEnricher implements ErrorResponseEnricher {
+public class RequestInfoResponseEnricher implements ErrorResponseEnricher {
 
     /**
      * {@inheritDoc}

@@ -18,7 +18,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 
 /**
- * Tests for {@link ErrorTransactionIdEnricher}.
+ * Tests for {@link TransactionIdResponseEnricher}.
  *
  * <p>Verifies the ErrorTransactionIdEnricher functionality including:
  * <ul>
@@ -29,9 +29,9 @@ import static org.mockito.Mockito.mock;
  * </p>
  */
 @DisplayName("Exception Response Enrichers - Error Transaction ID Enricher")
-public class ErrorTransactionIdEnricherTest extends UnitTest {
+public class TransactionIdResponseEnricherTest extends UnitTest {
 
-    private final ErrorTransactionIdEnricher enricher = new ErrorTransactionIdEnricher();
+    private final TransactionIdResponseEnricher enricher = new TransactionIdResponseEnricher();
 
     @AfterEach
     public void tearDown() {

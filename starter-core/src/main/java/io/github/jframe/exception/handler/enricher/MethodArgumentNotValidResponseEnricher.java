@@ -17,6 +17,8 @@ import org.springframework.web.context.request.WebRequest;
 
 /**
  * This enricher adds validation errors to the error response resource.
+ *
+ * <p>It only applies to a {@link MethodArgumentNotValidException}.</p>
  */
 @Component
 @RequiredArgsConstructor

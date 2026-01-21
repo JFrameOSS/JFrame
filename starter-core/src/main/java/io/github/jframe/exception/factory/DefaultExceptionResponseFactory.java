@@ -4,10 +4,12 @@ package io.github.jframe.exception.factory;
 import io.github.jframe.exception.ApiException;
 import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.JFrameException;
+import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.exception.resource.ApiErrorResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
+import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 
 import org.springframework.stereotype.Component;
@@ -60,17 +62,17 @@ public class DefaultExceptionResponseFactory implements ExceptionResponseFactory
      * @return the error resource
      */
     private static ErrorResponseResource getErrorResponseResource(final Throwable throwable) {
-        final ErrorResponseResource result;
-        if (throwable instanceof final ApiException apiException) {
-            result = new ApiErrorResponseResource(apiException);
-        } else if (throwable instanceof final MethodArgumentNotValidException methodArgumentNotValidException) {
-            result = new MethodArgumentNotValidResponseResource(methodArgumentNotValidException);
-        } else if (throwable instanceof final ValidationException validationException) {
-            result = new ValidationErrorResponseResource(validationException);
-        } else {
-            result = null;
-        }
-        return result;
+        return switch (throwable) {
+            case final ApiException apiException -> new ApiErrorResponseResource(apiException);
+            case final MethodArgumentNotValidException methodArgumentNotValidException -> new MethodArgumentNotValidResponseResource(
+                methodArgumentNotValidException
+            );
+            case final ValidationException validationException -> new ValidationErrorResponseResource(validationException);
+            case final RateLimitExceededException rateLimitExceededException -> new RateLimitErrorResponseResource(
+                rateLimitExceededException
+            );
+            case null, default -> null;
+        };
     }
 
     /**

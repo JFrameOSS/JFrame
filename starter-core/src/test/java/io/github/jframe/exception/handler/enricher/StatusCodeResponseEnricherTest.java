@@ -14,7 +14,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 
 /**
- * Tests for {@link ErrorResponseStatusEnricher}.
+ * Tests for {@link StatusCodeResponseEnricher}.
  *
  * <p>Verifies the ErrorResponseStatusEnricher functionality including:
  * <ul>
@@ -24,9 +24,9 @@ import static org.mockito.Mockito.mock;
  * </ul>
  */
 @DisplayName("Exception Response Enrichers - Error Response Status Enricher")
-public class ErrorResponseStatusEnricherTest extends UnitTest {
+public class StatusCodeResponseEnricherTest extends UnitTest {
 
-    private final ErrorResponseStatusEnricher enricher = new ErrorResponseStatusEnricher();
+    private final StatusCodeResponseEnricher enricher = new StatusCodeResponseEnricher();
 
     @Test
     @DisplayName("Should enrich status code and message from HTTP status")

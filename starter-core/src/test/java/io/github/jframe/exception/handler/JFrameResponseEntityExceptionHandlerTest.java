@@ -4,17 +4,21 @@ import io.github.jframe.exception.ApiError;
 import io.github.jframe.exception.ApiException;
 import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.core.BadRequestException;
+import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.exception.factory.ErrorResponseEntityBuilder;
 import io.github.jframe.exception.resource.ApiErrorResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
+import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;
 import io.github.support.UnitTest;
 import io.github.support.fixtures.TestApiError;
 import io.github.support.fixtures.TestApiException;
+
+import java.time.OffsetDateTime;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -64,6 +68,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
     private ApiErrorResponseResource mockApiErrorResponse;
     private MethodArgumentNotValidResponseResource mockMethodArgumentNotValidResponse;
     private ValidationErrorResponseResource mockValidationErrorResponse;
+    private RateLimitErrorResponseResource mockRateLimitErrorResponse;
 
     @BeforeEach
     @Override
@@ -81,6 +86,9 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
 
         mockValidationErrorResponse = new ValidationErrorResponseResource();
         mockValidationErrorResponse.setErrorMessage("Test validation error");
+
+        mockRateLimitErrorResponse = new RateLimitErrorResponseResource();
+        mockRateLimitErrorResponse.setErrorMessage("Rate limit exceeded");
     }
 
     @Test
@@ -274,5 +282,60 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         // Then: All responses have correct content type header
         assertThat(httpResponse.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
         assertThat(apiResponse.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
+    }
+
+    @Test
+    @DisplayName("Should handle RateLimitExceededException with TOO_MANY_REQUESTS status and rate limit headers")
+    public void shouldHandleRateLimitExceededException() {
+        // Given: A RateLimitExceededException with rate limit details
+        final int limit = 100;
+        final int remaining = 0;
+        final OffsetDateTime resetDate = OffsetDateTime.now().plusMinutes(5);
+        final RateLimitExceededException exception = new RateLimitExceededException("Rate limit exceeded", limit, remaining, resetDate);
+
+        // Configure mock to return a response with rate limit details (simulating enricher behavior)
+        mockRateLimitErrorResponse.setLimit(limit);
+        mockRateLimitErrorResponse.setRemaining(remaining);
+        mockRateLimitErrorResponse.setResetDate(resetDate);
+        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.TOO_MANY_REQUESTS), eq(webRequest)))
+            .thenReturn(mockRateLimitErrorResponse);
+
+        // When: Handling the RateLimitExceededException
+        final ResponseEntity<RateLimitErrorResponseResource> response = exceptionHandler.handleRateLimitExceeded(exception, webRequest);
+
+        // Then: Response has TOO_MANY_REQUESTS status, correct headers and body with rate limit details
+        assertThat(response, is(notNullValue()));
+        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.TOO_MANY_REQUESTS)));
+        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
+        assertThat(response.getHeaders().getFirst("X-RateLimit-Limit"), is(equalTo(String.valueOf(limit))));
+        assertThat(response.getHeaders().getFirst("X-RateLimit-Remaining"), is(equalTo(String.valueOf(remaining))));
+        assertThat(response.getHeaders().getFirst("X-RateLimit-Reset"), is(equalTo(resetDate.toString())));
+        assertThat(response.getBody(), is(notNullValue()));
+        assertThat(response.getBody().getLimit(), is(equalTo(limit)));
+        assertThat(response.getBody().getRemaining(), is(equalTo(remaining)));
+        assertThat(response.getBody().getResetDate(), is(equalTo(resetDate)));
+        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.TOO_MANY_REQUESTS, webRequest);
+    }
+
+    @Test
+    @DisplayName("Should handle RateLimitExceededException with null resetDate")
+    public void shouldHandleRateLimitExceededExceptionWithNullResetDate() {
+        // Given: A RateLimitExceededException with null reset date
+        final int limit = 50;
+        final int remaining = 0;
+        final RateLimitExceededException exception = new RateLimitExceededException(limit, remaining, null);
+        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.TOO_MANY_REQUESTS), eq(webRequest)))
+            .thenReturn(mockRateLimitErrorResponse);
+
+        // When: Handling the RateLimitExceededException
+        final ResponseEntity<RateLimitErrorResponseResource> response = exceptionHandler.handleRateLimitExceeded(exception, webRequest);
+
+        // Then: Response has TOO_MANY_REQUESTS status and no X-RateLimit-Reset header
+        assertThat(response, is(notNullValue()));
+        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.TOO_MANY_REQUESTS)));
+        assertThat(response.getHeaders().getFirst("X-RateLimit-Limit"), is(equalTo(String.valueOf(limit))));
+        assertThat(response.getHeaders().getFirst("X-RateLimit-Remaining"), is(equalTo(String.valueOf(remaining))));
+        assertThat(response.getHeaders().getFirst("X-RateLimit-Reset"), is(nullValue()));
+        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.TOO_MANY_REQUESTS, webRequest);
     }
 }
