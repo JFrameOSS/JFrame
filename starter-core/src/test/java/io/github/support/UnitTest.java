@@ -1,5 +1,9 @@
 package io.github.support;
 
+import io.github.support.fixtures.TestEntity;
+
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,8 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class UnitTest {
 
     /**
-     * Common setup executed before each test method.
-     * Subclasses can override this method to add their own setup logic.
+     * Common setup executed before each test method. Subclasses can override this method to add their own setup logic.
      */
     @BeforeEach
     public void setUp() {
@@ -31,13 +34,33 @@ public class UnitTest {
     }
 
     /**
-     * Creates a test message with the given prefix and suffix.
+     * Creates a sample TestEntity instance for testing.
      *
-     * @param prefix the message prefix
-     * @param suffix the message suffix
-     * @return the constructed message
+     * @return a TestEntity with preset values
      */
-    protected String createTestMessage(final String prefix, final String suffix) {
-        return prefix + " " + suffix;
+    protected static TestEntity aTestEntity() {
+        return new TestEntity(1L, "Test");
+    }
+
+    /**
+     * Creates a TestEntity instance with a null ID for testing.
+     *
+     * @return a TestEntity with null ID
+     */
+    protected static TestEntity aTestEntityWithNullId() {
+        return new TestEntity(null, "Test");
+    }
+
+    /**
+     * Creates a list of sample TestEntity instances for testing.
+     *
+     * @return a list of TestEntity objects
+     */
+    protected static List<TestEntity> aTestEntityList() {
+        return List.of(
+            new TestEntity(1L, "First"),
+            new TestEntity(2L, "Second"),
+            new TestEntity(3L, "Third")
+        );
     }
 }

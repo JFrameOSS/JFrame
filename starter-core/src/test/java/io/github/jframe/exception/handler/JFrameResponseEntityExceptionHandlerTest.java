@@ -12,9 +12,9 @@ import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResourc
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;
-import io.github.support.TestApiError;
-import io.github.support.TestApiException;
 import io.github.support.UnitTest;
+import io.github.support.fixtures.TestApiError;
+import io.github.support.fixtures.TestApiException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -154,7 +154,7 @@ class FilterVoterTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should use consistent attribute name for caching")
+    @DisplayName("Should use consistent attribute name for cache")
     void enabled_shouldUseSameAttributeNameForCaching() {
         // Given: Multiple calls to enabled
         when(request.getAttribute(anyString())).thenReturn(null);

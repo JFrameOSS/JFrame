@@ -1,8 +1,8 @@
 package io.github.jframe.exception;
 
-import io.github.support.TestApiError;
-import io.github.support.TestApiException;
 import io.github.support.UnitTest;
+import io.github.support.fixtures.TestApiError;
+import io.github.support.fixtures.TestApiException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

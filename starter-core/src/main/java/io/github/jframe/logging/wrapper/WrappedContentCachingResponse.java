@@ -56,7 +56,7 @@ public class WrappedContentCachingResponse extends ContentCachingResponseWrapper
     public void addHeader(final String name, final String value) {
         super.addHeader(name, value);
         if (isTextEventStreamHeader(name, value)) {
-            log.debug("Triggered streaming for this content-caching response.");
+            log.debug("Triggered streaming for this content-cache response.");
             this.streaming = true;
         }
     }

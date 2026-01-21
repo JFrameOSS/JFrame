@@ -1,9 +1,11 @@
-package io.github.jframe.caching;
+package io.github.jframe.cache;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.jspecify.annotations.NonNull;
 
 /**
  * Generic request-scoped cache for entities.
@@ -17,15 +19,16 @@ import java.util.stream.Collectors;
  * <pre>
  * {@code
  * @Component
+ *
  * @RequestScope
- * public class ChannelCache extends RequestScopedCache<Long, Entity> {
- *     @Override
- *     protected Long getId(Entity entity) {
- *         return entity.getId();
- *     }
- * }
- * }
- * </pre>
+ *               public class ChannelCache extends RequestScopedCache<Long, Entity> {
+ * @Override
+ *           protected Long getId(Entity entity) {
+ *           return entity.getId();
+ *           }
+ *           }
+ *           }
+ *           </pre>
  *
  * @param <K> the type of the entity identifier (e.g. {@link Long}, {@link UUID})
  * @param <V> the type of the cached entity (e.g. Channel, User)
@@ -118,9 +121,8 @@ public abstract class RequestScopedCache<K, V> {
         }
 
         return ids.stream()
-            .map(id -> Map.entry(id, cache.get(id)))
-            .filter(e -> e.getValue() != null)
-            .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+            .filter(cache::containsKey)
+            .collect(Collectors.toUnmodifiableMap(Function.identity(), cache::get));
     }
 
     /**
@@ -132,21 +134,25 @@ public abstract class RequestScopedCache<K, V> {
      * @param batchLoader function that loads entities for the missing identifiers
      * @return map of identifier to entity for all found entities
      */
-    public Map<K, V> getAllOrLoad(
-        final Collection<K> ids,
-        final Function<Collection<K>, Collection<V>> batchLoader
-    ) {
-        Objects.requireNonNull(batchLoader, "batchLoader");
-
+    public Map<K, V> getAllOrLoad(final Collection<K> ids, @NonNull final Function<Collection<K>, Collection<V>> batchLoader) {
         if (ids == null || ids.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        final Map<K, V> result = new HashMap<>(ids.size());
+        final Map<K, V> result = HashMap.newHashMap(ids.size());
+        final List<K> missing = partitionCachedAndMissing(ids, result);
+        if (!missing.isEmpty()) {
+            loadAndCacheMissing(missing, batchLoader, result);
+        }
+
+        return result;
+    }
+
+    private List<K> partitionCachedAndMissing(final Collection<K> ids, final Map<K, V> result) {
         final List<K> missing = new ArrayList<>();
 
-        for (K id : ids) {
-            V cached = cache.get(id);
+        for (final K id : ids) {
+            final V cached = cache.get(id);
             if (cached != null) {
                 result.put(id, cached);
             } else {
@@ -154,24 +160,7 @@ public abstract class RequestScopedCache<K, V> {
             }
         }
 
-        if (!missing.isEmpty()) {
-            final Collection<V> loaded = batchLoader.apply(missing);
-            if (loaded != null && !loaded.isEmpty()) {
-                for (V entity : loaded) {
-                    if (entity == null) {
-                        continue;
-                    }
-
-                    K id = getId(entity);
-                    if (id != null) {
-                        cache.put(id, entity);
-                        result.put(id, entity);
-                    }
-                }
-            }
-        }
-
-        return result;
+        return missing;
     }
 
     /**
@@ -210,5 +199,28 @@ public abstract class RequestScopedCache<K, V> {
      */
     public V remove(final K id) {
         return cache.remove(id);
+    }
+
+    private void loadAndCacheMissing(final List<K> missing, final Function<Collection<K>, Collection<V>> loader, final Map<K, V> result) {
+        final Collection<V> loaded = loader.apply(missing);
+        if (loaded == null || loaded.isEmpty()) {
+            return;
+        }
+
+        for (final V entity : loaded) {
+            cacheAndAddToResult(entity, result);
+        }
+    }
+
+    private void cacheAndAddToResult(final V entity, final Map<K, V> result) {
+        if (entity == null) {
+            return;
+        }
+
+        final K id = getId(entity);
+        if (id != null) {
+            cache.put(id, entity);
+            result.put(id, entity);
+        }
     }
 }

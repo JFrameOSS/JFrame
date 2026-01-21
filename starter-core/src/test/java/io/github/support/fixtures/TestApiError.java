@@ -1,4 +1,4 @@
-package io.github.support;
+package io.github.support.fixtures;
 
 import io.github.jframe.exception.ApiError;
 
