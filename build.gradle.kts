@@ -1,5 +1,6 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import org.cyclonedx.Version
+import org.cyclonedx.gradle.CyclonedxAggregateTask
 import org.cyclonedx.gradle.CyclonedxDirectTask
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.springframework.boot.gradle.tasks.bundling.BootJar
@@ -42,7 +43,6 @@ subprojects {
     apply(plugin = "io.freefair.lombok")
     apply(plugin = "com.diffplug.spotless")
     apply(plugin = "ru.vyarus.quality")
-    apply(plugin = "org.cyclonedx.bom")
     apply(plugin = "com.github.spotbugs")
     apply(plugin = "maven-publish")
     apply(plugin = "signing")
@@ -132,20 +132,6 @@ subprojects {
             val replace = mapOf("copyright" to Calendar.getInstance().get(YEAR), "version" to rootProject.version)
             expand(replace)
         }
-    }
-
-    tasks.named<CyclonedxDirectTask>("cyclonedxDirectBom") {
-        projectType = org.cyclonedx.model.Component.Type.LIBRARY
-        schemaVersion = Version.VERSION_16
-        componentName = project.name
-        componentVersion = project.version.toString()
-        skipConfigs = listOf(".*test.*", ".*Test.*")
-        jsonOutput = project.file("build/reports/sbom/${project.name}-sbom.json")
-        xmlOutput = project.file("build/reports/sbom/${project.name}-sbom.xml")
-
-        includeBomSerialNumber = true
-        includeLicenseText = true
-        includeMetadataResolution = true
     }
 
     tasks.withType<Test> {
@@ -256,6 +242,35 @@ subprojects {
             sign(extensions.getByType<PublishingExtension>().publications["java"])
         }
     }
+}
+
+// =============== CYCLONEDX SBOM CONFIGURATION =================
+// Configure per-project SBOM generation for all projects (root + subprojects)
+allprojects {
+    tasks.named<CyclonedxDirectTask>("cyclonedxDirectBom") {
+        projectType = org.cyclonedx.model.Component.Type.LIBRARY
+        schemaVersion = Version.VERSION_16
+        componentName = project.name
+        componentVersion = project.version.toString()
+        skipConfigs = listOf(".*test.*", ".*Test.*")
+        jsonOutput = project.file("build/reports/sbom/${project.name}-sbom.json")
+        xmlOutput = project.file("build/reports/sbom/${project.name}-sbom.xml")
+
+        includeBomSerialNumber = true
+        includeLicenseText = true
+        includeMetadataResolution = true
+    }
+}
+
+// Configure aggregated SBOM (combines all subprojects into single SBOM)
+tasks.named<CyclonedxAggregateTask>("cyclonedxBom") {
+    projectType = org.cyclonedx.model.Component.Type.LIBRARY
+    schemaVersion = Version.VERSION_16
+    componentName = rootProject.name
+    componentVersion = rootProject.version.toString()
+
+    includeBomSerialNumber = true
+    includeLicenseText = true
 }
 
 // =============== OPTIONAL FUNCTIONS / TASKS =================
