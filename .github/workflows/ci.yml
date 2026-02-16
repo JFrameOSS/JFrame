@@ -48,8 +48,30 @@ jobs:
           echo "=== Starting clean build ==="
           echo "Branch: ${GITHUB_REF#refs/heads/}"
           echo "Commit: ${GITHUB_SHA::7}"
-          ./gradlew clean build
+          ./gradlew clean build cyclonedxBom
           echo "=== Build completed successfully ==="
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            **/build/test-results/test/*.xml
+            **/build/reports/tests/test/
+          retention-days: 30
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: sbom
+          path: |
+            **/build/reports/sbom/*.json
+            **/build/reports/sbom/*.xml
+            build/reports/cyclonedx/bom.json
+            build/reports/cyclonedx/bom.xml
+          retention-days: 90
 
   publish:
     runs-on: ubuntu-latest
@@ -96,8 +118,30 @@ jobs:
       - name: Build
         run: |
           echo "=== Building release ${{ github.ref_name }} ==="
-          ./gradlew clean build
+          ./gradlew clean build cyclonedxBom
           echo "=== Build completed successfully ==="
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-test-results
+          path: |
+            **/build/test-results/test/*.xml
+            **/build/reports/tests/test/
+          retention-days: 90
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: release-sbom
+          path: |
+            **/build/reports/sbom/*.json
+            **/build/reports/sbom/*.xml
+            build/reports/cyclonedx/bom.json
+            build/reports/cyclonedx/bom.xml
+          retention-days: 90
 
       - name: Publish to Maven Central
         run: |
