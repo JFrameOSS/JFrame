@@ -112,9 +112,9 @@ subprojects {
         logging.captureStandardOutput(LogLevel.INFO)
     }
 
-    tasks.getByName<BootJar>("bootJar") {
+    tasks.findByName("bootJar")?.let {
         // Disable bootJar (they should be libraries, not applications)
-        enabled = false
+        (it as BootJar).enabled = false
     }
 
     tasks.getByName<Jar>("jar") {

@@ -4,6 +4,8 @@ fun retrieve(property: String): String =
         ?: throw IllegalStateException("Property $property not found")
 
 dependencies {
+    api(project(":jframe-core"))
+
     // ======= ANNOTATION PROCESSORS =======
     annotationProcessor("org.mapstruct", "mapstruct-processor", retrieve("mapStructVersion"))
     annotationProcessor("org.springframework.boot", "spring-boot-configuration-processor")
@@ -16,11 +18,6 @@ dependencies {
     api("org.springdoc", "springdoc-openapi-starter-webmvc-ui", retrieve("springdocVersion"))
 
     api("net.logstash.logback", "logstash-logback-encoder", retrieve("logstashEncoderVersion"))
-    api("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
-
-    api("commons-io", "commons-io", retrieve("commonsIoVersion"))
-    api("org.apache.commons", "commons-collections4", retrieve("commonsCollectionVersion"))
-    api("org.apache.commons", "commons-lang3", retrieve("commonsLangVersion"))
 
     // ======= OTHER DEPENDENCIES =======
     implementation("org.mapstruct","mapstruct", retrieve("mapStructVersion"))

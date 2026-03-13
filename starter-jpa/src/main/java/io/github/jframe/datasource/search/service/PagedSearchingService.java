@@ -59,9 +59,10 @@ public abstract class PagedSearchingService {
      */
     protected <T extends PageableItem> Page<T> searchPage(final SortablePageInput input,
         final AbstractSortSearchMetaData metaData,
-        final Specification<T> searchSpecification,
+        final JpaSearchSpecification<T> searchSpecification,
         final JpaSpecificationExecutor<T> repository) {
         final Pageable page = PageRequest.of(input.getPageNumber(), input.getPageSize(), metaData.toSort(input.getSortOrder()));
-        return repository.findAll(searchSpecification, page);
+        final Specification<T> springSpec = searchSpecification::toPredicate;
+        return repository.findAll(springSpec, page);
     }
 }

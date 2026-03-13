@@ -1,5 +1,6 @@
 rootProject.name = "jframe"
 val modules = arrayOf(
+    "jframe-core",
     "starter-core",
     "starter-otlp",
     "starter-jpa"

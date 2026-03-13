@@ -12,6 +12,7 @@ import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
+import io.github.jframe.http.HttpStatusCode;
 import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;
 import io.github.support.UnitTest;
@@ -113,7 +114,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
     @DisplayName("Should handle HttpException with custom status code")
     public void shouldHandleHttpExceptionWithCustomStatus() {
         // Given: An HttpException with NOT_FOUND status
-        final HttpException exception = new HttpException(HttpStatus.NOT_FOUND);
+        final HttpException exception = new HttpException(HttpStatusCode.NOT_FOUND);
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.NOT_FOUND), eq(webRequest)))
             .thenReturn(mockApiErrorResponse);
 
