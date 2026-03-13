@@ -10,6 +10,7 @@ import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
+import io.github.jframe.http.SpringHttpStatus;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -77,7 +78,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         )
     )
     public ResponseEntity<ErrorResponseResource> handleHttpException(final HttpException exception, final WebRequest request) {
-        final HttpStatus status = HttpStatus.valueOf(exception.getHttpStatus().getCode());
+        final HttpStatus status = SpringHttpStatus.toSpringHttpStatus(exception.getHttpStatus());
         return ResponseEntity
             .status(status)
             .contentType(APPLICATION_JSON)
