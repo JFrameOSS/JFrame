@@ -9,19 +9,19 @@ Add JFrame modules to your Spring Boot project:
 ```gradle
 dependencies {
     // Core utilities and application properties
-    implementation 'io.github.jframe:starter-core:1.0.0'
+    implementation 'io.github.jframe:jframe-spring-core:1.0.0'
 
-    // JPA utilities (includes starter-core)
-    implementation 'io.github.jframe:starter-jpa:1.0.0'
+    // JPA utilities (includes jframe-spring-core)
+    implementation 'io.github.jframe:jframe-spring-jpa:1.0.0'
 
-    // OpenTelemetry integration (includes starter-core)
-    implementation 'io.github.jframe:starter-otlp:1.0.0'
+    // OpenTelemetry integration (includes jframe-spring-core)
+    implementation 'io.github.jframe:jframe-spring-otlp:1.0.0'
 }
 ```
 
 ## Module Overview
 
-### [starter-core](./starter-core.md)
+### [jframe-spring-core](./jframe-spring-core.md)
 Core utilities, exception handling, logging, and validation.
 
 **Provides:**
@@ -31,7 +31,7 @@ Core utilities, exception handling, logging, and validation.
 - Validation framework
 - Utilities (JSON, MapStruct, converters)
 
-### [starter-jpa](./starter-jpa.md)
+### [jframe-spring-jpa](./jframe-spring-jpa.md)
 JPA enhancements for database operations.
 
 **Provides:**
@@ -39,7 +39,7 @@ JPA enhancements for database operations.
 - Standardized pagination
 - Database query monitoring
 
-### [starter-otlp](./starter-otlp.md)
+### [jframe-spring-otlp](./jframe-spring-otlp.md)
 OpenTelemetry observability.
 
 **Provides:**
@@ -86,9 +86,9 @@ See individual module documentation for complete configuration options.
 
 ```
 jframe/
-├── starter-core/          # Core utilities
-├── starter-jpa/           # JPA enhancements
-├── starter-otlp/          # Observability
+├── jframe-spring-core/    # Core utilities
+├── jframe-spring-jpa/     # JPA enhancements
+├── jframe-spring-otlp/    # Observability
 └── src/
     ├── docs/              # Documentation
     ├── dist/              # Distribution files
@@ -98,9 +98,9 @@ jframe/
 ## Documentation
 
 ### Modules
-- [starter-core](./starter-core.md) - Core utilities and shared components
-- [starter-jpa](./starter-jpa.md) - JPA and database features
-- [starter-otlp](./starter-otlp.md) - OpenTelemetry integration
+- [jframe-spring-core](./jframe-spring-core.md) - Core utilities and shared components
+- [jframe-spring-jpa](./jframe-spring-jpa.md) - JPA and database features
+- [jframe-spring-otlp](./jframe-spring-otlp.md) - OpenTelemetry integration
 
 ### Features
 - [Exception Handling](./core/exception-handling.md) - Hierarchical exceptions

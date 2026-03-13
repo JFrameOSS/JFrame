@@ -49,7 +49,7 @@ subprojects {
     apply(plugin = "com.github.ben-manes.versions")
     apply(plugin = "project-report")
 
-    if (project.name.startsWith("starter-")) {
+    if (project.name.startsWith("jframe-spring-")) {
         apply(plugin = "org.springframework.boot")
         apply(plugin = "io.spring.dependency-management")
     }
@@ -69,7 +69,7 @@ subprojects {
     }
 
     dependencies {
-        if (project.name.startsWith("starter-")) {
+        if (project.name.startsWith("jframe-spring-")) {
             annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
             compileOnly("org.springframework.boot:spring-boot-configuration-processor")
             compileOnly("org.springframework.boot:spring-boot-starter-web")

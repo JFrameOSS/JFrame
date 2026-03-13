@@ -1,10 +1,10 @@
-description = "JFrame OpenTelemetry Starter - Provides OpenTelemetry integration with custom tracing, logging, and monitoring capabilities"
+description = "JFrame Spring OpenTelemetry - Provides OpenTelemetry integration with custom tracing, logging, and monitoring capabilities"
 fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")
 
 dependencies {
-    api(project(":starter-core"))
+    api(project(":jframe-spring-core"))
 
     // ======= NECESSARY SPRING DEPENDENCIES =======
     api("org.springframework.boot", "spring-boot-starter-web")

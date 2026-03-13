@@ -347,4 +347,4 @@ public class PaymentException extends ApiException {
 
 - [Validation Framework](./validation.md)
 - [Logging Framework](./logging.md)
-- [starter-core](../starter-core.md)
+- [jframe-spring-core](../jframe-spring-core.md)

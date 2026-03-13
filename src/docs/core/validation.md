@@ -358,4 +358,4 @@ public class OrderValidator implements Validator<Order> {
 
 - [Exception Handling](./exception-handling.md)
 - [Logging Framework](./logging.md)
-- [starter-core](../starter-core.md)
+- [jframe-spring-core](../jframe-spring-core.md)

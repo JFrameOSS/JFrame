@@ -22,12 +22,12 @@ High-level overview of JFrame architecture, design principles, and module intera
 ## Module Dependencies
 
 ```
-starter-otlp ──┐
-               ├─► starter-core (foundation)
-starter-jpa ───┘
+jframe-spring-otlp ──┐
+                     ├─► jframe-spring-core (foundation)
+jframe-spring-jpa ───┘
 ```
 
-### starter-core (Foundation)
+### jframe-spring-core (Foundation)
 **Role:** Core utilities and shared configuration for all modules
 
 **Responsibilities:**
@@ -45,7 +45,7 @@ starter-jpa ───┘
 - Used by other modules for service identification
 - Minimal external dependencies
 
-### starter-jpa (Data Layer)
+### jframe-spring-jpa (Data Layer)
 **Role:** Enhanced JPA capabilities for database operations
 
 **Responsibilities:**
@@ -53,9 +53,9 @@ starter-jpa ───┘
 - Standardized pagination responses
 - Database query monitoring
 
-**Dependencies:** Spring Data JPA, starter-core
+**Dependencies:** Spring Data JPA, jframe-spring-core
 
-### starter-otlp (Observability)
+### jframe-spring-otlp (Observability)
 **Role:** Comprehensive observability and monitoring
 
 **Responsibilities:**
@@ -63,7 +63,7 @@ starter-jpa ───┘
 - Metrics collection
 - Auto-instrumentation
 
-**Dependencies:** OpenTelemetry stack, starter-core
+**Dependencies:** OpenTelemetry stack, jframe-spring-core
 
 **Key Features:**
 - Uses `ApplicationProperties` for service naming
@@ -73,19 +73,19 @@ starter-jpa ───┘
 
 ### Centralized Configuration
 
-All JFrame properties defined in `starter-core/src/main/resources/jframe-properties.yml`:
+All JFrame properties defined in `jframe-spring-core/src/main/resources/jframe-properties.yml`:
 
 ```yaml
 jframe:
-  application:        # ApplicationProperties (starter-core)
+  application:        # ApplicationProperties (jframe-spring-core)
     name: "--- UNSET ---"
     version: "--- UNSET ---"
     environment: "dev"
 
-  logging:            # LoggingProperties (starter-core)
+  logging:            # LoggingProperties (jframe-spring-core)
     disabled: false
 
-  otlp:               # OpenTelemetryProperties (starter-otlp)
+  otlp:               # OpenTelemetryProperties (jframe-spring-otlp)
     disabled: true
     url: "http://localhost:4318"
 ```
@@ -95,7 +95,7 @@ jframe:
 Modules can reference each other's properties:
 
 ```yaml
-# starter-otlp uses ApplicationProperties
+# jframe-spring-otlp uses ApplicationProperties
 jframe:
   otlp:
     service-name: "${jframe.application.name}"
@@ -105,8 +105,8 @@ jframe:
 
 Each module provides Spring Boot auto-configuration:
 
-- `CoreAutoConfiguration` (starter-core) - Registers properties, filters, handlers
-- `OpenTelemetryAutoConfiguration` (starter-otlp) - Registers OTLP configuration
+- `CoreAutoConfiguration` (jframe-spring-core) - Registers properties, filters, handlers
+- `OpenTelemetryAutoConfiguration` (jframe-spring-otlp) - Registers OTLP configuration
 
 **Discovery:** `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
 
@@ -139,10 +139,10 @@ Each module provides Spring Boot auto-configuration:
 ## Cross-Cutting Concerns
 
 ### Logging
-- HTTP request/response logging (starter-core)
+- HTTP request/response logging (jframe-spring-core)
 - Correlation IDs for request tracking
 - Structured logging for Kibana/ELK
-- OpenTelemetry trace correlation (starter-otlp)
+- OpenTelemetry trace correlation (jframe-spring-otlp)
 
 ### Error Handling
 - Consistent error response formats
@@ -226,6 +226,6 @@ public class UserCache extends RequestScopedCache<Long, User> {
 
 ## See Also
 
-- [starter-core](./starter-core.md)
-- [starter-jpa](./starter-jpa.md)
-- [starter-otlp](./starter-otlp.md)
+- [jframe-spring-core](./jframe-spring-core.md)
+- [jframe-spring-jpa](./jframe-spring-jpa.md)
+- [jframe-spring-otlp](./jframe-spring-otlp.md)

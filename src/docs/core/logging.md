@@ -283,8 +283,8 @@ Uses wrapper classes for multiple reads without performance impact:
 
 ## Integration
 
-### With starter-otlp
-When using `starter-otlp`, logging is enhanced with:
+### With jframe-spring-otlp
+When using `jframe-spring-otlp`, logging is enhanced with:
 - Trace ID propagation to logs
 - Span ID correlation
 - Custom spans for filter execution
@@ -294,5 +294,5 @@ When using `starter-otlp`, logging is enhanced with:
 
 - [Exception Handling](./exception-handling.md)
 - [Validation Framework](./validation.md)
-- [starter-core](../starter-core.md)
-- [starter-otlp](../starter-otlp.md)
+- [jframe-spring-core](../jframe-spring-core.md)
+- [jframe-spring-otlp](../jframe-spring-otlp.md)

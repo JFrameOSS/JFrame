@@ -1,9 +1,9 @@
 rootProject.name = "jframe"
 val modules = arrayOf(
     "jframe-core",
-    "starter-core",
-    "starter-otlp",
-    "starter-jpa"
+    "jframe-spring-core",
+    "jframe-spring-otlp",
+    "jframe-spring-jpa"
 )
 modules.forEach { name -> include(name)}
 

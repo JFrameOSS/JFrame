@@ -221,7 +221,7 @@ Create a test project:
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:starter-core:0.1.0")
+    implementation("io.github.jframeoss:jframe-spring-core:0.1.0")
 }
 ```
 

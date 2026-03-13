@@ -9,7 +9,7 @@ The `RequestScopedCache<K, V>` abstract class provides a thread-safe, request-sc
 ## Location
 
 ```
-starter-core/src/main/java/io/github/jframe/cache/
+jframe-spring-core/src/main/java/io/github/jframe/cache/
 └── RequestScopedCache.java    # Abstract base class for entity caching
 ```
 
@@ -247,6 +247,6 @@ public class InvoiceService {
 
 ## See Also
 
-- [starter-core](../starter-core.md)
+- [jframe-spring-core](../jframe-spring-core.md)
 - [Exception Handling](./exception-handling.md)
 - [Validation Framework](./validation.md)

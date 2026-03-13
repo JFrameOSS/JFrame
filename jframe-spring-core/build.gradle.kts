@@ -1,4 +1,4 @@
-description = "JFrame Core - Provides core utilities and application properties for the JFrame"
+description = "JFrame Spring Core - Provides core utilities and application properties for the JFrame"
 fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")

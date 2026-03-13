@@ -49,13 +49,13 @@ JFrame is a comprehensive Java framework providing enterprise-grade utilities, c
 ```kotlin
 dependencies {
     // Core utilities and shared configurations
-    implementation("io.github.jframeoss:starter-core:0.10.0-SNAPSHOT")
+    implementation("io.github.jframeoss:jframe-spring-core:0.10.0-SNAPSHOT")
 
     // JPA enhancements (optional)
-    implementation("io.github.jframeoss:starter-jpa:0.10.0-SNAPSHOT")
+    implementation("io.github.jframeoss:jframe-spring-jpa:0.10.0-SNAPSHOT")
 
     // OpenTelemetry integration (optional)
-    implementation("io.github.jframeoss:starter-otlp:0.10.0-SNAPSHOT")
+    implementation("io.github.jframeoss:jframe-spring-otlp:0.10.0-SNAPSHOT")
 }
 ```
 
@@ -66,21 +66,21 @@ dependencies {
     <!-- Core utilities and shared configurations -->
     <dependency>
         <groupId>io.github.jframeoss</groupId>
-        <artifactId>starter-core</artifactId>
+        <artifactId>jframe-spring-core</artifactId>
         <version>0.10.0-SNAPSHOT</version>
     </dependency>
 
     <!-- JPA enhancements (optional) -->
     <dependency>
         <groupId>io.github.jframeoss</groupId>
-        <artifactId>starter-jpa</artifactId>
+        <artifactId>jframe-spring-jpa</artifactId>
         <version>0.10.0-SNAPSHOT</version>
     </dependency>
 
     <!-- OpenTelemetry integration (optional) -->
     <dependency>
         <groupId>io.github.jframeoss</groupId>
-        <artifactId>starter-otlp</artifactId>
+        <artifactId>jframe-spring-otlp</artifactId>
         <version>0.10.0-SNAPSHOT</version>
     </dependency>
 </dependencies>
@@ -109,9 +109,9 @@ JFrame is organized into focused, reusable modules:
 
 | Module | Description | Documentation |
 |--------|-------------|---------------|
-| **starter-core** | Core utilities, JSON processing, and shared application properties | [📖 Documentation](./src/docs/starter-core.md) |
-| **starter-jpa** | JPA enhancements including advanced search, pagination, and query logging | [📖 Documentation](./src/docs/starter-jpa.md) |
-| **starter-otlp** | OpenTelemetry integration for distributed tracing and observability | [📖 Documentation](./src/docs/starter-otlp.md) |
+| **jframe-spring-core** | Core utilities, JSON processing, and shared application properties | [📖 Documentation](./src/docs/jframe-spring-core.md) |
+| **jframe-spring-jpa** | JPA enhancements including advanced search, pagination, and query logging | [📖 Documentation](./src/docs/jframe-spring-jpa.md) |
+| **jframe-spring-otlp** | OpenTelemetry integration for distributed tracing and observability | [📖 Documentation](./src/docs/jframe-spring-otlp.md) |
 
 ### CI/CD & Automation
 
@@ -141,9 +141,9 @@ cd JFrame
 
 ```
 jframe/
-├── starter-core/          # Core utilities and shared properties
-├── starter-jpa/           # JPA enhancements and search framework
-├── starter-otlp/          # OpenTelemetry integration
+├── jframe-spring-core/    # Core utilities and shared properties
+├── jframe-spring-jpa/     # JPA enhancements and search framework
+├── jframe-spring-otlp/    # OpenTelemetry integration
 ├── src/
 │   ├── docs/             # Module documentation
 │   ├── quality/          # Code quality configurations

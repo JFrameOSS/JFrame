@@ -1,11 +1,11 @@
-# starter-otlp
+# jframe-spring-otlp
 
 OpenTelemetry integration providing distributed tracing, metrics collection, and observability for Spring Boot applications.
 
 ## Location
 
 ```
-starter-otlp/src/main/java/io/github/jframe/
+jframe-spring-otlp/src/main/java/io/github/jframe/
 ├── autoconfigure/          # Auto-configuration
 │   ├── properties/         # OpenTelemetryProperties
 │   └── OpenTelemetryAutoConfiguration.java
@@ -89,7 +89,7 @@ public class OrderService {
 | Spring Boot Web/WebFlux | Web application instrumentation |
 | Spring Boot AOP | Aspect-oriented tracing |
 | Apache HttpClient 5 | HTTP client instrumentation |
-| starter-core | Foundation (ApplicationProperties, logging) |
+| jframe-spring-core | Foundation (ApplicationProperties, logging) |
 
 ## Configuration
 
@@ -272,12 +272,12 @@ try {
 
 ## Integration
 
-### With starter-core
+### With jframe-spring-core
 - Uses `ApplicationProperties` for service naming in traces
 - Inherits `LoggingProperties` configuration
 - Trace correlation in exception responses
 
-### With starter-jpa
+### With jframe-spring-jpa
 - Automatic database query instrumentation
 - Search operation tracing
 - Query performance monitoring
@@ -293,5 +293,5 @@ try {
 
 ## See Also
 
-- [starter-core](./starter-core.md)
-- [starter-jpa](./starter-jpa.md)
+- [jframe-spring-core](./jframe-spring-core.md)
+- [jframe-spring-jpa](./jframe-spring-jpa.md)

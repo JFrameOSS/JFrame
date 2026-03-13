@@ -1,11 +1,11 @@
-# starter-jpa
+# jframe-spring-jpa
 
 JPA enhancements for database operations, dynamic search, pagination, and query monitoring.
 
 ## Location
 
 ```
-starter-jpa/src/main/java/io/github/jframe/datasource/
+jframe-spring-jpa/src/main/java/io/github/jframe/datasource/
 ├── config/                 # Datasource configuration
 │   └── DatasourceProxyConfiguration.java
 ├── mapper/                 # Result mappers
@@ -133,7 +133,7 @@ Automatic query logging and performance monitoring via datasource-proxy.
 | Spring Boot JDBC | Database connectivity |
 | datasource-proxy | Query logging and monitoring |
 | Commons IO/Lang3/Collections | Utilities |
-| starter-core | Foundation (ApplicationProperties, utilities) |
+| jframe-spring-core | Foundation (ApplicationProperties, utilities) |
 
 ## Configuration
 
@@ -234,17 +234,17 @@ public class UserController {
 
 ## Integration
 
-### With starter-core
+### With jframe-spring-core
 - Uses `ObjectMappers` for JSON processing
 - Leverages shared MapStruct configurations
 - Inherits `ApplicationProperties`
 
-### With starter-otlp
+### With jframe-spring-otlp
 - Automatic database operation tracing
 - Query performance metrics
 - Span creation for repository methods
 
 ## See Also
 
-- [starter-core](./starter-core.md)
-- [starter-otlp](./starter-otlp.md)
+- [jframe-spring-core](./jframe-spring-core.md)
+- [jframe-spring-otlp](./jframe-spring-otlp.md)

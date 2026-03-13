@@ -1,11 +1,11 @@
-# starter-core
+# jframe-spring-core
 
 Foundation module providing core utilities, exception handling, logging, validation, caching, and shared configuration.
 
 ## Location
 
 ```
-starter-core/src/main/java/io/github/jframe/
+jframe-spring-core/src/main/java/io/github/jframe/
 ├── autoconfigure/          # Auto-configuration and properties
 │   └── properties/         # ApplicationProperties, LoggingProperties
 ├── cache/                  # Request-scoped caching infrastructure
@@ -245,5 +245,5 @@ jframe:
 - [Logging Framework](./core/logging.md)
 - [Validation Framework](./core/validation.md)
 - [Request-Scoped Caching](./core/caching.md)
-- [starter-jpa](./starter-jpa.md)
-- [starter-otlp](./starter-otlp.md)
+- [jframe-spring-jpa](./jframe-spring-jpa.md)
+- [jframe-spring-otlp](./jframe-spring-otlp.md)
