@@ -1,0 +1,18 @@
+[
+  {
+    "name": "empty_required_fields",
+    "hasErrors": true,
+    "errors": [
+      {"field": "field1", "code": "REQUIRED"},
+      {"field": "field2", "code": "REQUIRED"}
+    ]
+  },
+  {
+    "name": "invalid_format",
+    "hasErrors": true,
+    "errors": [
+      {"field": "email", "code": "INVALID_FORMAT"},
+      {"field": "age", "code": "INVALID_VALUE"}
+    ]
+  }
+]

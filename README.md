@@ -2,11 +2,12 @@
 
 # JFrame
 
-**A modern Java framework for building enterprise-grade Spring Boot applications**
+**A modern Java framework for building enterprise-grade Spring Boot and Quarkus applications**
 
 [![GitHub stars](https://img.shields.io/github/stars/JFrameOSS/JFrame?style=social)](https://github.com/JFrameOSS/JFrame/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Spring Boot](https://img.shields.io/badge/spring--boot-3.5.3-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/quarkus-3.x-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
 [![Java](https://img.shields.io/badge/java-25--temurin-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.java.net/projects/jdk/25/)
 [![Maven Central](https://img.shields.io/badge/maven--central--0.10.0-SNAPSHOT-blue.svg)](https://search.maven.org/search?q=g:io.github.jframeoss)
 
@@ -23,7 +24,7 @@
 
 ## 📋 Overview
 
-JFrame is a comprehensive Java framework providing enterprise-grade utilities, configurations, and best practices for building robust, scalable, and maintainable Spring Boot applications. It offers a modular architecture with specialized starters that enhance your development experience and accelerate application delivery.
+JFrame is a comprehensive Java framework providing enterprise-grade utilities, configurations, and best practices for building robust, scalable, and maintainable Spring Boot and Quarkus applications. It offers a modular architecture with specialized adapters for each framework, built on a shared framework-agnostic core that accelerates application delivery across both runtimes.
 
 ## ✨ Features
 
@@ -31,6 +32,7 @@ JFrame is a comprehensive Java framework providing enterprise-grade utilities, c
 - **JPA Enhancements**: Advanced search capabilities, pagination, and database query logging
 - **OpenTelemetry Integration**: Distributed tracing, metrics collection, and observability out-of-the-box
 - **Type-Safe Configuration**: Strongly-typed configuration properties with IDE autocomplete support
+- **Quarkus Support**: Full Quarkus adapter modules with JAX-RS, Panache, and CDI interceptor integration
 - **Zero Dependencies**: Minimal external dependencies, reducing potential conflicts
 - **Java 21+ Ready**: Built with modern Java features and best practices
 
@@ -39,12 +41,12 @@ JFrame is a comprehensive Java framework providing enterprise-grade utilities, c
 ### Prerequisites
 
 - Java 21 or higher (Temurin recommended)
-- Spring Boot 3.5.3+
+- Spring Boot 3.5.3+ **or** Quarkus 3.x
 - Gradle 9.x
 
 ### Installation
 
-#### Gradle (Kotlin DSL)
+#### Spring Boot — Gradle (Kotlin DSL)
 
 ```kotlin
 dependencies {
@@ -59,7 +61,7 @@ dependencies {
 }
 ```
 
-#### Maven
+#### Spring Boot — Maven
 
 ```xml
 <dependencies>
@@ -86,6 +88,48 @@ dependencies {
 </dependencies>
 ```
 
+#### Quarkus — Gradle (Kotlin DSL)
+
+```kotlin
+dependencies {
+    // Exception mappers and request logging
+    implementation("io.github.jframeoss:jframe-quarkus-core:0.10.0-SNAPSHOT")
+
+    // Panache search integration (optional)
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:0.10.0-SNAPSHOT")
+
+    // OpenTelemetry tracing (optional)
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:0.10.0-SNAPSHOT")
+}
+```
+
+#### Quarkus — Maven
+
+```xml
+<dependencies>
+    <!-- Exception mappers and request logging -->
+    <dependency>
+        <groupId>io.github.jframeoss</groupId>
+        <artifactId>jframe-quarkus-core</artifactId>
+        <version>0.10.0-SNAPSHOT</version>
+    </dependency>
+
+    <!-- Panache search integration (optional) -->
+    <dependency>
+        <groupId>io.github.jframeoss</groupId>
+        <artifactId>jframe-quarkus-jpa</artifactId>
+        <version>0.10.0-SNAPSHOT</version>
+    </dependency>
+
+    <!-- OpenTelemetry tracing (optional) -->
+    <dependency>
+        <groupId>io.github.jframeoss</groupId>
+        <artifactId>jframe-quarkus-otlp</artifactId>
+        <version>0.10.0-SNAPSHOT</version>
+    </dependency>
+</dependencies>
+```
+
 ### Basic Configuration
 
 Add to your `application.yml`:
@@ -107,11 +151,32 @@ JFrame is organized into focused, reusable modules:
 
 - **[Architecture Overview](./src/docs/architecture.md)** - Framework design and patterns
 
+#### Spring Boot Modules
+
 | Module | Description | Documentation |
 |--------|-------------|---------------|
 | **jframe-spring-core** | Core utilities, JSON processing, and shared application properties | [📖 Documentation](./src/docs/jframe-spring-core.md) |
 | **jframe-spring-jpa** | JPA enhancements including advanced search, pagination, and query logging | [📖 Documentation](./src/docs/jframe-spring-jpa.md) |
 | **jframe-spring-otlp** | OpenTelemetry integration for distributed tracing and observability | [📖 Documentation](./src/docs/jframe-spring-otlp.md) |
+
+#### Quarkus Modules
+
+| Module | Description | Documentation |
+|--------|-------------|---------------|
+| **jframe-quarkus-core** | JAX-RS exception mappers and request logging filters | [📖 Quarkus Guide](./docs/quarkus-guide.md) |
+| **jframe-quarkus-jpa** | Panache search integration and page mapping | [📖 Quarkus Guide](./docs/quarkus-guide.md) |
+| **jframe-quarkus-otlp** | OpenTelemetry tracing with CDI interceptors | [📖 Quarkus Guide](./docs/quarkus-guide.md) |
+
+#### Shared Core
+
+| Module | Description |
+|--------|-------------|
+| **jframe-core** | Framework-agnostic exceptions, validation, HTTP status, and search specs (transitive dependency) |
+
+### Guides
+
+- **[Migration Guide](./docs/migration-guide.md)** — Migrating from `jframe-starter-*` to `jframe-spring-*`
+- **[Quarkus Adoption Guide](./docs/quarkus-guide.md)** — Getting started with JFrame on Quarkus
 
 ### CI/CD & Automation
 
@@ -141,9 +206,17 @@ cd JFrame
 
 ```
 jframe/
-├── jframe-spring-core/    # Core utilities and shared properties
-├── jframe-spring-jpa/     # JPA enhancements and search framework
-├── jframe-spring-otlp/    # OpenTelemetry integration
+├── jframe-core/           # Framework-agnostic exceptions, validation, search specs
+├── jframe-spring-core/    # Spring Boot core utilities and shared properties
+├── jframe-spring-jpa/     # Spring Boot JPA enhancements and search framework
+├── jframe-spring-otlp/    # Spring Boot OpenTelemetry integration
+├── jframe-quarkus-core/   # Quarkus JAX-RS exception mappers and logging filters
+├── jframe-quarkus-jpa/    # Quarkus Panache search integration
+├── jframe-quarkus-otlp/   # Quarkus OpenTelemetry CDI interceptors
+├── jframe-tests-contract/ # Shared contract tests across frameworks
+├── jframe-tests-spring/   # Spring Boot integration tests
+├── jframe-tests-quarkus/  # Quarkus integration tests
+├── docs/                  # Guides (migration, Quarkus adoption)
 ├── src/
 │   ├── docs/             # Module documentation
 │   ├── quality/          # Code quality configurations

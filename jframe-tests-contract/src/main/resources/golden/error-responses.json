@@ -1,0 +1,32 @@
+[
+  {
+    "name": "bad_request",
+    "statusCode": 400,
+    "errorMessage": "Invalid input provided"
+  },
+  {
+    "name": "resource_not_found",
+    "statusCode": 404,
+    "errorMessage": "Entity with ID 42 not found"
+  },
+  {
+    "name": "unauthorized",
+    "statusCode": 401,
+    "errorMessage": "Access denied"
+  },
+  {
+    "name": "rate_limited",
+    "statusCode": 429,
+    "errorMessage": "Too many requests"
+  },
+  {
+    "name": "internal_server_error",
+    "statusCode": 500,
+    "errorMessage": "Unexpected error"
+  },
+  {
+    "name": "data_not_found",
+    "statusCode": 404,
+    "errorMessage": "Data not available"
+  }
+]

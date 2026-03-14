@@ -6,7 +6,10 @@ val modules = arrayOf(
     "jframe-spring-jpa",
     "jframe-quarkus-core",
     "jframe-quarkus-jpa",
-    "jframe-quarkus-otlp"
+    "jframe-quarkus-otlp",
+    "jframe-tests-contract",
+    "jframe-tests-spring",
+    "jframe-tests-quarkus"
 )
 modules.forEach { name -> include(name)}
 

@@ -1,0 +1,12 @@
+[
+  {
+    "name": "text_field_search",
+    "predicateGenerated": true,
+    "description": "Text search on 'name' field"
+  },
+  {
+    "name": "enum_field_search",
+    "predicateGenerated": true,
+    "description": "Enum search on 'status' field"
+  }
+]
