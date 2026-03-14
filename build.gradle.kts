@@ -54,15 +54,6 @@ subprojects {
         apply(plugin = "io.spring.dependency-management")
     }
 
-    if (project.name.startsWith("jframe-tests-")) {
-        tasks.withType<GenerateModuleMetadata> { enabled = false }
-        afterEvaluate {
-            tasks.findByName("javadocJar")?.enabled = false
-            tasks.findByName("sourcesJar")?.enabled = false
-            tasks.findByName("publishJavaPublicationToMavenLocalRepository")?.enabled = false
-        }
-    }
-
     java {
         withJavadocJar()
         withSourcesJar()
@@ -198,59 +189,57 @@ subprojects {
         codenarc = true
     }
 
-    if (!project.name.startsWith("jframe-tests-")) {
-        configure<PublishingExtension> {
-            publications {
-                create<MavenPublication>("java") {
-                    artifactId = project.name
-                    groupId = project.group.toString()
-                    version = project.version.toString()
+    configure<PublishingExtension> {
+        publications {
+            create<MavenPublication>("java") {
+                artifactId = project.name
+                groupId = project.group.toString()
+                version = project.version.toString()
 
-                    from(components["java"])
-                    pom {
-                        packaging = "jar"
-                        name.set("JFrame - " + project.name)
-                        description.set("JFrame - " + project.name)
+                from(components["java"])
+                pom {
+                    packaging = "jar"
+                    name.set("JFrame - " + project.name)
+                    description.set("JFrame - " + project.name)
+                    url.set(retrieve("url"))
+
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            name.set("Jordi Jaspers")
+                            email.set("jordijaspers@gmail.com")
+                        }
+                    }
+
+                    scm {
+                        connection.set("scm:git:git://github.com/JFrameOSS/JFrame.git")
+                        developerConnection.set("scm:git:ssh://github.com:JFrameOSS/JFrame.git")
                         url.set(retrieve("url"))
-
-                        licenses {
-                            license {
-                                name.set("The Apache License, Version 2.0")
-                                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                            }
-                        }
-
-                        developers {
-                            developer {
-                                name.set("Jordi Jaspers")
-                                email.set("jordijaspers@gmail.com")
-                            }
-                        }
-
-                        scm {
-                            connection.set("scm:git:git://github.com/JFrameOSS/JFrame.git")
-                            developerConnection.set("scm:git:ssh://github.com:JFrameOSS/JFrame.git")
-                            url.set(retrieve("url"))
-                        }
                     }
                 }
             }
-            repositories {
-                maven {
-                    name = "MavenLocal"
-                    url = uri(mavenLocal().url)
-                }
+        }
+        repositories {
+            maven {
+                name = "MavenLocal"
+                url = uri(mavenLocal().url)
             }
         }
+    }
 
-        // Standard Gradle signing
-        configure<SigningExtension> {
-            val signingKey = System.getenv("SIGNING_KEY")
-            val signingPassword = System.getenv("SIGNING_PASSWORD")
-            if (nonNull(signingKey) && nonNull(signingPassword)) {
-                useInMemoryPgpKeys(signingKey, signingPassword)
-                sign(extensions.getByType<PublishingExtension>().publications["java"])
-            }
+    // Standard Gradle signing
+    configure<SigningExtension> {
+        val signingKey = System.getenv("SIGNING_KEY")
+        val signingPassword = System.getenv("SIGNING_PASSWORD")
+        if (nonNull(signingKey) && nonNull(signingPassword)) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+            sign(extensions.getByType<PublishingExtension>().publications["java"])
         }
     }
 }
@@ -316,14 +305,14 @@ tasks.register("publishLocal") {
     group = "publishing"
     description = "Cleans and publishes all modules to the local Maven repository"
     dependsOn("clean", "cleanLocalMavenArtifacts")
-    subprojects.filter { !it.name.startsWith("jframe-tests-") }.forEach { subproject ->
+    subprojects.forEach { subproject ->
         dependsOn(":${subproject.name}:build")
         dependsOn(":${subproject.name}:publishToMavenLocal")
     }
 
     doLast {
         logger.lifecycle("📦 Published to local repository (~/.m2/repository) :")
-        subprojects.filter { !it.name.startsWith("jframe-tests-") }.forEach { logger.lifecycle("   ✓ ${it.artifactCoordinates()}") }
+        subprojects.forEach { logger.lifecycle("   ✓ ${it.artifactCoordinates()}") }
         logger.lifecycle("🎉 Successfully published all modules locally!")
     }
 }
@@ -337,13 +326,13 @@ tasks.register("publishMaven") {
         )
     }
 
-    subprojects.filter { !it.name.startsWith("jframe-tests-") }.forEach { subproject ->
+    subprojects.forEach { subproject ->
         dependsOn(":${subproject.name}:publish")
     }
 
     doLast {
         logger.lifecycle("📦 Published artifacts:")
-        subprojects.filter { !it.name.startsWith("jframe-tests-") }.forEach { logger.lifecycle("   ✓ ${it.artifactCoordinates()}") }
+        subprojects.forEach { logger.lifecycle("   ✓ ${it.artifactCoordinates()}") }
         logger.lifecycle("🎉 Successfully published all modules!")
     }
 }
@@ -365,7 +354,7 @@ nmcpAggregation {
         password = providers.environmentVariable("MAVEN_PASSWORD")
         publishingType = "AUTOMATIC"
     }
-    subprojects.filter { !it.name.startsWith("jframe-tests-") }.forEach { subproject ->
+    subprojects.forEach { subproject ->
         project(subproject.path)
     }
 }

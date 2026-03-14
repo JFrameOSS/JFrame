@@ -36,7 +36,7 @@ import static io.github.jframe.util.constants.Constants.Characters.PERCENTAGE;
  *
  * <p>This class implements the predicate-building logic without any Spring or Quarkus dependencies,
  * making it reusable across framework-specific subclasses. Framework-specific subclasses (e.g.,
- * {@code JpaSearchSpecification} in {@code jframe-spring-jpa} and {@code jframe-quarkus-jpa}) extend
+ * {@code JpaSearchSpecification} in {@code jframe-spring-jpa} and {@code PanacheSearchSpecification} in {@code jframe-quarkus-jpa}) extend
  * this class and implement the relevant framework's specification contract.
  *
  * @param <T> the entity type for which this specification can be applied

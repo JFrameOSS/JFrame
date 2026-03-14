@@ -206,22 +206,21 @@ cd JFrame
 
 ```
 jframe/
-├── jframe-core/           # Framework-agnostic exceptions, validation, search specs
-├── jframe-spring-core/    # Spring Boot core utilities and shared properties
-├── jframe-spring-jpa/     # Spring Boot JPA enhancements and search framework
-├── jframe-spring-otlp/    # Spring Boot OpenTelemetry integration
-├── jframe-quarkus-core/   # Quarkus JAX-RS exception mappers and logging filters
-├── jframe-quarkus-jpa/    # Quarkus Panache search integration
-├── jframe-quarkus-otlp/   # Quarkus OpenTelemetry CDI interceptors
-├── jframe-tests-contract/ # Shared contract tests across frameworks
-├── jframe-tests-spring/   # Spring Boot integration tests
-├── jframe-tests-quarkus/  # Quarkus integration tests
-├── docs/                  # Guides (migration, Quarkus adoption)
+├── jframe-core/              # Framework-agnostic exceptions, validation, search specs
+├── jframe-spring/
+│   ├── core/                 # Spring Boot core utilities and shared properties
+│   ├── jpa/                  # Spring Boot JPA enhancements and search framework
+│   └── otlp/                 # Spring Boot OpenTelemetry integration
+├── jframe-quarkus/
+│   ├── core/                 # Quarkus JAX-RS exception mappers and logging filters
+│   ├── jpa/                  # Quarkus Panache search integration
+│   └── otlp/                 # Quarkus OpenTelemetry CDI interceptors
+├── docs/                     # Guides (migration, Quarkus adoption)
 ├── src/
-│   ├── docs/             # Module documentation
-│   ├── quality/          # Code quality configurations
-│   └── dist/             # Distribution files
-└── gradle/               # Gradle wrapper and configurations
+│   ├── docs/                 # Module documentation
+│   ├── quality/              # Code quality configurations
+│   └── dist/                 # Distribution files
+└── gradle/                   # Gradle wrapper and configurations
 ```
 
 ## 🤝 Contributing

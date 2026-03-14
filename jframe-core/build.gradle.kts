@@ -10,8 +10,10 @@ dependencies {
     api("org.apache.commons", "commons-collections4", retrieve("commonsCollectionVersion"))
     api("commons-io", "commons-io", retrieve("commonsIoVersion"))
 
+    // Hamcrest is used in public API signatures (FieldRejection, ValidationResult)
+    api("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
+
     // ======= COMPILE-ONLY (provided by consumer) =======
-    compileOnly("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
     compileOnly("jakarta.persistence", "jakarta.persistence-api", retrieve("jakartaPersistenceVersion"))
     compileOnly("jakarta.annotation", "jakarta.annotation-api", retrieve("jakartaAnnotationVersion"))
     compileOnly("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
