@@ -17,12 +17,12 @@ dependencies {
     compileOnly("io.smallrye.config:smallrye-config-common:${retrieve("smallryeConfigVersion")}")
 
     // Quarkus CDI — compileOnly
-    compileOnly("jakarta.enterprise:jakarta.enterprise.cdi-api:4.1.0")
-    compileOnly("jakarta.interceptor:jakarta.interceptor-api:2.2.0")
-    compileOnly("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
+    compileOnly("jakarta.enterprise:jakarta.enterprise.cdi-api:${retrieve("jakartaCdiVersion")}")
+    compileOnly("jakarta.interceptor:jakarta.interceptor-api:${retrieve("jakartaInterceptorVersion")}")
+    compileOnly("jakarta.ws.rs:jakarta.ws.rs-api:${retrieve("jakartaWsrsVersion")}")
 
     // Security
-    compileOnly("io.quarkus:quarkus-security:3.20.3")
+    compileOnly("io.quarkus:quarkus-security:${retrieve("quarkusVersion")}")
 
     // Test dependencies
     testImplementation("io.smallrye.config:smallrye-config-core:${retrieve("smallryeConfigVersion")}")
@@ -31,10 +31,10 @@ dependencies {
     testImplementation("io.opentelemetry:opentelemetry-api")
     testImplementation("io.opentelemetry:opentelemetry-context")
     testImplementation("io.opentelemetry:opentelemetry-sdk-testing")
-    testImplementation("jakarta.enterprise:jakarta.enterprise.cdi-api:4.1.0")
-    testImplementation("jakarta.interceptor:jakarta.interceptor-api:2.2.0")
-    testImplementation("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
-    testImplementation("io.quarkus:quarkus-security:3.20.3")
+    testImplementation("jakarta.enterprise:jakarta.enterprise.cdi-api:${retrieve("jakartaCdiVersion")}")
+    testImplementation("jakarta.interceptor:jakarta.interceptor-api:${retrieve("jakartaInterceptorVersion")}")
+    testImplementation("jakarta.ws.rs:jakarta.ws.rs-api:${retrieve("jakartaWsrsVersion")}")
+    testImplementation("io.quarkus:quarkus-security:${retrieve("quarkusVersion")}")
     testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")
     testImplementation("org.mockito:mockito-core:${retrieve("mockitoVersion")}")
     testImplementation("org.mockito:mockito-junit-jupiter:${retrieve("mockitoVersion")}")

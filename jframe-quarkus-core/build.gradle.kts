@@ -8,19 +8,19 @@ dependencies {
     api(project(":jframe-core"))
 
     // Quarkus APIs — compileOnly (provided by consumer's Quarkus runtime)
-    compileOnly("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
+    compileOnly("jakarta.ws.rs:jakarta.ws.rs-api:${retrieve("jakartaWsrsVersion")}")
     compileOnly("org.slf4j:slf4j-api:${retrieve("slf4jVersion")}")
-    compileOnly("io.smallrye.config:smallrye-config-core:3.13.1")
+    compileOnly("io.smallrye.config:smallrye-config-core:${retrieve("smallryeConfigVersion")}")
 
     // Test dependencies
-    testImplementation("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
+    testImplementation("jakarta.ws.rs:jakarta.ws.rs-api:${retrieve("jakartaWsrsVersion")}")
     testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")
     testImplementation("org.mockito:mockito-core:${retrieve("mockitoVersion")}")
     testImplementation("org.mockito:mockito-junit-jupiter:${retrieve("mockitoVersion")}")
     testImplementation("org.hamcrest:hamcrest:${retrieve("hamcrestVersion")}")
     testImplementation("org.slf4j:slf4j-api:${retrieve("slf4jVersion")}")
     testImplementation("ch.qos.logback:logback-classic:${retrieve("logbackVersion")}")
-    testImplementation("io.smallrye.config:smallrye-config-core:3.13.1")
-    testRuntimeOnly("org.jboss.resteasy:resteasy-core:6.2.11.Final")
+    testImplementation("io.smallrye.config:smallrye-config-core:${retrieve("smallryeConfigVersion")}")
+    testRuntimeOnly("org.jboss.resteasy:resteasy-core:${retrieve("resteasyCoreVersion")}")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:${retrieve("junitVersion")}")
 }

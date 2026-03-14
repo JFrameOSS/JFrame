@@ -9,10 +9,10 @@ dependencies {
     testImplementation(project(":jframe-quarkus-core"))
 
     // JAX-RS API (needed to invoke mappers directly)
-    testImplementation("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
+    testImplementation("jakarta.ws.rs:jakarta.ws.rs-api:${retrieve("jakartaWsrsVersion")}")
 
     // RESTEasy core provides JAX-RS Response implementation at test runtime
-    testRuntimeOnly("org.jboss.resteasy:resteasy-core:6.2.11.Final")
+    testRuntimeOnly("org.jboss.resteasy:resteasy-core:${retrieve("resteasyCoreVersion")}")
 
     // Standard test deps
     testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")

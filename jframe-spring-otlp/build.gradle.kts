@@ -22,5 +22,4 @@ dependencies {
     compileOnly("org.apache.commons", "commons-lang3", retrieve("commonsLangVersion"))
     compileOnly("jakarta.servlet", "jakarta.servlet-api", retrieve("jakartaServletVersion"))
     compileOnly("org.aspectj", "aspectjweaver", retrieve("aspectjVersion"))
-    compileOnly("org.aspectj", "aspectjweaver", retrieve("aspectjVersion"))
 }

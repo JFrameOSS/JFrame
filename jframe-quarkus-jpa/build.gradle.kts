@@ -8,12 +8,12 @@ dependencies {
     api(project(":jframe-quarkus-core"))
 
     // Quarkus Panache API — compileOnly (provided by consumer)
-    compileOnly("io.quarkus:quarkus-hibernate-orm-panache:3.20.3")
+    compileOnly("io.quarkus:quarkus-hibernate-orm-panache:${retrieve("quarkusVersion")}")
     // Swagger annotations on jframe-core API — compileOnly (annotation types needed to compile against core classes)
     compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
 
     // Test dependencies
-    testImplementation("io.quarkus:quarkus-hibernate-orm-panache:3.20.3")
+    testImplementation("io.quarkus:quarkus-hibernate-orm-panache:${retrieve("quarkusVersion")}")
     testImplementation("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
     testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")
     testImplementation("org.mockito:mockito-core:${retrieve("mockitoVersion")}")

@@ -14,5 +14,5 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")
     testImplementation("org.hamcrest:hamcrest:${retrieve("hamcrestVersion")}")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:${retrieve("junitVersion")}")
 }
