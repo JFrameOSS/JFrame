@@ -19,22 +19,32 @@ import java.io.Serial;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import jakarta.annotation.Nonnull;
-import jakarta.persistence.criteria.*;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 import org.jspecify.annotations.NonNull;
 
 import static io.github.jframe.util.constants.Constants.Characters.PERCENTAGE;
 
 /**
- * Defines a search specification for a given domain model object.
+ * Framework-agnostic base class for building JPA search predicates from a list of {@link SearchCriterium}.
  *
- * @param <T> Domain model type for which the instantiated Search Specification can be used.
+ * <p>This class implements the predicate-building logic without any Spring or Quarkus dependencies,
+ * making it reusable across framework-specific subclasses. Framework-specific subclasses (e.g.,
+ * {@code JpaSearchSpecification} in {@code jframe-spring-jpa} and {@code jframe-quarkus-jpa}) extend
+ * this class and implement the relevant framework's specification contract.
+ *
+ * @param <T> the entity type for which this specification can be applied
  */
 @Slf4j
 @RequiredArgsConstructor
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-public class JpaSearchSpecification<T> implements SearchSpecification<T> {
+public class BaseSearchSpecification<T> implements SearchSpecification<T> {
 
     @Serial
     private static final long serialVersionUID = 4048263278292967348L;
@@ -44,6 +54,9 @@ public class JpaSearchSpecification<T> implements SearchSpecification<T> {
     /**
      * {@inheritDoc}
      *
+     * <p>Returns {@code cb.conjunction()} (a tautology predicate) when no criteria are present,
+     * ensuring that callers always receive a non-{@code null} predicate.
+     *
      * @param root    must not be {@literal null}.
      * @param query   can be {@literal null} to allow overrides that accept {@link jakarta.persistence.criteria.CriteriaDelete} which is an
      *                {@link jakarta.persistence.criteria.AbstractQuery} but no {@link CriteriaQuery}.
@@ -51,11 +64,11 @@ public class JpaSearchSpecification<T> implements SearchSpecification<T> {
      * @return a {@link Predicate} that can be used to filter the results of a query based on the provided search criteria.
      */
     @Override
-    public Predicate toPredicate(@Nonnull final Root<T> root,
+    public Predicate toPredicate(@NonNull final Root<T> root,
         @NonNull final CriteriaQuery<?> query,
-        @Nonnull final CriteriaBuilder builder) {
+        @NonNull final CriteriaBuilder builder) {
         if (searchCriteria == null || searchCriteria.isEmpty()) {
-            return null;
+            return builder.conjunction();
         }
 
         final List<Predicate> searchPredicates = new ArrayList<>();

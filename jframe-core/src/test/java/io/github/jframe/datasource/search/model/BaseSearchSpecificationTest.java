@@ -1,14 +1,28 @@
 package io.github.jframe.datasource.search.model;
 
 import io.github.jframe.datasource.search.SearchOperator;
-import io.github.jframe.datasource.search.fields.*;
+import io.github.jframe.datasource.search.fields.BooleanField;
+import io.github.jframe.datasource.search.fields.DateField;
+import io.github.jframe.datasource.search.fields.EnumField;
+import io.github.jframe.datasource.search.fields.FuzzyTextField;
+import io.github.jframe.datasource.search.fields.MultiColumnFuzzyField;
+import io.github.jframe.datasource.search.fields.MultiEnumField;
+import io.github.jframe.datasource.search.fields.MultiFuzzyField;
+import io.github.jframe.datasource.search.fields.MultiTextField;
+import io.github.jframe.datasource.search.fields.NumericField;
+import io.github.jframe.datasource.search.fields.TextField;
 import io.github.support.UnitTest;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
-import jakarta.persistence.criteria.*;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,11 +30,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @DisplayName("SearchSpecification - Search Fields")
-class JpaSearchSpecificationTest extends UnitTest {
+class BaseSearchSpecificationTest extends UnitTest {
 
     @Mock
     private Root<Object> root;
@@ -57,7 +76,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithBooleanField() {
         // Given: A BooleanField for the 'active' field with value 'true'
         final BooleanField field = new BooleanField("active", "true");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -72,7 +91,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithNumericField() {
         // Given: A NumericField for 'age' with value '25'
         final NumericField field = new NumericField("age", "25");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -87,7 +106,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithInverseNumericField() {
         // Given: A NumericField for 'age' with inverse value '!25'
         final NumericField field = new NumericField("age", "!25");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -105,7 +124,7 @@ class JpaSearchSpecificationTest extends UnitTest {
         final LocalDateTime now = LocalDateTime.now();
         final String nowStr = now.format(DateTimeFormatter.ISO_DATE_TIME);
         final DateField field = new DateField("createdAt", nowStr, null);
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -122,7 +141,7 @@ class JpaSearchSpecificationTest extends UnitTest {
         final LocalDateTime now = LocalDateTime.now();
         final String nowStr = now.format(DateTimeFormatter.ISO_DATE_TIME);
         final DateField field = new DateField("createdAt", null, nowStr);
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -137,7 +156,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithEnumField() {
         // Given: An EnumField for 'status' with value 'ACTIVE'
         final EnumField field = new EnumField("status", TestStatus.class, "ACTIVE");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -152,7 +171,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithInverseEnumField() {
         // Given: An EnumField for 'status' with inverse value '!ACTIVE'
         final EnumField field = new EnumField("status", TestStatus.class, "!ACTIVE");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -169,7 +188,7 @@ class JpaSearchSpecificationTest extends UnitTest {
         // Given: A MultiEnumField for 'status' with multiple enum values
         final List<String> enums = List.of("ACTIVE", "PENDING");
         final MultiEnumField field = new MultiEnumField("status", TestStatus.class, enums);
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -184,7 +203,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithTextField() {
         // Given: A TextField for 'description' with exact value 'test'
         final TextField field = new TextField("description", "test");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -199,7 +218,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithInverseTextField() {
         // Given: A TextField for 'description' with inverse value '!test'
         final TextField field = new TextField("description", "!test");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -216,7 +235,7 @@ class JpaSearchSpecificationTest extends UnitTest {
         // Given: A MultiTextField for 'category' with multiple text values
         final List<String> values = List.of("A", "B");
         final MultiTextField field = new MultiTextField("category", values);
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -231,7 +250,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithFuzzyTextField() {
         // Given: A FuzzyTextField for 'username' with value 'admin'
         final FuzzyTextField field = new FuzzyTextField("username", "admin");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -246,7 +265,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithMultiFuzzyField_AND() {
         // Given: A MultiFuzzyField for 'tags' with AND operator and two terms
         final MultiFuzzyField field = new MultiFuzzyField("tags", SearchOperator.AND, "tag1 tag2");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -262,7 +281,7 @@ class JpaSearchSpecificationTest extends UnitTest {
     void testToPredicate_WithMultiFuzzyField_OR() {
         // Given: A MultiFuzzyField for 'tags' with OR operator and two terms
         final MultiFuzzyField field = new MultiFuzzyField("tags", SearchOperator.OR, "tag1 tag2");
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         spec.toPredicate(root, query, cb);
@@ -280,7 +299,7 @@ class JpaSearchSpecificationTest extends UnitTest {
         final List<String> columns = List.of("firstName", "lastName");
         final String searchValue = "john doe";
         final MultiColumnFuzzyField field = new MultiColumnFuzzyField(columns, searchValue);
-        final JpaSearchSpecification<Object> spec = new JpaSearchSpecification<>(Collections.singletonList(field));
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
 
         // When: Building the predicate
         final Predicate result = spec.toPredicate(root, query, cb);

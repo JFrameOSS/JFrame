@@ -1,14 +1,13 @@
 package io.github.jframe.datasource.search.service;
 
+import io.github.jframe.datasource.search.JpaSearchSpecification;
 import io.github.jframe.datasource.search.model.AbstractSortSearchMetaData;
-import io.github.jframe.datasource.search.model.JpaSearchSpecification;
 import io.github.jframe.datasource.search.model.PageableItem;
 import io.github.jframe.datasource.search.model.input.SortablePageInput;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 /**
@@ -62,7 +61,6 @@ public abstract class PagedSearchingService {
         final JpaSearchSpecification<T> searchSpecification,
         final JpaSpecificationExecutor<T> repository) {
         final Pageable page = PageRequest.of(input.getPageNumber(), input.getPageSize(), metaData.toSort(input.getSortOrder()));
-        final Specification<T> springSpec = searchSpecification::toPredicate;
-        return repository.findAll(springSpec, page);
+        return repository.findAll(searchSpecification, page);
     }
 }

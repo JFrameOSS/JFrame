@@ -105,11 +105,25 @@ All existing imports continue to compile without modification.
 | Change Type | Details |
 |-------------|---------|
 | **Module artifact names** | `jframe-starter-*` → `jframe-spring-*` |
-| **API changes** | None — public API is identical |
+| **JpaSearchSpecification** | No longer implements Spring's `Specification<T>` — wrap with `SpringDataSearchSpecification` (see below) |
 | **Configuration changes** | None — same `jframe.*` properties |
 | **Package changes** | None — same `io.github.jframe.*` packages |
 
-The migration is purely a dependency coordinate update in your build file.
+### JpaSearchSpecification → SpringDataSearchSpecification
+
+`JpaSearchSpecification<T>` was moved to `jframe-core` and now implements the framework-agnostic `SearchSpecification<T>` instead of Spring's `Specification<T>`. To use it with Spring Data repositories, wrap it with `SpringDataSearchSpecification`:
+
+**Before:**
+```java
+final Specification<User> spec = new JpaSearchSpecification<>(criteria);
+```
+
+**After:**
+```java
+final Specification<User> spec = SpringDataSearchSpecification.of(new JpaSearchSpecification<>(criteria));
+```
+
+`SpringDataSearchSpecification` lives in `jframe-spring-jpa`.
 
 ---
 

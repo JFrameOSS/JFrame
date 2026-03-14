@@ -28,6 +28,17 @@ public class SearchCriterium implements Serializable {
     private boolean inverse;
 
     /**
+     * No-arg constructor producing a {@link SearchType#NONE} criterium with no column name.
+     *
+     * <p>Useful as a placeholder or for testing purposes.
+     */
+    public SearchCriterium() {
+        this.columnName = null;
+        this.columnNames = Collections.emptyList();
+        this.searchType = SearchType.NONE;
+    }
+
+    /**
      * Constructor for a single column search criterium.
      *
      * @param columnName the database column name.
