@@ -3,7 +3,10 @@ val modules = arrayOf(
     "jframe-core",
     "jframe-spring-core",
     "jframe-spring-otlp",
-    "jframe-spring-jpa"
+    "jframe-spring-jpa",
+    "jframe-quarkus-core",
+    "jframe-quarkus-jpa",
+    "jframe-quarkus-otlp"
 )
 modules.forEach { name -> include(name)}
 
