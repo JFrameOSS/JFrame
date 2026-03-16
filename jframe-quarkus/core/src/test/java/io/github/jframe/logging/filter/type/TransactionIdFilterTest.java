@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.TransactionId;
 import io.github.support.UnitTest;
 
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
 import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -33,6 +35,7 @@ import static org.mockito.Mockito.when;
  * <li>Transaction ID addition to response header</li>
  * <li>Invalid UUID handling in request header</li>
  * <li>Null and blank header handling</li>
+ * <li>MDC integration via KibanaLogFields</li>
  * </ul>
  */
 @DisplayName("Quarkus Logging Filters - Transaction ID Filter")
@@ -40,8 +43,9 @@ public class TransactionIdFilterTest extends UnitTest {
 
     @AfterEach
     public void tearDown() {
-        // Clean up ThreadLocal to avoid test pollution
+        // Clean up ThreadLocal and MDC to avoid test pollution
         TransactionId.remove();
+        KibanaLogFields.clear();
     }
 
     @Test
@@ -215,5 +219,43 @@ public class TransactionIdFilterTest extends UnitTest {
         // Then: A new UUID is generated
         assertThat(resolvedUuid, is(notNullValue()));
         assertThat(resolvedUuid.toString(), is(not(equalTo("invalid-uuid-format"))));
+    }
+
+    @Test
+    @DisplayName("Should set tx_id MDC field when filtering request")
+    public void shouldSetTxIdMdcFieldWhenFilteringRequest() throws Exception {
+        // Given: A transaction ID filter and mocked request context without header
+        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
+
+        when(requestContext.getHeaderString(TX_ID_HEADER)).thenReturn(null);
+
+        // When: Filter processes the incoming request
+        filter.filter(requestContext);
+
+        // Then: MDC field tx_id matches the transaction ID stored in ThreadLocal
+        final String threadLocalTxId = TransactionId.get();
+        final String mdcTxId = KibanaLogFields.get(TX_ID);
+        assertThat(mdcTxId, is(notNullValue()));
+        assertThat(mdcTxId, is(equalTo(threadLocalTxId)));
+    }
+
+    @Test
+    @DisplayName("Should set tx_id MDC field to existing header value when header UUID is valid")
+    public void shouldSetTxIdMdcFieldToExistingHeaderValueWhenPresent() throws Exception {
+        // Given: A transaction ID filter and request context with a valid UUID header
+        final UUID existingTxId = UUID.randomUUID();
+        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
+
+        when(requestContext.getHeaderString(TX_ID_HEADER)).thenReturn(existingTxId.toString());
+
+        // When: Filter processes the incoming request
+        filter.filter(requestContext);
+
+        // Then: MDC field tx_id equals the UUID from the header
+        final String mdcTxId = KibanaLogFields.get(TX_ID);
+        assertThat(mdcTxId, is(notNullValue()));
+        assertThat(mdcTxId, is(equalTo(existingTxId.toString())));
     }
 }

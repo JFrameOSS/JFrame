@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.RequestId;
 import io.github.support.UnitTest;
 
@@ -13,8 +14,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
 import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -31,6 +34,7 @@ import static org.mockito.Mockito.when;
  * <li>Request ID addition to response header</li>
  * <li>Filter chain execution</li>
  * <li>ThreadLocal cleanup after test</li>
+ * <li>MDC integration via KibanaLogFields</li>
  * </ul>
  */
 @DisplayName("Quarkus Logging Filters - Request ID Filter")
@@ -38,8 +42,9 @@ public class RequestIdFilterTest extends UnitTest {
 
     @AfterEach
     public void tearDown() {
-        // Clean up ThreadLocal to avoid test pollution
+        // Clean up ThreadLocal and MDC to avoid test pollution
         RequestId.remove();
+        KibanaLogFields.clear();
     }
 
     @Test
@@ -133,5 +138,22 @@ public class RequestIdFilterTest extends UnitTest {
         assertThat(requestId, is(notNullValue()));
         final UUID parsed = UUID.fromString(requestId);
         assertThat(parsed, is(notNullValue()));
+    }
+
+    @Test
+    @DisplayName("Should set req_id MDC field when filtering request")
+    public void shouldSetRequestIdMdcFieldWhenFilteringRequest() throws Exception {
+        // Given: A request ID filter and mocked JAX-RS request context
+        final RequestIdFilter filter = new RequestIdFilter(REQ_ID_HEADER);
+        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
+
+        // When: Filter processes the incoming request
+        filter.filter(requestContext);
+
+        // Then: MDC field req_id matches the request ID stored in ThreadLocal
+        final String threadLocalRequestId = RequestId.get();
+        final String mdcRequestId = KibanaLogFields.get(REQUEST_ID);
+        assertThat(mdcRequestId, is(notNullValue()));
+        assertThat(mdcRequestId, is(equalTo(threadLocalRequestId)));
     }
 }

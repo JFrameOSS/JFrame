@@ -54,7 +54,7 @@ public class ConstraintViolationResourceAssemblerTest extends UnitTest {
         ) final jakarta.validation.metadata.ConstraintDescriptor<jakarta.validation.constraints.NotNull> descriptor = mock(
             jakarta.validation.metadata.ConstraintDescriptor.class
         );
-        when(violation.getConstraintDescriptor()).thenReturn((jakarta.validation.metadata.ConstraintDescriptor) descriptor);
+        stubConstraintDescriptor(violation, descriptor);
         when(descriptor.getAnnotation()).thenReturn(mock(jakarta.validation.constraints.NotNull.class));
 
         final Set<ConstraintViolation<?>> violations = Set.of(violation);
@@ -88,7 +88,7 @@ public class ConstraintViolationResourceAssemblerTest extends UnitTest {
         ) final jakarta.validation.metadata.ConstraintDescriptor<jakarta.validation.constraints.NotBlank> descriptor = mock(
             jakarta.validation.metadata.ConstraintDescriptor.class
         );
-        when(violation.getConstraintDescriptor()).thenReturn((jakarta.validation.metadata.ConstraintDescriptor) descriptor);
+        stubConstraintDescriptor(violation, descriptor);
         when(descriptor.getAnnotation()).thenReturn(mock(jakarta.validation.constraints.NotBlank.class));
 
         final Set<ConstraintViolation<?>> violations = Set.of(violation);
@@ -100,6 +100,15 @@ public class ConstraintViolationResourceAssemblerTest extends UnitTest {
         assertThat(result, hasSize(1));
         assertThat(result.get(0).getField(), is(equalTo("discount_price")));
         assertThat(result.get(0).getCode(), is(equalTo("NotBlank")));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void stubConstraintDescriptor(
+        final ConstraintViolation<Object> violation,
+        final jakarta.validation.metadata.ConstraintDescriptor<?> descriptor
+    ) {
+        when(violation.getConstraintDescriptor())
+            .thenReturn((jakarta.validation.metadata.ConstraintDescriptor) descriptor);
     }
 
     @Test

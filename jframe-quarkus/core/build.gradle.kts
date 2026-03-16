@@ -28,9 +28,3 @@ dependencies {
     testRuntimeOnly("org.jboss.resteasy", "resteasy-core", retrieve("resteasyCoreVersion"))
     testRuntimeOnly("org.junit.platform", "junit-platform-launcher", retrieve("junitVersion"))
 }
-
-// Suppress unchecked warnings in test compilation due to Mockito raw-type stubs in test fixtures
-tasks.named<JavaCompile>("compileTestJava") {
-    options.compilerArgs.add("-Xlint:-unchecked")
-    options.compilerArgs.remove("-Werror")
-}
