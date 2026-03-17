@@ -17,9 +17,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.reactive.function.client.ClientResponse;
 
-import static io.github.jframe.OpenTelemetryConstants.Logging.REQUEST_PREFIX;
-import static io.github.jframe.OpenTelemetryConstants.Logging.RESPONSE_PREFIX;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.*;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Logging.REQUEST_PREFIX;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Logging.RESPONSE_PREFIX;
 import static io.github.jframe.util.constants.Constants.Headers.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang3.StringUtils.isBlank;

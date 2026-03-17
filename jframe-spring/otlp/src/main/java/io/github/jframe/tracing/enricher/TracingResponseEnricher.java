@@ -15,10 +15,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
-import static io.github.jframe.OpenTelemetryConstants.Attributes.*;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
 import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.*;
 
 /**
  * Enriches the error response with tracing information when an error occurs in a web request.

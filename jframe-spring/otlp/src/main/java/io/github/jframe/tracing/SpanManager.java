@@ -21,10 +21,10 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientRequest;
 
-import static io.github.jframe.OpenTelemetryConstants.Attributes.*;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
 import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.*;
 import static io.github.jframe.util.constants.Constants.Headers.L7_REQUEST_ID;
 
 /**

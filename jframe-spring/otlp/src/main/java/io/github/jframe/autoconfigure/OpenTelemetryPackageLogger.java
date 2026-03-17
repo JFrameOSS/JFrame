@@ -8,7 +8,7 @@ import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import static io.github.jframe.OpenTelemetryConstants.Logging.LINE_BREAK;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Logging.LINE_BREAK;
 
 /**
  * Logs application properties when the application context is started. This class listens for the {@link ApplicationStartedEvent} and logs

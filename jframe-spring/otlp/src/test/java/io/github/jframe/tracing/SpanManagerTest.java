@@ -20,7 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.ClientRequest;
 
-import static io.github.jframe.OpenTelemetryConstants.Attributes.*;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.*;
 import static io.github.jframe.util.constants.Constants.Headers.L7_REQUEST_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;

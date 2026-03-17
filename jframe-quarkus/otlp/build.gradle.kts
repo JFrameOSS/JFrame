@@ -21,10 +21,14 @@ dependencies {
     compileOnly("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
     compileOnly("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
 
+    // Jackson — compileOnly (needed to resolve annotations from jframe-core)
+    compileOnly("tools.jackson.core", "jackson-databind", retrieve("jacksonVersion"))
+
     // Security
     compileOnly("io.quarkus", "quarkus-security", retrieve("quarkusVersion"))
 
     // Test dependencies
+    testImplementation("tools.jackson.core", "jackson-databind", retrieve("jacksonVersion"))
     testImplementation("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     testImplementation("io.smallrye.config", "smallrye-config-common", retrieve("smallryeConfigVersion"))
     testImplementation(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:${retrieve("openTelemetryVersion")}"))

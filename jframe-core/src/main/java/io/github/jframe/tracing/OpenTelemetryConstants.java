@@ -1,4 +1,4 @@
-package io.github.jframe;
+package io.github.jframe.tracing;
 
 import lombok.experimental.UtilityClass;
 
@@ -8,7 +8,7 @@ import lombok.experimental.UtilityClass;
 public final class OpenTelemetryConstants {
 
     private OpenTelemetryConstants() {
-        // Private constructor to prevent instantiation
+        throw new UnsupportedOperationException("Utility class");
     }
 
     /**
@@ -21,7 +21,6 @@ public final class OpenTelemetryConstants {
         public static final String RESPONSE_PREFIX = "[EXTERNAL] Incoming response is:";
         public static final String LINE_BREAK = "\n";
         public static final String TAB = "\t";
-
     }
 
 

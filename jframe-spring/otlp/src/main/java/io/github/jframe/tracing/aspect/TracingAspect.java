@@ -14,10 +14,10 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import static io.github.jframe.OpenTelemetryConstants.Attributes.*;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
 import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.*;
 
 /**
  * Aspect for tracing method execution using Micrometer Tracing. This aspect will create a span for each method annotated with @Traced.

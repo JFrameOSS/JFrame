@@ -21,9 +21,9 @@ import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 
-import static io.github.jframe.OpenTelemetryConstants.Attributes.TRACING_SPAN;
 import static io.github.jframe.logging.HttpLogger.*;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.*;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.TRACING_SPAN;
 import static io.github.jframe.util.constants.Constants.Headers.*;
 import static java.util.Objects.nonNull;
 
