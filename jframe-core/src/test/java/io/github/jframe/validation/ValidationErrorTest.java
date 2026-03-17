@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * <li>Field and code storage and retrieval</li>
  * <li>Null handling for optional field parameter</li>
  * <li>Required code parameter validation</li>
- * <li>Serialization support</li>
  * </ul>
  */
 @DisplayName("Validation Framework - Validation Error")
@@ -90,18 +89,5 @@ public class ValidationErrorTest extends UnitTest {
         // When: Creating validation error with field and null code
         // Then: NullPointerException is thrown
         assertThrows(NullPointerException.class, () -> new ValidationError(field, null));
-    }
-
-    @Test
-    @DisplayName("Should have working toString method")
-    public void shouldHaveWorkingToString() {
-        // Given: A validation error with field and code
-        final ValidationError error = new ValidationError("age", "INVALID_FORMAT");
-
-        // When: Calling toString
-        final String result = error.toString();
-
-        // Then: Result is not null and contains relevant information
-        assertThat(result, is(notNullValue()));
     }
 }

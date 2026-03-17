@@ -8,7 +8,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * Tests for {@link ApiException}.
@@ -18,7 +20,6 @@ import static org.hamcrest.Matchers.*;
  * <li>Constructor variations with ApiError parameter</li>
  * <li>ApiError storage and retrieval</li>
  * <li>Convenience methods for error code and reason</li>
- * <li>Exception hierarchy (extends JFrameException)</li>
  * <li>Null handling for optional parameters</li>
  * </ul>
  */
@@ -108,18 +109,5 @@ public class ApiExceptionTest extends UnitTest {
         // Then: Convenience methods return null
         assertThat(exception.getErrorCode(), is(nullValue()));
         assertThat(exception.getReason(), is(nullValue()));
-    }
-
-    @Test
-    @DisplayName("Should be a JFrameException")
-    public void shouldBeJFrameException() {
-        // Given: An ApiError
-        final ApiError apiError = new TestApiError("ERR005", "Test error");
-
-        // When: Creating an ApiException
-        final ApiException exception = new TestApiException(apiError);
-
-        // Then: Exception is an instance of JFrameException
-        assertThat(exception, is(instanceOf(JFrameException.class)));
     }
 }

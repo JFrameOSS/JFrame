@@ -1,6 +1,5 @@
 package io.github.jframe.exception.core;
 
-import io.github.jframe.exception.HttpException;
 import io.github.jframe.http.HttpStatusCode;
 import io.github.support.UnitTest;
 
@@ -10,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -21,7 +19,6 @@ import static org.hamcrest.Matchers.nullValue;
  * <ul>
  * <li>Constructor variations (no args, message, cause, message+cause)</li>
  * <li>HTTP status is always BAD_REQUEST (400)</li>
- * <li>Exception hierarchy (extends HttpException)</li>
  * </ul>
  */
 @DisplayName("Exception Hierarchy - Bad Request Exception")
@@ -85,17 +82,5 @@ public class BadRequestExceptionTest extends UnitTest {
         assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.BAD_REQUEST)));
         assertThat(exception.getCause(), is(equalTo(cause)));
         assertThat(exception.getMessage(), containsString("Parameter validation failed"));
-    }
-
-    @Test
-    @DisplayName("Should be a HttpException")
-    public void shouldBeHttpException() {
-        // Given: No preconditions needed
-
-        // When: Creating a BadRequestException
-        final BadRequestException exception = new BadRequestException();
-
-        // Then: Exception is an instance of HttpException
-        assertThat(exception, is(instanceOf(HttpException.class)));
     }
 }

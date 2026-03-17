@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -22,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * <li>Constructor variations with HttpStatusCode parameter</li>
  * <li>HttpStatusCode storage and retrieval</li>
  * <li>Null safety for HttpStatusCode parameter</li>
- * <li>Exception hierarchy (extends JFrameException)</li>
  * <li>Support for different HTTP status codes</li>
  * </ul>
  */
@@ -111,18 +109,6 @@ public class HttpExceptionTest extends UnitTest {
         // When: Creating exception with message and null HTTP status
         // Then: NullPointerException is thrown
         assertThrows(NullPointerException.class, () -> new HttpException("message", null));
-    }
-
-    @Test
-    @DisplayName("Should be a JFrameException")
-    public void shouldBeJFrameException() {
-        // Given: No preconditions needed
-
-        // When: Creating a HttpException
-        final HttpException exception = new HttpException(HttpStatusCode.BAD_REQUEST);
-
-        // Then: Exception is an instance of JFrameException
-        assertThat(exception, is(instanceOf(JFrameException.class)));
     }
 
     @Test

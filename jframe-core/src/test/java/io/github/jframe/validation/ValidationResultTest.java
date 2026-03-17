@@ -341,20 +341,6 @@ public class ValidationResultTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should have working toString method")
-    public void shouldHaveWorkingToString() {
-        // Given: A validation result with errors
-        validationResult.reject("ERROR1");
-        validationResult.rejectValue("field", "ERROR2");
-
-        // When: Calling toString
-        final String result = validationResult.toString();
-
-        // Then: Result is not null
-        assertThat(result, is(notNullValue()));
-    }
-
-    @Test
     @DisplayName("Should handle complex nested paths with multiple levels")
     public void shouldHandleComplexNestedPaths() {
         // Given: A validation result

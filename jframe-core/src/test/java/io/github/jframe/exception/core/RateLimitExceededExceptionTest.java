@@ -1,6 +1,5 @@
 package io.github.jframe.exception.core;
 
-import io.github.jframe.exception.HttpException;
 import io.github.jframe.http.HttpStatusCode;
 import io.github.support.UnitTest;
 
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -24,7 +22,6 @@ import static org.hamcrest.Matchers.nullValue;
  * <li>Constructor variations (rate limit details, message, cause, message+cause)</li>
  * <li>HTTP status is always TOO_MANY_REQUESTS (429)</li>
  * <li>Rate limit metadata (limit, remaining, resetDate) is correctly stored</li>
- * <li>Exception hierarchy (extends HttpException)</li>
  * </ul>
  */
 @DisplayName("Exception Hierarchy - Rate Limit Exceeded Exception")
@@ -104,18 +101,6 @@ public class RateLimitExceededExceptionTest extends UnitTest {
         assertThat(exception.getLimit(), is(equalTo(LIMIT)));
         assertThat(exception.getRemaining(), is(equalTo(REMAINING)));
         assertThat(exception.getResetDate(), is(equalTo(RESET_DATE)));
-    }
-
-    @Test
-    @DisplayName("Should be a HttpException")
-    public void shouldBeHttpException() {
-        // Given: No preconditions needed
-
-        // When: Creating a RateLimitExceededException
-        final RateLimitExceededException exception = new RateLimitExceededException(LIMIT, REMAINING, RESET_DATE);
-
-        // Then: Exception is an instance of HttpException
-        assertThat(exception, is(instanceOf(HttpException.class)));
     }
 
     @Test

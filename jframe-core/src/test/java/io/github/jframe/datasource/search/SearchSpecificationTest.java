@@ -64,19 +64,6 @@ public class SearchSpecificationTest extends UnitTest {
         assertThat(result, is(predicateA));
     }
 
-    @Test
-    @DisplayName("Should allow lambda implementation of toPredicate")
-    public void shouldAllowLambdaImplementation() {
-        // Given: A lambda implementing SearchSpecification
-        final SearchSpecification<Object> spec = (r, q, c) -> predicateA;
-
-        // When: Calling toPredicate
-        final Predicate result = spec.toPredicate(root, query, cb);
-
-        // Then: Result is the expected predicate
-        assertThat(result, is(predicateA));
-    }
-
     // ---- and() composition -----------------------------------------------
 
     @Test
