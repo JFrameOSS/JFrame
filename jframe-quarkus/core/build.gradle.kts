@@ -24,7 +24,6 @@ dependencies {
     testImplementation("org.mockito", "mockito-core", retrieve("mockitoVersion"))
     testImplementation("org.mockito", "mockito-junit-jupiter", retrieve("mockitoVersion"))
     testImplementation("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
-    testImplementation("org.slf4j", "slf4j-api", retrieve("slf4jVersion"))
     testImplementation("ch.qos.logback", "logback-classic", retrieve("logbackVersion"))
     testImplementation("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     testRuntimeOnly("org.jboss.resteasy", "resteasy-core", retrieve("resteasyCoreVersion"))

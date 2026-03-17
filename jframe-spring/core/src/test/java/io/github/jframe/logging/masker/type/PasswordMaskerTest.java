@@ -9,7 +9,8 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Unit tests for {@link PasswordMasker}.
@@ -38,7 +39,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password value is masked with asterisks
-        assertThat(result).isEqualTo("{\"username\":\"john\",\"password\":\"***\"}");
+        assertThat(result, is("{\"username\":\"john\",\"password\":\"***\"}"));
     }
 
     @Test
@@ -52,7 +53,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password value is masked regardless of whitespace
-        assertThat(result).isEqualTo("{\"username\": \"john\", \"password\" : \"***\"}");
+        assertThat(result, is("{\"username\": \"john\", \"password\" : \"***\"}"));
     }
 
     @Test
@@ -66,7 +67,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password parameter value is masked
-        assertThat(result).isEqualTo("username=john&password=***&remember=true");
+        assertThat(result, is("username=john&password=***&remember=true"));
     }
 
     @Test
@@ -80,7 +81,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password parameter value is masked at the end
-        assertThat(result).isEqualTo("username=john&password=***");
+        assertThat(result, is("username=john&password=***"));
     }
 
     @Test
@@ -94,7 +95,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: All password values are masked
-        assertThat(result).isEqualTo("{\"password\":\"***\"} and {\"password\":\"***\"}");
+        assertThat(result, is("{\"password\":\"***\"} and {\"password\":\"***\"}"));
     }
 
     @Test
@@ -108,7 +109,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: All configured fields are masked
-        assertThat(result).isEqualTo("{\"password\":\"***\",\"apiKey\":\"***\",\"token\":\"***\"}");
+        assertThat(result, is("{\"password\":\"***\",\"apiKey\":\"***\",\"token\":\"***\"}"));
     }
 
     @Test
@@ -122,7 +123,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password field is masked
-        assertThat(result).isEqualTo("{\"password\":\"***\"}");
+        assertThat(result, is("{\"password\":\"***\"}"));
     }
 
     @Test
@@ -136,7 +137,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password field is masked
-        assertThat(result).isEqualTo("{\"password\":\"***\"}");
+        assertThat(result, is("{\"password\":\"***\"}"));
     }
 
     @Test
@@ -150,7 +151,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: String is returned unchanged
-        assertThat(result).isEqualTo(input);
+        assertThat(result, is(input));
     }
 
     @Test
@@ -164,7 +165,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Empty string is returned
-        assertThat(result).isEmpty();
+        assertThat(result, is(emptyString()));
     }
 
     @Test
@@ -178,7 +179,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password with special characters is masked
-        assertThat(result).isEqualTo("{\"password\":\"***\"}");
+        assertThat(result, is("{\"password\":\"***\"}"));
     }
 
     @Test
@@ -192,7 +193,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password with escaped quotes is properly masked
-        assertThat(result).isEqualTo("{\"password\":\"***\"}");
+        assertThat(result, is("{\"password\":\"***\"}"));
     }
 
     @Test
@@ -206,7 +207,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password in POST body is masked
-        assertThat(result).isEqualTo("username=john&password=***&email=john@example.com");
+        assertThat(result, is("username=john&password=***&email=john@example.com"));
     }
 
     @Test
@@ -220,8 +221,8 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Passwords in both formats are masked
-        assertThat(result).contains("password=***");
-        assertThat(result).contains("\"password\":\"***\"");
+        assertThat(result, containsString("password=***"));
+        assertThat(result, containsString("\"password\":\"***\""));
     }
 
     @Test
@@ -235,7 +236,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Both password and Password are masked (case-insensitive matching)
-        assertThat(result).isEqualTo("{\"password\":\"***\",\"Password\":\"***\"}");
+        assertThat(result, is("{\"password\":\"***\",\"Password\":\"***\"}"));
     }
 
     @Test
@@ -249,7 +250,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password in nested structure is masked
-        assertThat(result).isEqualTo("{\"user\":{\"name\":\"john\",\"password\":\"***\"}}");
+        assertThat(result, is("{\"user\":{\"name\":\"john\",\"password\":\"***\"}}"));
     }
 
     @Test
@@ -263,7 +264,7 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password is masked up to the quote
-        assertThat(result).isEqualTo("username=john&password=***\"extra");
+        assertThat(result, is("username=john&password=***\"extra"));
     }
 
     @Test
@@ -277,6 +278,6 @@ class PasswordMaskerTest extends UnitTest {
         final String result = masker.maskPasswordsIn(input);
 
         // Then: Password is masked up to newline
-        assertThat(result).isEqualTo("password=***\nusername=john");
+        assertThat(result, is("password=***\nusername=john"));
     }
 }

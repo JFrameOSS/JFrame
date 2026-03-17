@@ -19,7 +19,8 @@ import static io.github.jframe.logging.kibana.KibanaLogFieldNames.SPAN_ID;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
 import static io.github.jframe.util.constants.Constants.Headers.SPAN_ID_HEADER;
 import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -96,8 +97,8 @@ class TracingResponseFilterTest extends UnitTest {
             filter.doFilterInternal(request, response, filterChain);
 
             // Then: MDC was populated with trace and span IDs during filter chain execution
-            assertThat(capturedTraceId[0]).isEqualTo(TEST_TRACE_ID);
-            assertThat(capturedSpanId[0]).isEqualTo(TEST_SPAN_ID);
+            assertThat(capturedTraceId[0], is(TEST_TRACE_ID));
+            assertThat(capturedSpanId[0], is(TEST_SPAN_ID));
         }
     }
 
@@ -222,8 +223,8 @@ class TracingResponseFilterTest extends UnitTest {
             filter.doFilterInternal(request, response, filterChain);
 
             // Then: MDC is cleaned up after execution
-            assertThat(KibanaLogFields.get(TRACE_ID)).isNull();
-            assertThat(KibanaLogFields.get(SPAN_ID)).isNull();
+            assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
+            assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
         }
     }
 
@@ -253,8 +254,8 @@ class TracingResponseFilterTest extends UnitTest {
             }
 
             // Then: MDC is still cleaned up after exception
-            assertThat(KibanaLogFields.get(TRACE_ID)).isNull();
-            assertThat(KibanaLogFields.get(SPAN_ID)).isNull();
+            assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
+            assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
         }
     }
 

@@ -14,7 +14,6 @@ dependencies {
 
     // SmallRye Config — compileOnly (provided by consumer's Quarkus runtime)
     compileOnly("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
-    compileOnly("io.smallrye.config", "smallrye-config-common", retrieve("smallryeConfigVersion"))
 
     // Quarkus CDI — compileOnly
     compileOnly("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
@@ -30,7 +29,6 @@ dependencies {
     // Test dependencies
     testImplementation("tools.jackson.core", "jackson-databind", retrieve("jacksonVersion"))
     testImplementation("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
-    testImplementation("io.smallrye.config", "smallrye-config-common", retrieve("smallryeConfigVersion"))
     testImplementation(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:${retrieve("openTelemetryVersion")}"))
     testImplementation("io.opentelemetry", "opentelemetry-api")
     testImplementation("io.opentelemetry", "opentelemetry-context")
@@ -43,8 +41,6 @@ dependencies {
     testImplementation("org.mockito", "mockito-core", retrieve("mockitoVersion"))
     testImplementation("org.mockito", "mockito-junit-jupiter", retrieve("mockitoVersion"))
     testImplementation("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
-    testImplementation("org.assertj", "assertj-core", retrieve("assertjVersion"))
-    testImplementation("org.slf4j", "slf4j-api", retrieve("slf4jVersion"))
     testImplementation("ch.qos.logback", "logback-classic", retrieve("logbackVersion"))
     testRuntimeOnly("org.junit.platform", "junit-platform-launcher", retrieve("junitVersion"))
 }

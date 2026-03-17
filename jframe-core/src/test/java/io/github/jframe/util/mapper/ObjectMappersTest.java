@@ -13,8 +13,9 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for {@link ObjectMappers}.
@@ -41,11 +42,10 @@ class ObjectMappersTest extends UnitTest {
         final String json = ObjectMappers.toJson(testData);
 
         // Then: JSON string contains all field values
-        assertThat(json)
-            .isNotEmpty()
-            .contains("\"name\":\"John Doe\"")
-            .contains("\"age\":30")
-            .contains("\"email\":\"john@example.com\"");
+        assertThat(json, not(emptyString()));
+        assertThat(json, containsString("\"name\":\"John Doe\""));
+        assertThat(json, containsString("\"age\":30"));
+        assertThat(json, containsString("\"email\":\"john@example.com\""));
     }
 
     @Test
@@ -56,7 +56,7 @@ class ObjectMappersTest extends UnitTest {
         final String json = ObjectMappers.toJson(null);
 
         // Then: Empty string is returned
-        assertThat(json).isEmpty();
+        assertThat(json, is(emptyString()));
     }
 
     @Test
@@ -69,11 +69,10 @@ class ObjectMappersTest extends UnitTest {
         final String json = ObjectMappers.toJson(testData);
 
         // Then: JSON contains non-null fields and includes null values
-        assertThat(json)
-            .isNotEmpty()
-            .contains("\"name\":\"Jane Doe\"")
-            .contains("\"age\":null")
-            .contains("\"email\":null");
+        assertThat(json, not(emptyString()));
+        assertThat(json, containsString("\"name\":\"Jane Doe\""));
+        assertThat(json, containsString("\"age\":null"));
+        assertThat(json, containsString("\"email\":null"));
     }
 
     @Test
@@ -87,10 +86,9 @@ class ObjectMappersTest extends UnitTest {
         final String json = ObjectMappers.toJson(testData);
 
         // Then: DateTime is serialized as ISO-8601 string, not as timestamp
-        assertThat(json)
-            .isNotEmpty()
-            .contains("\"dateTime\":\"2024-01-15T10:30:45\"")
-            .doesNotContain("timestamp");
+        assertThat(json, not(emptyString()));
+        assertThat(json, containsString("\"dateTime\":\"2024-01-15T10:30:45\""));
+        assertThat(json, not(containsString("timestamp")));
     }
 
     @Test
@@ -104,9 +102,8 @@ class ObjectMappersTest extends UnitTest {
         final String json = ObjectMappers.toJson(testData);
 
         // Then: DateTime is serialized as ISO-8601 string with Z offset
-        assertThat(json)
-            .isNotEmpty()
-            .contains("\"dateTime\":\"2024-01-15T10:30:45Z\"");
+        assertThat(json, not(emptyString()));
+        assertThat(json, containsString("\"dateTime\":\"2024-01-15T10:30:45Z\""));
     }
 
     @Test
@@ -119,10 +116,10 @@ class ObjectMappersTest extends UnitTest {
         final TestData result = ObjectMappers.fromJson(json, TestData.class);
 
         // Then: Object is created with all field values
-        assertThat(result).isNotNull();
-        assertThat(result.name()).isEqualTo("Alice");
-        assertThat(result.age()).isEqualTo(25);
-        assertThat(result.email()).isEqualTo("alice@example.com");
+        assertThat(result, is(notNullValue()));
+        assertThat(result.name(), is("Alice"));
+        assertThat(result.age(), is(25));
+        assertThat(result.email(), is("alice@example.com"));
     }
 
     @Test
@@ -135,10 +132,10 @@ class ObjectMappersTest extends UnitTest {
         final TestData result = ObjectMappers.fromJson(json, TestData.class);
 
         // Then: Object is created with non-null name and null other fields
-        assertThat(result).isNotNull();
-        assertThat(result.name()).isEqualTo("Bob");
-        assertThat(result.age()).isNull();
-        assertThat(result.email()).isNull();
+        assertThat(result, is(notNullValue()));
+        assertThat(result.name(), is("Bob"));
+        assertThat(result.age(), is(nullValue()));
+        assertThat(result.email(), is(nullValue()));
     }
 
     @Test
@@ -151,10 +148,10 @@ class ObjectMappersTest extends UnitTest {
         final TestData result = ObjectMappers.fromJson(json, TestData.class);
 
         // Then: Object is created with known fields, unknown field is ignored
-        assertThat(result).isNotNull();
-        assertThat(result.name()).isEqualTo("Charlie");
-        assertThat(result.age()).isEqualTo(35);
-        assertThat(result.email()).isEqualTo("charlie@example.com");
+        assertThat(result, is(notNullValue()));
+        assertThat(result.name(), is("Charlie"));
+        assertThat(result.age(), is(35));
+        assertThat(result.email(), is("charlie@example.com"));
     }
 
     @Test
@@ -167,9 +164,9 @@ class ObjectMappersTest extends UnitTest {
         final TestDataWithDateTime result = ObjectMappers.fromJson(json, TestDataWithDateTime.class);
 
         // Then: Object is created with parsed LocalDateTime
-        assertThat(result).isNotNull();
-        assertThat(result.name()).isEqualTo("Test");
-        assertThat(result.dateTime()).isEqualTo(LocalDateTime.of(2024, 1, 15, 10, 30, 45));
+        assertThat(result, is(notNullValue()));
+        assertThat(result.name(), is("Test"));
+        assertThat(result.dateTime(), is(LocalDateTime.of(2024, 1, 15, 10, 30, 45)));
     }
 
     @Test
@@ -179,8 +176,7 @@ class ObjectMappersTest extends UnitTest {
         final String invalidJson = "{invalid json}";
 
         // When/Then: Deserializing invalid JSON throws AssertionError with descriptive message
-        assertThatThrownBy(() -> ObjectMappers.fromJson(invalidJson, TestData.class))
-            .isInstanceOf(InternalServerErrorException.class);
+        assertThrows(InternalServerErrorException.class, () -> ObjectMappers.fromJson(invalidJson, TestData.class));
     }
 
     @Test
@@ -194,11 +190,11 @@ class ObjectMappersTest extends UnitTest {
         final List<TestData> result = ObjectMappers.fromJson(json, typeRef);
 
         // Then: List is created with two TestData objects
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).name()).isEqualTo("Alice");
-        assertThat(result.get(0).age()).isEqualTo(25);
-        assertThat(result.get(1).name()).isEqualTo("Bob");
-        assertThat(result.get(1).age()).isEqualTo(30);
+        assertThat(result, hasSize(2));
+        assertThat(result.get(0).name(), is("Alice"));
+        assertThat(result.get(0).age(), is(25));
+        assertThat(result.get(1).name(), is("Bob"));
+        assertThat(result.get(1).age(), is(30));
     }
 
     @Test
@@ -212,10 +208,9 @@ class ObjectMappersTest extends UnitTest {
         final Map<String, String> result = ObjectMappers.fromJson(json, typeRef);
 
         // Then: Map is created with correct key-value pairs
-        assertThat(result)
-            .hasSize(2)
-            .containsEntry("key1", "value1")
-            .containsEntry("key2", "value2");
+        assertThat(result, hasEntry("key1", "value1"));
+        assertThat(result, hasEntry("key2", "value2"));
+        assertThat(result, aMapWithSize(2));
     }
 
     @Test
@@ -226,8 +221,7 @@ class ObjectMappersTest extends UnitTest {
         final TypeReference<List<TestData>> typeRef = new TypeReference<>() {};
 
         // When/Then: Deserializing invalid JSON with TypeReference throws AssertionError
-        assertThatThrownBy(() -> ObjectMappers.fromJson(invalidJson, typeRef))
-            .isInstanceOf(InternalServerErrorException.class);
+        assertThrows(InternalServerErrorException.class, () -> ObjectMappers.fromJson(invalidJson, typeRef));
     }
 
     @Test
@@ -241,11 +235,10 @@ class ObjectMappersTest extends UnitTest {
         final String json = ObjectMappers.toJson(testData);
 
         // Then: JSON contains both parent and nested object fields
-        assertThat(json)
-            .isNotEmpty()
-            .contains("\"name\":\"Parent\"")
-            .contains("\"nested\":")
-            .contains("\"name\":\"Nested\"");
+        assertThat(json, not(emptyString()));
+        assertThat(json, containsString("\"name\":\"Parent\""));
+        assertThat(json, containsString("\"nested\":"));
+        assertThat(json, containsString("\"name\":\"Nested\""));
     }
 
     @Test
@@ -258,11 +251,11 @@ class ObjectMappersTest extends UnitTest {
         final TestDataWithNested result = ObjectMappers.fromJson(json, TestDataWithNested.class);
 
         // Then: Object is created with nested object populated
-        assertThat(result).isNotNull();
-        assertThat(result.name()).isEqualTo("Parent");
-        assertThat(result.nested()).isNotNull();
-        assertThat(result.nested().name()).isEqualTo("Child");
-        assertThat(result.nested().age()).isEqualTo(10);
+        assertThat(result, is(notNullValue()));
+        assertThat(result.name(), is("Parent"));
+        assertThat(result.nested(), is(notNullValue()));
+        assertThat(result.nested().name(), is("Child"));
+        assertThat(result.nested().age(), is(10));
     }
 
     // Test data classes

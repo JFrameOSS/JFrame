@@ -11,7 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Unit tests for {@link ApplicationProperties}.
@@ -50,7 +51,7 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -66,8 +67,8 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank name
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage()).contains("Application name must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(violations.iterator().next().getMessage(), containsString("Application name must not be blank"));
     }
 
     @Test
@@ -83,8 +84,8 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank name
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage()).contains("Application name must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(violations.iterator().next().getMessage(), containsString("Application name must not be blank"));
     }
 
     @Test
@@ -100,8 +101,8 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank group
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage()).contains("group/namespace must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(violations.iterator().next().getMessage(), containsString("group/namespace must not be blank"));
     }
 
     @Test
@@ -117,8 +118,8 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank group
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage()).contains("group/namespace must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(violations.iterator().next().getMessage(), containsString("group/namespace must not be blank"));
     }
 
     @Test
@@ -134,8 +135,8 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank version
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage()).contains("version must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(violations.iterator().next().getMessage(), containsString("version must not be blank"));
     }
 
     @Test
@@ -151,8 +152,8 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank version
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage()).contains("version must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(violations.iterator().next().getMessage(), containsString("version must not be blank"));
     }
 
     @Test
@@ -168,8 +169,8 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank environment
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage()).contains("Application environment must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(violations.iterator().next().getMessage(), containsString("Application environment must not be blank"));
     }
 
     @Test
@@ -185,8 +186,8 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank environment
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage()).contains("Application environment must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(violations.iterator().next().getMessage(), containsString("Application environment must not be blank"));
     }
 
     @Test
@@ -198,7 +199,7 @@ class ApplicationPropertiesTest extends UnitTest {
         final String environment = properties.getEnvironment();
 
         // Then: Default value is 'dev'
-        assertThat(environment).isEqualTo("dev");
+        assertThat(environment, is("dev"));
     }
 
     @Test
@@ -215,7 +216,7 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations since url is optional
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -228,7 +229,7 @@ class ApplicationPropertiesTest extends UnitTest {
         properties.setName(name);
 
         // Then: Name property is set correctly
-        assertThat(properties.getName()).isEqualTo(name);
+        assertThat(properties.getName(), is(name));
     }
 
     @Test
@@ -241,7 +242,7 @@ class ApplicationPropertiesTest extends UnitTest {
         properties.setGroup(group);
 
         // Then: Group property is set correctly
-        assertThat(properties.getGroup()).isEqualTo(group);
+        assertThat(properties.getGroup(), is(group));
     }
 
     @Test
@@ -254,7 +255,7 @@ class ApplicationPropertiesTest extends UnitTest {
         properties.setVersion(version);
 
         // Then: Version property is set correctly
-        assertThat(properties.getVersion()).isEqualTo(version);
+        assertThat(properties.getVersion(), is(version));
     }
 
     @Test
@@ -267,7 +268,7 @@ class ApplicationPropertiesTest extends UnitTest {
         properties.setEnvironment(environment);
 
         // Then: Environment property is set correctly
-        assertThat(properties.getEnvironment()).isEqualTo(environment);
+        assertThat(properties.getEnvironment(), is(environment));
     }
 
     @Test
@@ -280,7 +281,7 @@ class ApplicationPropertiesTest extends UnitTest {
         properties.setUrl(url);
 
         // Then: URL property is set correctly
-        assertThat(properties.getUrl()).isEqualTo(url);
+        assertThat(properties.getUrl(), is(url));
     }
 
     @Test
@@ -296,6 +297,6 @@ class ApplicationPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<ApplicationProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails for all null required fields
-        assertThat(violations).hasSize(4);
+        assertThat(violations, hasSize(4));
     }
 }

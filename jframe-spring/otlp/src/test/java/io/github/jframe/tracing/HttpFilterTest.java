@@ -21,7 +21,8 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 
 import static io.github.jframe.util.constants.Constants.Headers.*;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -89,7 +90,7 @@ class HttpFilterTest extends UnitTest {
         // And: Trace context is injected and span is created
         verify(spanManager).injectTraceContext(request.getHeaders());
         verify(spanManager).createOutboundSpan(HttpMethod.GET, request.getURI(), SERVICE_NAME_VALUE);
-        assertThat(response).isNotNull();
+        assertThat(response, is(notNullValue()));
     }
 
     @Test
@@ -155,7 +156,7 @@ class HttpFilterTest extends UnitTest {
         final ClientHttpResponse response = interceptor.intercept(request, body, execution);
 
         // Then: Request still processes successfully
-        assertThat(response).isNotNull();
+        assertThat(response, is(notNullValue()));
 
         // And: No span operations were attempted
         verify(spanManager, never()).createOutboundSpan(any(), any(), any());
@@ -170,7 +171,7 @@ class HttpFilterTest extends UnitTest {
         final ExchangeFilterFunction exchangeFilter = httpFilter.getExchangeFilter(SERVICE_NAME_VALUE);
 
         // Then: Exchange filter is created
-        assertThat(exchangeFilter).isNotNull();
+        assertThat(exchangeFilter, is(notNullValue()));
     }
 
     @Test
@@ -192,8 +193,8 @@ class HttpFilterTest extends UnitTest {
         final ClientHttpResponse response = interceptor.intercept(request, body, execution);
 
         // Then: Response is handled correctly
-        assertThat(response).isNotNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response, is(notNullValue()));
+        assertThat(response.getStatusCode(), is(HttpStatus.NOT_FOUND));
 
         // And: Span is enriched with error status
         verify(spanManager).enrichOutboundSpan(eq(span), eq(HttpStatus.NOT_FOUND), any(HttpHeaders.class));

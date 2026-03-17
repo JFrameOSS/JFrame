@@ -12,8 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for {@link DateTimeMapper}.
@@ -49,14 +50,14 @@ class DateTimeMapperTest extends UnitTest {
         final ZonedDateTime result = dateTimeMapper.toZonedDateTime(localDateTime);
 
         // Then: ZonedDateTime is created in UTC zone
-        assertThat(result).isNotNull();
-        assertThat(result.getYear()).isEqualTo(2024);
-        assertThat(result.getMonthValue()).isEqualTo(1);
-        assertThat(result.getDayOfMonth()).isEqualTo(15);
-        assertThat(result.getHour()).isEqualTo(10);
-        assertThat(result.getMinute()).isEqualTo(30);
-        assertThat(result.getSecond()).isEqualTo(45);
-        assertThat(result.getZone()).isEqualTo(ZoneOffset.UTC);
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getYear(), is(2024));
+        assertThat(result.getMonthValue(), is(1));
+        assertThat(result.getDayOfMonth(), is(15));
+        assertThat(result.getHour(), is(10));
+        assertThat(result.getMinute(), is(30));
+        assertThat(result.getSecond(), is(45));
+        assertThat(result.getZone(), is(ZoneOffset.UTC));
     }
 
     @Test
@@ -69,7 +70,7 @@ class DateTimeMapperTest extends UnitTest {
         final ZonedDateTime result = dateTimeMapper.toZonedDateTime(localDateTime);
 
         // Then: Null is returned
-        assertThat(result).isNull();
+        assertThat(result, is(nullValue()));
     }
 
     @Test
@@ -82,13 +83,13 @@ class DateTimeMapperTest extends UnitTest {
         final ZonedDateTime result = dateTimeMapper.toZonedDateTime(offsetDateTime);
 
         // Then: ZonedDateTime is created with correct values
-        assertThat(result).isNotNull();
-        assertThat(result.getYear()).isEqualTo(2024);
-        assertThat(result.getMonthValue()).isEqualTo(1);
-        assertThat(result.getDayOfMonth()).isEqualTo(15);
-        assertThat(result.getHour()).isEqualTo(10);
-        assertThat(result.getMinute()).isEqualTo(30);
-        assertThat(result.getSecond()).isEqualTo(45);
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getYear(), is(2024));
+        assertThat(result.getMonthValue(), is(1));
+        assertThat(result.getDayOfMonth(), is(15));
+        assertThat(result.getHour(), is(10));
+        assertThat(result.getMinute(), is(30));
+        assertThat(result.getSecond(), is(45));
     }
 
     @Test
@@ -101,9 +102,9 @@ class DateTimeMapperTest extends UnitTest {
         final ZonedDateTime result = dateTimeMapper.toZonedDateTime(offsetDateTime);
 
         // Then: ZonedDateTime preserves the offset
-        assertThat(result).isNotNull();
-        assertThat(result.getHour()).isEqualTo(10);
-        assertThat(result.getOffset()).isEqualTo(ZoneOffset.ofHours(2));
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getHour(), is(10));
+        assertThat(result.getOffset(), is(ZoneOffset.ofHours(2)));
     }
 
     @Test
@@ -116,7 +117,7 @@ class DateTimeMapperTest extends UnitTest {
         final ZonedDateTime result = dateTimeMapper.toZonedDateTime(offsetDateTime);
 
         // Then: Null is returned
-        assertThat(result).isNull();
+        assertThat(result, is(nullValue()));
     }
 
     @Test
@@ -129,14 +130,14 @@ class DateTimeMapperTest extends UnitTest {
         final OffsetDateTime result = dateTimeMapper.toOffsetDateTime(timestamp);
 
         // Then: OffsetDateTime is created in UTC with correct values
-        assertThat(result).isNotNull();
-        assertThat(result.getYear()).isEqualTo(2024);
-        assertThat(result.getMonthValue()).isEqualTo(1);
-        assertThat(result.getDayOfMonth()).isEqualTo(15);
-        assertThat(result.getHour()).isEqualTo(10);
-        assertThat(result.getMinute()).isEqualTo(30);
-        assertThat(result.getSecond()).isEqualTo(45);
-        assertThat(result.getOffset()).isEqualTo(ZoneOffset.UTC);
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getYear(), is(2024));
+        assertThat(result.getMonthValue(), is(1));
+        assertThat(result.getDayOfMonth(), is(15));
+        assertThat(result.getHour(), is(10));
+        assertThat(result.getMinute(), is(30));
+        assertThat(result.getSecond(), is(45));
+        assertThat(result.getOffset(), is(ZoneOffset.UTC));
     }
 
     @Test
@@ -146,8 +147,7 @@ class DateTimeMapperTest extends UnitTest {
         final String invalidTimestamp = "invalid-date";
 
         // When/Then: Parsing invalid string throws DateTimeParseException
-        assertThatThrownBy(() -> dateTimeMapper.toOffsetDateTime(invalidTimestamp))
-            .isInstanceOf(Exception.class);
+        assertThrows(Exception.class, () -> dateTimeMapper.toOffsetDateTime(invalidTimestamp));
     }
 
     @Test
@@ -160,13 +160,13 @@ class DateTimeMapperTest extends UnitTest {
         final LocalDateTime result = DateTimeMapper.toLocalDateTime(zonedDateTime);
 
         // Then: LocalDateTime is created with UTC time values
-        assertThat(result).isNotNull();
-        assertThat(result.getYear()).isEqualTo(2024);
-        assertThat(result.getMonthValue()).isEqualTo(1);
-        assertThat(result.getDayOfMonth()).isEqualTo(15);
-        assertThat(result.getHour()).isEqualTo(10);
-        assertThat(result.getMinute()).isEqualTo(30);
-        assertThat(result.getSecond()).isEqualTo(45);
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getYear(), is(2024));
+        assertThat(result.getMonthValue(), is(1));
+        assertThat(result.getDayOfMonth(), is(15));
+        assertThat(result.getHour(), is(10));
+        assertThat(result.getMinute(), is(30));
+        assertThat(result.getSecond(), is(45));
     }
 
     @Test
@@ -179,9 +179,9 @@ class DateTimeMapperTest extends UnitTest {
         final LocalDateTime result = DateTimeMapper.toLocalDateTime(zonedDateTime);
 
         // Then: LocalDateTime shows UTC time (1 hour earlier than Paris time in winter)
-        assertThat(result).isNotNull();
-        assertThat(result.getHour()).isEqualTo(10);
-        assertThat(result.getMinute()).isEqualTo(30);
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getHour(), is(10));
+        assertThat(result.getMinute(), is(30));
     }
 
     @Test
@@ -194,7 +194,7 @@ class DateTimeMapperTest extends UnitTest {
         final LocalDateTime result = DateTimeMapper.toLocalDateTime(zonedDateTime);
 
         // Then: Null is returned
-        assertThat(result).isNull();
+        assertThat(result, is(nullValue()));
     }
 
     @Test
@@ -207,11 +207,11 @@ class DateTimeMapperTest extends UnitTest {
         final ZonedDateTime result = dateTimeMapper.toZonedDateTime(localDateTime);
 
         // Then: ZonedDateTime is created with midnight time
-        assertThat(result).isNotNull();
-        assertThat(result.getHour()).isEqualTo(0);
-        assertThat(result.getMinute()).isEqualTo(0);
-        assertThat(result.getSecond()).isEqualTo(0);
-        assertThat(result.getZone()).isEqualTo(ZoneOffset.UTC);
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getHour(), is(0));
+        assertThat(result.getMinute(), is(0));
+        assertThat(result.getSecond(), is(0));
+        assertThat(result.getZone(), is(ZoneOffset.UTC));
     }
 
     @Test
@@ -224,10 +224,10 @@ class DateTimeMapperTest extends UnitTest {
         final ZonedDateTime result = dateTimeMapper.toZonedDateTime(localDateTime);
 
         // Then: ZonedDateTime is created with correct time
-        assertThat(result).isNotNull();
-        assertThat(result.getHour()).isEqualTo(23);
-        assertThat(result.getMinute()).isEqualTo(59);
-        assertThat(result.getSecond()).isEqualTo(59);
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getHour(), is(23));
+        assertThat(result.getMinute(), is(59));
+        assertThat(result.getSecond(), is(59));
     }
 
     @Test
@@ -241,6 +241,6 @@ class DateTimeMapperTest extends UnitTest {
         final LocalDateTime result = DateTimeMapper.toLocalDateTime(zonedDateTime);
 
         // Then: Original LocalDateTime is preserved
-        assertThat(result).isEqualTo(original);
+        assertThat(result, is(original));
     }
 }

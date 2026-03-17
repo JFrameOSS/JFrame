@@ -27,8 +27,6 @@ dependencies {
     // ======= TEST =======
     testImplementation("org.junit.jupiter", "junit-jupiter", retrieve("junitVersion"))
     testImplementation("org.mockito", "mockito-junit-jupiter", retrieve("mockitoVersion"))
-    testImplementation("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
-    testImplementation("org.assertj", "assertj-core", retrieve("assertjVersion"))
     testImplementation("jakarta.persistence", "jakarta.persistence-api", retrieve("jakartaPersistenceVersion"))
     testCompileOnly("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
     testCompileOnly("jakarta.annotation", "jakarta.annotation-api", retrieve("jakartaAnnotationVersion"))

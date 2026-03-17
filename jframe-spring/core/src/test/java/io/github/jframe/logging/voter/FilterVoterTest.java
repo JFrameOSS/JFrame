@@ -10,7 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.http.MediaType;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,7 +63,7 @@ class FilterVoterTest extends UnitTest {
         final boolean enabled = filterVoter.enabled(request);
 
         // Then: Filter is enabled
-        assertThat(enabled).isTrue();
+        assertThat(enabled, is(true));
         verify(request).setAttribute(anyString(), eq(true));
     }
 
@@ -79,7 +80,7 @@ class FilterVoterTest extends UnitTest {
         final boolean enabled = filterVoter.enabled(request);
 
         // Then: Filter is disabled due to media type
-        assertThat(enabled).isFalse();
+        assertThat(enabled, is(false));
         verify(request).setAttribute(anyString(), eq(false));
     }
 
@@ -96,7 +97,7 @@ class FilterVoterTest extends UnitTest {
         final boolean enabled = filterVoter.enabled(request);
 
         // Then: Filter is disabled due to request path
-        assertThat(enabled).isFalse();
+        assertThat(enabled, is(false));
         verify(request).setAttribute(anyString(), eq(false));
     }
 
@@ -113,7 +114,7 @@ class FilterVoterTest extends UnitTest {
         final boolean enabled = filterVoter.enabled(request);
 
         // Then: Filter is disabled
-        assertThat(enabled).isFalse();
+        assertThat(enabled, is(false));
         verify(request).setAttribute(anyString(), eq(false));
     }
 
@@ -127,7 +128,7 @@ class FilterVoterTest extends UnitTest {
         final boolean enabled = filterVoter.enabled(request);
 
         // Then: Cached value is returned without invoking voters
-        assertThat(enabled).isTrue();
+        assertThat(enabled, is(true));
         verify(mediaTypeVoter, times(0)).mediaTypeMatches(anyString());
         verify(requestVoter, times(0)).allowed(any());
     }
@@ -147,8 +148,8 @@ class FilterVoterTest extends UnitTest {
         final boolean enabled2 = filterVoter.enabled(request);
 
         // Then: Both calls return false and result is cached
-        assertThat(enabled1).isFalse();
-        assertThat(enabled2).isFalse();
+        assertThat(enabled1, is(false));
+        assertThat(enabled2, is(false));
         verify(mediaTypeVoter, times(1)).mediaTypeMatches(anyString());
         verify(requestVoter, times(1)).allowed(any());
     }
@@ -183,7 +184,7 @@ class FilterVoterTest extends UnitTest {
         final boolean enabled = filterVoter.enabled(request);
 
         // Then: Filter decision is based on voter responses
-        assertThat(enabled).isTrue();
+        assertThat(enabled, is(true));
     }
 
     @Test
@@ -199,7 +200,7 @@ class FilterVoterTest extends UnitTest {
         final boolean enabled = filterVoter.enabled(request);
 
         // Then: Both voters are evaluated and result is false
-        assertThat(enabled).isFalse();
+        assertThat(enabled, is(false));
         verify(mediaTypeVoter).mediaTypeMatches(MediaType.APPLICATION_JSON_VALUE);
         verify(requestVoter).allowed(request);
     }

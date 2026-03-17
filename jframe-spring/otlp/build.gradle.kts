@@ -9,7 +9,6 @@ dependencies {
     // ======= NECESSARY SPRING DEPENDENCIES =======
     api("org.springframework.boot", "spring-boot-starter-web")
     api("org.springframework.boot", "spring-boot-starter-webflux")
-    api("org.springframework.boot", "spring-boot-starter-security")
 
     // ======= OTEL DEPENDENCIES (https://opentelemetry.io/docs/getting-started/) =======
     api("org.apache.httpcomponents.client5", "httpclient5", retrieve("httpClientVersion"))

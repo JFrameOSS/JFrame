@@ -22,7 +22,8 @@ import org.springframework.web.reactive.function.client.ClientRequest;
 
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.*;
 import static io.github.jframe.util.constants.Constants.Headers.L7_REQUEST_ID;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -99,7 +100,7 @@ class SpanManagerTest extends UnitTest {
 
         // And: Span is started and returned
         verify(spanBuilder).startSpan();
-        assertThat(result).isEqualTo(span);
+        assertThat(result, is(span));
     }
 
     @Test
@@ -255,7 +256,7 @@ class SpanManagerTest extends UnitTest {
         // Then: Context propagator is called to inject trace context
         final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
         verify(textMapPropagator).inject(contextCaptor.capture(), eq(headers), any());
-        assertThat(contextCaptor.getValue()).isNotNull();
+        assertThat(contextCaptor.getValue(), is(notNullValue()));
     }
 
     @Test
@@ -270,7 +271,7 @@ class SpanManagerTest extends UnitTest {
         // Then: Context propagator is called to inject trace context
         final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
         verify(textMapPropagator).inject(contextCaptor.capture(), eq(requestBuilder), any());
-        assertThat(contextCaptor.getValue()).isNotNull();
+        assertThat(contextCaptor.getValue(), is(notNullValue()));
     }
 
     @Test

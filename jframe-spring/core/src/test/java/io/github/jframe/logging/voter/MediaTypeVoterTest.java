@@ -11,7 +11,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Unit tests for {@link MediaTypeVoter}.
@@ -39,7 +40,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches(MediaType.APPLICATION_JSON);
 
         // Then: Match is found
-        assertThat(matches).isTrue();
+        assertThat(matches, is(true));
     }
 
     @Test
@@ -53,7 +54,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches("application/json");
 
         // Then: Match is found
-        assertThat(matches).isTrue();
+        assertThat(matches, is(true));
     }
 
     @Test
@@ -67,7 +68,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches(MediaType.APPLICATION_XML);
 
         // Then: No match is found
-        assertThat(matches).isFalse();
+        assertThat(matches, is(false));
     }
 
     @Test
@@ -83,9 +84,9 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean textMatches = voter.mediaTypeMatches(MediaType.TEXT_PLAIN);
 
         // Then: Application types match, but text type does not
-        assertThat(jsonMatches).isTrue();
-        assertThat(xmlMatches).isTrue();
-        assertThat(textMatches).isFalse();
+        assertThat(jsonMatches, is(true));
+        assertThat(xmlMatches, is(true));
+        assertThat(textMatches, is(false));
     }
 
     @Test
@@ -99,7 +100,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches("application/json;charset=UTF-8");
 
         // Then: Match is found despite charset parameter
-        assertThat(matches).isTrue();
+        assertThat(matches, is(true));
     }
 
     @Test
@@ -120,10 +121,10 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean htmlMatches = voter.mediaTypeMatches(MediaType.TEXT_HTML);
 
         // Then: Configured types match, unconfigured type does not
-        assertThat(jsonMatches).isTrue();
-        assertThat(xmlMatches).isTrue();
-        assertThat(textMatches).isTrue();
-        assertThat(htmlMatches).isFalse();
+        assertThat(jsonMatches, is(true));
+        assertThat(xmlMatches, is(true));
+        assertThat(textMatches, is(true));
+        assertThat(htmlMatches, is(false));
     }
 
     @Test
@@ -137,7 +138,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches((MediaType) null);
 
         // Then: Match is found because matchIfEmpty is true
-        assertThat(matches).isTrue();
+        assertThat(matches, is(true));
     }
 
     @Test
@@ -151,7 +152,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches((MediaType) null);
 
         // Then: No match is found because matchIfEmpty is false
-        assertThat(matches).isFalse();
+        assertThat(matches, is(false));
     }
 
     @Test
@@ -164,7 +165,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches(MediaType.APPLICATION_JSON);
 
         // Then: Match is found because matchIfEmpty is true
-        assertThat(matches).isTrue();
+        assertThat(matches, is(true));
     }
 
     @Test
@@ -177,7 +178,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches(MediaType.APPLICATION_JSON);
 
         // Then: No match is found because matchIfEmpty is false
-        assertThat(matches).isFalse();
+        assertThat(matches, is(false));
     }
 
     @Test
@@ -190,7 +191,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches(MediaType.APPLICATION_JSON);
 
         // Then: Match is found because matchIfEmpty is true
-        assertThat(matches).isTrue();
+        assertThat(matches, is(true));
     }
 
     @Test
@@ -203,7 +204,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches(MediaType.APPLICATION_JSON);
 
         // Then: No match is found because matchIfEmpty is false
-        assertThat(matches).isFalse();
+        assertThat(matches, is(false));
     }
 
     @Test
@@ -217,7 +218,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches("invalid-media-type");
 
         // Then: No match is found due to invalid format
-        assertThat(matches).isFalse();
+        assertThat(matches, is(false));
     }
 
     @Test
@@ -231,7 +232,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches("   ");
 
         // Then: Match is found because matchIfEmpty is true
-        assertThat(matches).isTrue();
+        assertThat(matches, is(true));
     }
 
     @Test
@@ -245,7 +246,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches("   ");
 
         // Then: No match is found because matchIfEmpty is false
-        assertThat(matches).isFalse();
+        assertThat(matches, is(false));
     }
 
     @Test
@@ -259,7 +260,7 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean matches = voter.mediaTypeMatches("APPLICATION/JSON");
 
         // Then: Match is found regardless of case
-        assertThat(matches).isTrue();
+        assertThat(matches, is(true));
     }
 
     @Test
@@ -275,8 +276,8 @@ class MediaTypeVoterTest extends UnitTest {
         final boolean textMatches = voter.mediaTypeMatches(MediaType.TEXT_PLAIN);
 
         // Then: All media types match
-        assertThat(jsonMatches).isTrue();
-        assertThat(xmlMatches).isTrue();
-        assertThat(textMatches).isTrue();
+        assertThat(jsonMatches, is(true));
+        assertThat(xmlMatches, is(true));
+        assertThat(textMatches, is(true));
     }
 }

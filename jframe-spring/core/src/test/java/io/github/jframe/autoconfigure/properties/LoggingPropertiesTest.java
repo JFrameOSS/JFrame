@@ -16,7 +16,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Unit tests for {@link LoggingProperties}.
@@ -52,7 +53,7 @@ class LoggingPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<LoggingProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -64,7 +65,7 @@ class LoggingPropertiesTest extends UnitTest {
         final boolean disabled = properties.isDisabled();
 
         // Then: Default value is false
-        assertThat(disabled).isFalse();
+        assertThat(disabled, is(false));
     }
 
     @Test
@@ -76,7 +77,7 @@ class LoggingPropertiesTest extends UnitTest {
         final int responseLength = properties.getResponseLength();
 
         // Then: Default value is -1 (unlimited)
-        assertThat(responseLength).isEqualTo(-1);
+        assertThat(responseLength, is(-1));
     }
 
     @Test
@@ -88,7 +89,7 @@ class LoggingPropertiesTest extends UnitTest {
         final List<MediaType> excludedTypes = properties.getBodyExcludedContentTypes();
 
         // Then: Default list includes multipart/form-data
-        assertThat(excludedTypes).contains(MediaType.MULTIPART_FORM_DATA);
+        assertThat(excludedTypes, hasItem(MediaType.MULTIPART_FORM_DATA));
     }
 
     @Test
@@ -100,8 +101,8 @@ class LoggingPropertiesTest extends UnitTest {
         final List<PathDefinition> excludePaths = properties.getExcludePaths();
 
         // Then: Default list includes /actuator/* pattern
-        assertThat(excludePaths).hasSize(1);
-        assertThat(excludePaths.get(0).getPattern()).isEqualTo("/actuator/*");
+        assertThat(excludePaths, hasSize(1));
+        assertThat(excludePaths.get(0).getPattern(), is("/actuator/*"));
     }
 
     @Test
@@ -113,8 +114,7 @@ class LoggingPropertiesTest extends UnitTest {
         final List<String> fieldsToMask = properties.getFieldsToMask();
 
         // Then: Default list includes password, client_secret, secret, and keyPassphrase
-        assertThat(fieldsToMask)
-            .contains("password", "keyPassphrase", "client_secret", "secret");
+        assertThat(fieldsToMask, hasItems("password", "keyPassphrase", "client_secret", "secret"));
     }
 
     @Test
@@ -126,13 +126,15 @@ class LoggingPropertiesTest extends UnitTest {
         final List<MediaType> allowedTypes = properties.getAllowedContentTypes();
 
         // Then: Default list includes JSON, XML, plain text, and other common types
-        assertThat(allowedTypes)
-            .contains(
+        assertThat(
+            allowedTypes,
+            hasItems(
                 MediaType.parseMediaType("application/json"),
                 MediaType.parseMediaType("application/xml"),
                 MediaType.parseMediaType("text/plain")
-            );
-        assertThat(allowedTypes).hasSizeGreaterThan(5);
+            )
+        );
+        assertThat(allowedTypes.size(), greaterThan(5));
     }
 
     @Test
@@ -145,9 +147,11 @@ class LoggingPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<LoggingProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about minimum value
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("Response length must be -1 (unlimited) or a positive number");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("Response length must be -1 (unlimited) or a positive number")
+        );
     }
 
     @Test
@@ -160,7 +164,7 @@ class LoggingPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<LoggingProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -173,7 +177,7 @@ class LoggingPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<LoggingProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -186,7 +190,7 @@ class LoggingPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<LoggingProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -199,9 +203,11 @@ class LoggingPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<LoggingProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about empty list
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("Allowed content types list cannot be empty");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("Allowed content types list cannot be empty")
+        );
     }
 
     @Test
@@ -214,7 +220,7 @@ class LoggingPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<LoggingProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -226,7 +232,7 @@ class LoggingPropertiesTest extends UnitTest {
         properties.setDisabled(true);
 
         // Then: Disabled property is set correctly
-        assertThat(properties.isDisabled()).isTrue();
+        assertThat(properties.isDisabled(), is(true));
     }
 
     @Test
@@ -239,7 +245,7 @@ class LoggingPropertiesTest extends UnitTest {
         properties.setResponseLength(responseLength);
 
         // Then: ResponseLength property is set correctly
-        assertThat(properties.getResponseLength()).isEqualTo(responseLength);
+        assertThat(properties.getResponseLength(), is(responseLength));
     }
 
     @Test
@@ -255,7 +261,7 @@ class LoggingPropertiesTest extends UnitTest {
         properties.setBodyExcludedContentTypes(excludedTypes);
 
         // Then: BodyExcludedContentTypes property is set correctly
-        assertThat(properties.getBodyExcludedContentTypes()).isEqualTo(excludedTypes);
+        assertThat(properties.getBodyExcludedContentTypes(), is(excludedTypes));
     }
 
     @Test
@@ -271,7 +277,7 @@ class LoggingPropertiesTest extends UnitTest {
         properties.setExcludePaths(excludePaths);
 
         // Then: ExcludePaths property is set correctly
-        assertThat(properties.getExcludePaths()).isEqualTo(excludePaths);
+        assertThat(properties.getExcludePaths(), is(excludePaths));
     }
 
     @Test
@@ -284,7 +290,7 @@ class LoggingPropertiesTest extends UnitTest {
         properties.setFieldsToMask(fieldsToMask);
 
         // Then: FieldsToMask property is set correctly
-        assertThat(properties.getFieldsToMask()).isEqualTo(fieldsToMask);
+        assertThat(properties.getFieldsToMask(), is(fieldsToMask));
     }
 
     @Test
@@ -300,7 +306,7 @@ class LoggingPropertiesTest extends UnitTest {
         properties.setAllowedContentTypes(allowedTypes);
 
         // Then: AllowedContentTypes property is set correctly
-        assertThat(properties.getAllowedContentTypes()).isEqualTo(allowedTypes);
+        assertThat(properties.getAllowedContentTypes(), is(allowedTypes));
     }
 
     @Test
@@ -309,7 +315,7 @@ class LoggingPropertiesTest extends UnitTest {
         // Given/When: Getting the CONFIG_PREFIX constant
 
         // Then: Prefix matches expected value
-        assertThat(LoggingProperties.CONFIG_PREFIX).isEqualTo("jframe.logging");
+        assertThat(LoggingProperties.CONFIG_PREFIX, is("jframe.logging"));
     }
 
     @Test
@@ -324,6 +330,6 @@ class LoggingPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<LoggingProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations for optional lists
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 }

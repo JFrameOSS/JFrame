@@ -20,7 +20,10 @@ import static io.github.jframe.logging.kibana.KibanaLogFieldNames.SPAN_ID;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
 import static io.github.jframe.util.constants.Constants.Headers.SPAN_ID_HEADER;
 import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -60,8 +63,8 @@ public class TracingResponseFilterTest extends UnitTest {
             filter.filter(requestContext, responseContext);
 
             // Then: Trace ID and span ID are added to response headers
-            assertThat(headers.containsKey(TRACE_ID_HEADER)).isTrue();
-            assertThat(headers.containsKey(SPAN_ID_HEADER)).isTrue();
+            assertThat(headers.containsKey(TRACE_ID_HEADER), is(true));
+            assertThat(headers.containsKey(SPAN_ID_HEADER), is(true));
         }
     }
 
@@ -85,8 +88,8 @@ public class TracingResponseFilterTest extends UnitTest {
 
             // Then: MDC fields are set with trace and span IDs
             // (KibanaLogFields cleared in @AfterEach; check headers as proxy for MDC population)
-            assertThat(headers.getFirst(TRACE_ID_HEADER)).isEqualTo(TEST_TRACE_ID);
-            assertThat(headers.getFirst(SPAN_ID_HEADER)).isEqualTo(TEST_SPAN_ID);
+            assertThat(headers.getFirst(TRACE_ID_HEADER), is(TEST_TRACE_ID));
+            assertThat(headers.getFirst(SPAN_ID_HEADER), is(TEST_SPAN_ID));
         }
     }
 
@@ -111,8 +114,8 @@ public class TracingResponseFilterTest extends UnitTest {
             filter.filter(requestContext, responseContext);
 
             // Then: Existing headers are not overwritten (size stays at 1)
-            assertThat(headers.get(TRACE_ID_HEADER)).hasSize(1);
-            assertThat(headers.get(SPAN_ID_HEADER)).hasSize(1);
+            assertThat(headers.get(TRACE_ID_HEADER), hasSize(1));
+            assertThat(headers.get(SPAN_ID_HEADER), hasSize(1));
         }
     }
 
@@ -134,8 +137,8 @@ public class TracingResponseFilterTest extends UnitTest {
             filter.filter(requestContext, responseContext);
 
             // Then: No headers are added
-            assertThat(headers.containsKey(TRACE_ID_HEADER)).isFalse();
-            assertThat(headers.containsKey(SPAN_ID_HEADER)).isFalse();
+            assertThat(headers.containsKey(TRACE_ID_HEADER), is(false));
+            assertThat(headers.containsKey(SPAN_ID_HEADER), is(false));
         }
     }
 
@@ -158,8 +161,8 @@ public class TracingResponseFilterTest extends UnitTest {
             filter.filter(requestContext, responseContext);
 
             // Then: No headers are added for invalid span
-            assertThat(headers.containsKey(TRACE_ID_HEADER)).isFalse();
-            assertThat(headers.containsKey(SPAN_ID_HEADER)).isFalse();
+            assertThat(headers.containsKey(TRACE_ID_HEADER), is(false));
+            assertThat(headers.containsKey(SPAN_ID_HEADER), is(false));
         }
     }
 
@@ -182,8 +185,8 @@ public class TracingResponseFilterTest extends UnitTest {
             filter.filter(requestContext, responseContext);
 
             // Then: MDC is cleaned up after execution
-            assertThat(KibanaLogFields.get(TRACE_ID)).isNull();
-            assertThat(KibanaLogFields.get(SPAN_ID)).isNull();
+            assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
+            assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
         }
     }
 
@@ -208,8 +211,8 @@ public class TracingResponseFilterTest extends UnitTest {
             filter.filter(requestContext, responseContext);
 
             // Then: Custom header names are used
-            assertThat(headers.containsKey(customTraceHeader)).isTrue();
-            assertThat(headers.containsKey(customSpanHeader)).isTrue();
+            assertThat(headers.containsKey(customTraceHeader), is(true));
+            assertThat(headers.containsKey(customSpanHeader), is(true));
         }
     }
 

@@ -12,7 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.*;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Unit tests for {@link KibanaLogFields}.
@@ -46,8 +47,8 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.tag(REQUEST_ID, value);
 
         // Then: Value can be retrieved from MDC
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isEqualTo(value);
-        assertThat(MDC.get(REQUEST_ID.getLogName())).isEqualTo(value);
+        assertThat(KibanaLogFields.get(REQUEST_ID), is(value));
+        assertThat(MDC.get(REQUEST_ID.getLogName()), is(value));
     }
 
     @Test
@@ -60,7 +61,7 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.tag(HTTP_STATUS, value);
 
         // Then: Value is stored as string and can be retrieved
-        assertThat(KibanaLogFields.get(HTTP_STATUS)).isEqualTo("200");
+        assertThat(KibanaLogFields.get(HTTP_STATUS), is("200"));
     }
 
     @Test
@@ -73,7 +74,7 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.tag(TX_STATUS, value);
 
         // Then: Enum is converted to string and can be retrieved
-        assertThat(KibanaLogFields.get(TX_STATUS)).isEqualTo("SUCCESS");
+        assertThat(KibanaLogFields.get(TX_STATUS), is("SUCCESS"));
     }
 
     @Test
@@ -86,7 +87,7 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.tag(TX_REQUEST_HEADERS, values);
 
         // Then: Collection is formatted as array string with quotes
-        assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS)).isEqualTo("['header1', 'header2', 'header3']");
+        assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS), is("['header1', 'header2', 'header3']"));
     }
 
     @Test
@@ -99,7 +100,7 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.tag(REQUEST_ID, "   ");
 
         // Then: Field is cleared from MDC
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isNull();
+        assertThat(KibanaLogFields.get(REQUEST_ID), is(nullValue()));
     }
 
     @Test
@@ -112,7 +113,7 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.tag(REQUEST_ID, (String) null);
 
         // Then: Field is cleared from MDC
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isNull();
+        assertThat(KibanaLogFields.get(REQUEST_ID), is(nullValue()));
     }
 
     @Test
@@ -125,7 +126,7 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.tag(TX_REQUEST_HEADERS, (List<String>) null);
 
         // Then: Field is cleared from MDC
-        assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS)).isNull();
+        assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS), is(nullValue()));
     }
 
     @Test
@@ -138,7 +139,7 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.tag(TX_REQUEST_HEADERS, Collections.emptyList());
 
         // Then: Field is cleared from MDC
-        assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS)).isNull();
+        assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS), is(nullValue()));
     }
 
     @Test
@@ -150,7 +151,7 @@ class KibanaLogFieldsTest extends UnitTest {
         final String result = KibanaLogFields.get(REQUEST_ID);
 
         // Then: Null is returned
-        assertThat(result).isNull();
+        assertThat(result, is(nullValue()));
     }
 
     @Test
@@ -163,7 +164,7 @@ class KibanaLogFieldsTest extends UnitTest {
         final String result = KibanaLogFields.getOrDefault(REQUEST_ID, defaultValue);
 
         // Then: Default value is returned
-        assertThat(result).isEqualTo(defaultValue);
+        assertThat(result, is(defaultValue));
     }
 
     @Test
@@ -178,7 +179,7 @@ class KibanaLogFieldsTest extends UnitTest {
         final String result = KibanaLogFields.getOrDefault(REQUEST_ID, defaultValue);
 
         // Then: Actual value is returned, not default
-        assertThat(result).isEqualTo(actualValue);
+        assertThat(result, is(actualValue));
     }
 
     @Test
@@ -192,8 +193,8 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.clear(REQUEST_ID);
 
         // Then: Specified field is cleared, others remain
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isNull();
-        assertThat(KibanaLogFields.get(TX_ID)).isEqualTo("transaction-456");
+        assertThat(KibanaLogFields.get(REQUEST_ID), is(nullValue()));
+        assertThat(KibanaLogFields.get(TX_ID), is("transaction-456"));
     }
 
     @Test
@@ -208,9 +209,9 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.clear(REQUEST_ID, TX_ID);
 
         // Then: Specified fields are cleared, others remain
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isNull();
-        assertThat(KibanaLogFields.get(TX_ID)).isNull();
-        assertThat(KibanaLogFields.get(SESSION_ID)).isEqualTo("session-789");
+        assertThat(KibanaLogFields.get(REQUEST_ID), is(nullValue()));
+        assertThat(KibanaLogFields.get(TX_ID), is(nullValue()));
+        assertThat(KibanaLogFields.get(SESSION_ID), is("session-789"));
     }
 
     @Test
@@ -225,10 +226,10 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.clear();
 
         // Then: All fields are cleared from MDC
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isNull();
-        assertThat(KibanaLogFields.get(TX_ID)).isNull();
-        assertThat(KibanaLogFields.get(SESSION_ID)).isNull();
-        assertThat(MDC.getCopyOfContextMap()).isNullOrEmpty();
+        assertThat(KibanaLogFields.get(REQUEST_ID), is(nullValue()));
+        assertThat(KibanaLogFields.get(TX_ID), is(nullValue()));
+        assertThat(KibanaLogFields.get(SESSION_ID), is(nullValue()));
+        assertThat(MDC.getCopyOfContextMap(), anyOf(nullValue(), anEmptyMap()));
     }
 
     @Test
@@ -240,11 +241,11 @@ class KibanaLogFieldsTest extends UnitTest {
         // When: Creating auto-closeable field and using it in try-with-resources
         try (AutoCloseableKibanaLogField field = KibanaLogFields.tagCloseable(REQUEST_ID, "request-123")) {
             // Then: Field is set within the try block
-            assertThat(KibanaLogFields.get(REQUEST_ID)).isEqualTo("request-123");
+            assertThat(KibanaLogFields.get(REQUEST_ID), is("request-123"));
         }
 
         // Then: Field is automatically cleared after try block
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isNull();
+        assertThat(KibanaLogFields.get(REQUEST_ID), is(nullValue()));
     }
 
     @Test
@@ -256,11 +257,11 @@ class KibanaLogFieldsTest extends UnitTest {
         // When: Creating auto-closeable field with integer
         try (AutoCloseableKibanaLogField field = KibanaLogFields.tagCloseable(HTTP_STATUS, 200)) {
             // Then: Field is set within the try block
-            assertThat(KibanaLogFields.get(HTTP_STATUS)).isEqualTo("200");
+            assertThat(KibanaLogFields.get(HTTP_STATUS), is("200"));
         }
 
         // Then: Field is automatically cleared after try block
-        assertThat(KibanaLogFields.get(HTTP_STATUS)).isNull();
+        assertThat(KibanaLogFields.get(HTTP_STATUS), is(nullValue()));
     }
 
     @Test
@@ -272,11 +273,11 @@ class KibanaLogFieldsTest extends UnitTest {
         // When: Creating auto-closeable field with enum
         try (AutoCloseableKibanaLogField field = KibanaLogFields.tagCloseable(TX_STATUS, TestEnum.SUCCESS)) {
             // Then: Field is set within the try block
-            assertThat(KibanaLogFields.get(TX_STATUS)).isEqualTo("SUCCESS");
+            assertThat(KibanaLogFields.get(TX_STATUS), is("SUCCESS"));
         }
 
         // Then: Field is automatically cleared after try block
-        assertThat(KibanaLogFields.get(TX_STATUS)).isNull();
+        assertThat(KibanaLogFields.get(TX_STATUS), is(nullValue()));
     }
 
     @Test
@@ -289,11 +290,11 @@ class KibanaLogFieldsTest extends UnitTest {
         // When: Creating auto-closeable field with collection
         try (AutoCloseableKibanaLogField field = KibanaLogFields.tagCloseable(TX_REQUEST_HEADERS, headers)) {
             // Then: Field is set with formatted array within the try block
-            assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS)).isEqualTo("['header1', 'header2']");
+            assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS), is("['header1', 'header2']"));
         }
 
         // Then: Field is automatically cleared after try block
-        assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS)).isNull();
+        assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS), is(nullValue()));
     }
 
     @Test
@@ -308,9 +309,9 @@ class KibanaLogFieldsTest extends UnitTest {
         final String logString = KibanaLogFields.getValuesAsLogString();
 
         // Then: Log string contains all fields except LOG_TYPE
-        assertThat(logString).contains("req_id=\"req-123\"");
-        assertThat(logString).contains("tx_id=\"tx-456\"");
-        assertThat(logString).doesNotContain("log_type");
+        assertThat(logString, containsString("req_id=\"req-123\""));
+        assertThat(logString, containsString("tx_id=\"tx-456\""));
+        assertThat(logString, not(containsString("log_type")));
     }
 
 
@@ -325,9 +326,9 @@ class KibanaLogFieldsTest extends UnitTest {
         final KibanaLogContext context = KibanaLogFields.getContext();
 
         // Then: Context captures current MDC state
-        assertThat(context).isNotNull();
-        assertThat(context.getContextMap()).containsEntry("req_id", "req-123");
-        assertThat(context.getContextMap()).containsEntry("tx_id", "tx-456");
+        assertThat(context, is(notNullValue()));
+        assertThat(context.getContextMap(), hasEntry("req_id", "req-123"));
+        assertThat(context.getContextMap(), hasEntry("tx_id", "tx-456"));
     }
 
     @Test
@@ -340,14 +341,14 @@ class KibanaLogFieldsTest extends UnitTest {
 
         // Clear current MDC
         KibanaLogFields.clear();
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isNull();
+        assertThat(KibanaLogFields.get(REQUEST_ID), is(nullValue()));
 
         // When: Populating from saved context
         KibanaLogFields.populateFromContext(context);
 
         // Then: MDC is restored with context values
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isEqualTo("req-123");
-        assertThat(KibanaLogFields.get(TX_ID)).isEqualTo("tx-456");
+        assertThat(KibanaLogFields.get(REQUEST_ID), is("req-123"));
+        assertThat(KibanaLogFields.get(TX_ID), is("tx-456"));
     }
 
     @Test
@@ -360,7 +361,7 @@ class KibanaLogFieldsTest extends UnitTest {
         KibanaLogFields.populateFromContext(null);
 
         // Then: No exception is thrown and existing fields remain
-        assertThat(KibanaLogFields.get(REQUEST_ID)).isEqualTo("req-123");
+        assertThat(KibanaLogFields.get(REQUEST_ID), is("req-123"));
     }
 
     @Test
@@ -372,7 +373,7 @@ class KibanaLogFieldsTest extends UnitTest {
         final KibanaLogField result = KibanaLogFields.tag(REQUEST_ID, "req-123");
 
         // Then: The field itself is returned for potential chaining
-        assertThat(result).isEqualTo(REQUEST_ID);
+        assertThat(result, is(REQUEST_ID));
     }
 
     // Test enum for testing enum values

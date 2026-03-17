@@ -11,7 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Unit tests for {@link OpenTelemetryProperties}.
@@ -47,7 +48,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -59,7 +60,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final boolean disabled = properties.isDisabled();
 
         // Then: Default value is false
-        assertThat(disabled).isFalse();
+        assertThat(disabled, is(false));
     }
 
     @Test
@@ -71,7 +72,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final String url = properties.getUrl();
 
         // Then: Default value is http://localhost:4318
-        assertThat(url).isEqualTo("http://localhost:4318");
+        assertThat(url, is("http://localhost:4318"));
     }
 
     @Test
@@ -83,7 +84,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final String timeout = properties.getTimeout();
 
         // Then: Default value is 10s
-        assertThat(timeout).isEqualTo("10s");
+        assertThat(timeout, is("10s"));
     }
 
     @Test
@@ -95,7 +96,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final String exporter = properties.getExporter();
 
         // Then: Default value is otlp
-        assertThat(exporter).isEqualTo("otlp");
+        assertThat(exporter, is("otlp"));
     }
 
     @Test
@@ -107,7 +108,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final double samplingRate = properties.getSamplingRate();
 
         // Then: Default value is 1.0
-        assertThat(samplingRate).isEqualTo(1.0);
+        assertThat(samplingRate, is(1.0));
     }
 
     @Test
@@ -119,8 +120,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<String> excludedMethods = properties.getExcludedMethods();
 
         // Then: Default set includes common health check methods
-        assertThat(excludedMethods)
-            .contains("health", "actuator", "ping", "status");
+        assertThat(excludedMethods, hasItems("health", "actuator", "ping", "status"));
     }
 
     @Test
@@ -133,9 +133,11 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank url
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("OpenTelemetry OTLP URL must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("OpenTelemetry OTLP URL must not be blank")
+        );
     }
 
     @Test
@@ -148,9 +150,11 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank url
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("OpenTelemetry OTLP URL must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("OpenTelemetry OTLP URL must not be blank")
+        );
     }
 
     @Test
@@ -163,9 +167,11 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank timeout
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("OpenTelemetry timeout must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("OpenTelemetry timeout must not be blank")
+        );
     }
 
     @Test
@@ -178,7 +184,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails
-        assertThat(violations).hasSizeGreaterThanOrEqualTo(1);
+        assertThat(violations.size(), greaterThanOrEqualTo(1));
     }
 
     @Test
@@ -191,9 +197,11 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about format
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("Timeout must be in format: number followed by s (seconds), m (minutes), or h (hours)");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("Timeout must be in format: number followed by s (seconds), m (minutes), or h (hours)")
+        );
     }
 
     @Test
@@ -206,7 +214,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -219,7 +227,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -232,7 +240,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -245,9 +253,11 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about blank exporter
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("OpenTelemetry exporter must not be blank");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("OpenTelemetry exporter must not be blank")
+        );
     }
 
     @Test
@@ -260,7 +270,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails
-        assertThat(violations).hasSizeGreaterThanOrEqualTo(1);
+        assertThat(violations.size(), greaterThanOrEqualTo(1));
     }
 
     @Test
@@ -273,9 +283,11 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about valid options
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("Exporter must be one of: otlp, jaeger, zipkin");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("Exporter must be one of: otlp, jaeger, zipkin")
+        );
     }
 
     @Test
@@ -288,7 +300,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -301,7 +313,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -314,7 +326,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -327,9 +339,11 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about range
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("Sampling rate must be between 0.0 and 1.0");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("Sampling rate must be between 0.0 and 1.0")
+        );
     }
 
     @Test
@@ -342,9 +356,11 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails with message about range
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .contains("Sampling rate must be between 0.0 and 1.0");
+        assertThat(violations, hasSize(1));
+        assertThat(
+            violations.iterator().next().getMessage(),
+            containsString("Sampling rate must be between 0.0 and 1.0")
+        );
     }
 
     @Test
@@ -357,7 +373,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -370,7 +386,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -383,7 +399,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: No validation violations
-        assertThat(violations).isEmpty();
+        assertThat(violations, is(empty()));
     }
 
     @Test
@@ -395,7 +411,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         properties.setDisabled(true);
 
         // Then: Disabled property is set correctly
-        assertThat(properties.isDisabled()).isTrue();
+        assertThat(properties.isDisabled(), is(true));
     }
 
     @Test
@@ -408,7 +424,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         properties.setUrl(url);
 
         // Then: URL property is set correctly
-        assertThat(properties.getUrl()).isEqualTo(url);
+        assertThat(properties.getUrl(), is(url));
     }
 
     @Test
@@ -421,7 +437,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         properties.setTimeout(timeout);
 
         // Then: Timeout property is set correctly
-        assertThat(properties.getTimeout()).isEqualTo(timeout);
+        assertThat(properties.getTimeout(), is(timeout));
     }
 
     @Test
@@ -434,7 +450,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         properties.setExporter(exporter);
 
         // Then: Exporter property is set correctly
-        assertThat(properties.getExporter()).isEqualTo(exporter);
+        assertThat(properties.getExporter(), is(exporter));
     }
 
     @Test
@@ -447,7 +463,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         properties.setSamplingRate(samplingRate);
 
         // Then: SamplingRate property is set correctly
-        assertThat(properties.getSamplingRate()).isEqualTo(samplingRate);
+        assertThat(properties.getSamplingRate(), is(samplingRate));
     }
 
     @Test
@@ -460,7 +476,7 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         properties.setExcludedMethods(excludedMethods);
 
         // Then: ExcludedMethods property is set correctly
-        assertThat(properties.getExcludedMethods()).isEqualTo(excludedMethods);
+        assertThat(properties.getExcludedMethods(), is(excludedMethods));
     }
 
     @Test
@@ -476,6 +492,6 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         final Set<ConstraintViolation<OpenTelemetryProperties>> violations = validator.validate(properties);
 
         // Then: Validation fails for all invalid fields
-        assertThat(violations).hasSize(4);
+        assertThat(violations, hasSize(4));
     }
 }
