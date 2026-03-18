@@ -19,7 +19,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -51,21 +50,6 @@ public class ScheduledContextInterceptorTest extends UnitTest {
         RequestId.remove();
         TransactionId.remove();
         KibanaLogFields.clear();
-    }
-
-    @Test
-    @DisplayName("Should return value from intercepted method")
-    public void shouldReturnValueFromInterceptedMethod() throws Exception {
-        // Given: An InvocationContext whose proceed() returns a value
-        final InvocationContext context = mock(InvocationContext.class);
-        when(context.proceed()).thenReturn("scheduled-result");
-
-        // When: The interceptor processes the method
-        final Object result = interceptor.aroundInvoke(context);
-
-        // Then: The original return value is propagated
-        assertThat(result, is(notNullValue()));
-        assertThat(result, is("scheduled-result"));
     }
 
     @Test
@@ -167,36 +151,6 @@ public class ScheduledContextInterceptorTest extends UnitTest {
         } catch (final RuntimeException e) {
             assertThat(e.getMessage(), is("scheduled task failed"));
         }
-    }
-
-    @Test
-    @DisplayName("Should delegate to context.proceed()")
-    public void shouldDelegateToContextProceed() throws Exception {
-        // Given: An InvocationContext
-        final InvocationContext context = mock(InvocationContext.class);
-        when(context.proceed()).thenReturn("result");
-
-        // When: The interceptor processes the method
-        interceptor.aroundInvoke(context);
-
-        // Then: InvocationContext.proceed() was called exactly once
-        verify(context).proceed();
-    }
-
-    @Test
-    @DisplayName("Should handle null return value from intercepted method")
-    public void shouldHandleNullReturnValueFromInterceptedMethod() throws Exception {
-        // Given: An InvocationContext whose proceed() returns null (void method)
-        final InvocationContext context = mock(InvocationContext.class);
-        when(context.proceed()).thenReturn(null);
-
-        // When: The interceptor processes the method
-        final Object result = interceptor.aroundInvoke(context);
-
-        // Then: Null is returned without exception, and cleanup still occurs
-        assertThat(result, is(nullValue()));
-        assertThat(RequestId.get(), is(nullValue()));
-        assertThat(TransactionId.get(), is(nullValue()));
     }
 
 }

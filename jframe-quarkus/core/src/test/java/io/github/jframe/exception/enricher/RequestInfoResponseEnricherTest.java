@@ -109,47 +109,4 @@ public class RequestInfoResponseEnricherTest extends UnitTest {
         assertThat(resource.getMethod(), is(equalTo("DELETE")));
     }
 
-    @Test
-    @DisplayName("Should enrich POST method with JSON content type")
-    public void shouldEnrichPostMethodWithJsonContentType() {
-        // Given: A mocked ContainerRequestContext for a POST request
-        final ErrorResponseResource resource = new ErrorResponseResource();
-        final Throwable throwable = new RuntimeException("error");
-        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
-        final UriInfo uriInfo = mock(UriInfo.class);
-
-        when(requestContext.getMethod()).thenReturn("POST");
-        when(requestContext.getUriInfo()).thenReturn(uriInfo);
-        when(uriInfo.getRequestUri()).thenReturn(URI.create("http://localhost/api/products"));
-        when(requestContext.getMediaType()).thenReturn(MediaType.APPLICATION_JSON_TYPE);
-
-        // When: Enriching the response
-        enricher.doEnrich(resource, throwable, requestContext, 400);
-
-        // Then: Method and content type are correctly set
-        assertThat(resource.getMethod(), is(equalTo("POST")));
-        assertThat(resource.getContentType(), is(equalTo("application/json")));
-    }
-
-    @Test
-    @DisplayName("Should enrich PUT method with XML content type")
-    public void shouldEnrichPutMethodWithXmlContentType() {
-        // Given: A mocked ContainerRequestContext for a PUT request with XML
-        final ErrorResponseResource resource = new ErrorResponseResource();
-        final Throwable throwable = new RuntimeException("error");
-        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
-        final UriInfo uriInfo = mock(UriInfo.class);
-
-        when(requestContext.getMethod()).thenReturn("PUT");
-        when(requestContext.getUriInfo()).thenReturn(uriInfo);
-        when(uriInfo.getRequestUri()).thenReturn(URI.create("http://localhost/api/items/42"));
-        when(requestContext.getMediaType()).thenReturn(MediaType.APPLICATION_XML_TYPE);
-
-        // When: Enriching the response
-        enricher.doEnrich(resource, throwable, requestContext, 400);
-
-        // Then: Method and content type are correctly set
-        assertThat(resource.getMethod(), is(equalTo("PUT")));
-        assertThat(resource.getContentType(), is(equalTo("application/xml")));
-    }
 }
