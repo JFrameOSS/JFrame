@@ -145,44 +145,38 @@ jframe:
 
 ## 📚 Documentation
 
+- **[Getting Started](./src/docs/getting-started.md)** — Installation, configuration, and first steps
+- **[Configuration Reference](./src/docs/shared/configuration.md)** — All `jframe.*` properties explained
+
 ### Framework Modules
 
 JFrame is organized into focused, reusable modules:
-
-- **[Architecture Overview](./src/docs/architecture.md)** - Framework design and patterns
 
 #### Spring Boot Modules
 
 | Module | Description | Documentation |
 |--------|-------------|---------------|
-| **jframe-spring-core** | Core utilities, JSON processing, and shared application properties | [📖 Documentation](./src/docs/jframe-spring-core.md) |
-| **jframe-spring-jpa** | JPA enhancements including advanced search, pagination, and query logging | [📖 Documentation](./src/docs/jframe-spring-jpa.md) |
-| **jframe-spring-otlp** | OpenTelemetry integration for distributed tracing and observability | [📖 Documentation](./src/docs/jframe-spring-otlp.md) |
+| **jframe-spring-core** | Core utilities, JSON processing, and shared application properties | [📖 Documentation](./src/docs/spring/core.md) |
+| **jframe-spring-jpa** | JPA enhancements including advanced search, pagination, and query logging | [📖 Documentation](./src/docs/spring/jpa.md) |
+| **jframe-spring-otlp** | OpenTelemetry integration for distributed tracing and observability | [📖 Documentation](./src/docs/spring/otlp.md) |
 
 #### Quarkus Modules
 
-| Module | Description | Documentation |
-|--------|-------------|---------------|
-| **jframe-quarkus-core** | JAX-RS exception mappers and request logging filters | [📖 Quarkus Guide](./docs/quarkus-guide.md) |
-| **jframe-quarkus-jpa** | Panache search integration and page mapping | [📖 Quarkus Guide](./docs/quarkus-guide.md) |
-| **jframe-quarkus-otlp** | OpenTelemetry tracing with CDI interceptors | [📖 Quarkus Guide](./docs/quarkus-guide.md) |
+| Module | Description | Documentation                              |
+|--------|-------------|--------------------------------------------|
+| **jframe-quarkus-core** | JAX-RS exception mappers and request logging filters | [📖 Documentation](./src/docs/quarkus/core.md) |
+| **jframe-quarkus-jpa** | Panache search integration and page mapping | [📖 Documentation](./src/docs/quarkus/jpa.md)  |
+| **jframe-quarkus-otlp** | OpenTelemetry tracing with CDI interceptors | [📖 Documentation](./src/docs/quarkus/otlp.md) |
 
 #### Shared Core
 
-| Module | Description |
-|--------|-------------|
-| **jframe-core** | Framework-agnostic exceptions, validation, HTTP status, and search specs (transitive dependency) |
+| Module | Description | Documentation |
+|--------|-------------|---------------|
+| **jframe-core** | Framework-agnostic exceptions, validation, HTTP status, and search specs (transitive dependency) | [📖 Documentation](./src/docs/shared/core.md) |
 
 ### Guides
 
-- **[Migration Guide](./docs/migration-guide.md)** — Migrating from `jframe-starter-*` to `jframe-spring-*`
-- **[Quarkus Adoption Guide](./docs/quarkus-guide.md)** — Getting started with JFrame on Quarkus
-
-### CI/CD & Automation
-
-- **[GitHub Actions Workflows](./src/docs/github-actions/)** - CI/CD pipelines and automation
-  - [CI Pipeline](./src/docs/github-actions/ci.md) - Build, test, and publish to Maven Central
-  - [Gradle Wrapper Auto-Update](./src/docs/github-actions/gradle-wrapper-update.md) - Automated dependency management
+- **[Spring Boot 1.0.0 Migration Guide](./src/docs/migration/spring-migration-1.0.0.md)** — Migrating from `jframe-starter-*` to `jframe-spring-*`
 
 
 ## 🛠️ Building from Source
@@ -215,11 +209,14 @@ jframe/
 │   ├── core/                 # Quarkus JAX-RS exception mappers and logging filters
 │   ├── jpa/                  # Quarkus Panache search integration
 │   └── otlp/                 # Quarkus OpenTelemetry CDI interceptors
-├── docs/                     # Guides (migration, Quarkus adoption)
 ├── src/
-│   ├── docs/                 # Module documentation
 │   ├── quality/              # Code quality configurations
-│   └── dist/                 # Distribution files
+│   ├── dist/                 # Distribution files (LICENSE, CHANGELOG)
+│   └── docs/                 # Framework documentation and guides
+│       ├── spring/           # Spring Boot module docs
+│       ├── quarkus/          # Quarkus module docs
+│       ├── shared/           # Core and configuration docs
+│       └── migration/        # Migration guides
 └── gradle/                   # Gradle wrapper and configurations
 ```
 
