@@ -12,6 +12,9 @@ dependencies {
     // Swagger annotations on jframe-core API — compileOnly (annotation types needed to compile against core classes)
     compileOnly("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
 
+    // DataSource proxy — CDI producer for SQL query logging
+    implementation("net.ttddyy", "datasource-proxy", retrieve("datasourceProxyVersion"))
+
     // Test dependencies
     testImplementation("io.quarkus", "quarkus-hibernate-orm-panache", retrieve("quarkusVersion"))
     testImplementation("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
