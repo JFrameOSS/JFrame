@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.JFrameFilter;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.TransactionId;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
  * On the outbound response: adds the transaction ID to the response header (if not already present).
  */
 @RequiredArgsConstructor
-public class TransactionIdFilter implements ContainerRequestFilter, ContainerResponseFilter {
+public class TransactionIdFilter implements ContainerRequestFilter, ContainerResponseFilter, JFrameFilter {
 
     private final String headerName;
 

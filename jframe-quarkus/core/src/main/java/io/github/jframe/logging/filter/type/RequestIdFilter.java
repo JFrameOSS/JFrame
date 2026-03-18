@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.JFrameFilter;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.RequestId;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,7 @@ import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
  * On the outbound response: adds the request ID to the response header (if not already present).
  */
 @RequiredArgsConstructor
-public class RequestIdFilter implements ContainerRequestFilter, ContainerResponseFilter {
+public class RequestIdFilter implements ContainerRequestFilter, ContainerResponseFilter, JFrameFilter {
 
     private final String headerName;
 

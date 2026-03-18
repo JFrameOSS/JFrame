@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.JFrameFilter;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.logger.RequestResponseLogger;
 import io.github.jframe.logging.model.RequestId;
@@ -17,12 +18,13 @@ import jakarta.ws.rs.container.ContainerResponseFilter;
 
 /**
  * JAX-RS filter that logs full request and response details including body capture and masking.
- * Uses FilterVoter to decide whether logging is enabled for a given request.
- * Delegates actual logging to RequestResponseLogger.
+ *
+ * <p>Uses {@link FilterVoter} to decide whether logging is enabled for a given request.
+ * Delegates actual logging to {@link RequestResponseLogger}.
  * Cleans up ThreadLocal and MDC fields in the response phase.
  */
 @RequiredArgsConstructor
-public class RequestResponseLogFilter implements ContainerRequestFilter, ContainerResponseFilter {
+public class RequestResponseLogFilter implements ContainerRequestFilter, ContainerResponseFilter, JFrameFilter {
 
     private static final String CACHING_REQUEST_PROPERTY =
         "io.github.jframe.logging.filter.type.RequestResponseLogFilter.CACHING_REQUEST";

@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.JFrameFilter;
 import io.github.jframe.logging.kibana.AutoCloseableKibanaLogField;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.kibana.KibanaLogTypeNames;
@@ -26,7 +27,7 @@ import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_DURATION;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class RequestDurationFilter implements ContainerRequestFilter, ContainerResponseFilter {
+public class RequestDurationFilter implements ContainerRequestFilter, ContainerResponseFilter, JFrameFilter {
 
     private static final String START_TIMESTAMP = "start_timestamp";
 

@@ -14,12 +14,14 @@ dependencies {
     compileOnly("org.slf4j", "slf4j-api", retrieve("slf4jVersion"))
     compileOnly("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     compileOnly("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
+    compileOnly("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))
 
     // Test dependencies
     testImplementation("tools.jackson.core", "jackson-databind", retrieve("jacksonVersion"))
     testImplementation("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
     testImplementation("jakarta.validation", "jakarta.validation-api", "3.1.1")
     testImplementation("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
+    testImplementation("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))
     testImplementation("org.junit.jupiter", "junit-jupiter", retrieve("junitVersion"))
     testImplementation("org.mockito", "mockito-core", retrieve("mockitoVersion"))
     testImplementation("org.mockito", "mockito-junit-jupiter", retrieve("mockitoVersion"))
