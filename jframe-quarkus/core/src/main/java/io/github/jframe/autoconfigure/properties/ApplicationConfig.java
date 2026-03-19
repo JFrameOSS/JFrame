@@ -40,4 +40,12 @@ public interface ApplicationConfig {
      */
     @WithDefault("dev")
     String environment();
+
+    /**
+     * Base URL of the application. Used for health checks and service discovery.
+     *
+     * @return the application URL; defaults to {@code "http://localhost:8080"}
+     */
+    @WithDefault("http://localhost:8080")
+    String url();
 }

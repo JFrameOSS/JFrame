@@ -1,9 +1,13 @@
 package io.github.jframe.datasource.config;
 
+import io.agroal.api.AgroalDataSource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.ttddyy.dsproxy.listener.logging.SLF4JQueryLoggingListener;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Produces;
 import javax.sql.DataSource;
 
@@ -12,22 +16,18 @@ import org.jspecify.annotations.NonNull;
 import static net.ttddyy.dsproxy.support.ProxyDataSourceBuilder.create;
 
 /**
- * CDI producer that wraps a {@link DataSource} with a proxy for SQL query logging.
+ * CDI producer that wraps the Agroal {@link DataSource} with a proxy for SQL query logging.
+ *
+ * <p>Uses {@link Alternative} with {@link Priority} to replace the default Agroal-managed
+ * {@link DataSource} bean, preventing ambiguous resolution.
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class DatasourceProxyProducer {
 
-    private final DataSource dataSource;
-
-    /**
-     * Constructs a new {@code DatasourceProxyProducer} with the given {@link DataSource}.
-     *
-     * @param dataSource the original data source to wrap
-     */
-    public DatasourceProxyProducer(@NonNull final DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    @NonNull
+    private final AgroalDataSource dataSource;
 
     /**
      * Produces a proxied {@link DataSource} that logs all SQL queries via SLF4J.
@@ -35,6 +35,8 @@ public class DatasourceProxyProducer {
      * @return a {@link DataSource} proxy configured with {@link SLF4JQueryLoggingListener}
      */
     @Produces
+    @Alternative
+    @Priority(1)
     @ApplicationScoped
     public DataSource proxiedDataSource() {
         log.info("Wrapping DataSource with ProxyDataSource for query logging");

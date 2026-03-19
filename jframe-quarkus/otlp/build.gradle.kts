@@ -7,10 +7,10 @@ fun retrieve(property: String): String =
 dependencies {
     api(project(":jframe-quarkus-core"))
 
-    // OpenTelemetry API — compileOnly (provided by consumer's quarkus-opentelemetry)
-    compileOnly(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:${retrieve("openTelemetryVersion")}"))
-    compileOnly("io.opentelemetry", "opentelemetry-api")
-    compileOnly("io.opentelemetry", "opentelemetry-context")
+    // OpenTelemetry API — api (transitive to consumers)
+    api(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:${retrieve("openTelemetryVersion")}"))
+    api("io.opentelemetry", "opentelemetry-api")
+    api("io.opentelemetry", "opentelemetry-context")
 
     // SmallRye Config — compileOnly (provided by consumer's Quarkus runtime)
     compileOnly("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))

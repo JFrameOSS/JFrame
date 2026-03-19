@@ -160,7 +160,16 @@ public enum KibanaLogFieldNames implements KibanaLogField {
     HTTP_CLIENT_RESPONSE_BODY_BYTES("http.client.response.body.bytes"),
 
     /** The full URL (ECS). */
-    URL_FULL("url.full");
+    URL_FULL("url.full"),
+
+    /** ECS event value: client (for HTTP client calls). */
+    EVENT_VALUE_CLIENT("client"),
+
+    /** ECS event value: start. */
+    EVENT_VALUE_START("start"),
+
+    /** ECS event value: end. */
+    EVENT_VALUE_END("end");
 
     /** The logging key for this MDC entry. */
     private final String fieldName;

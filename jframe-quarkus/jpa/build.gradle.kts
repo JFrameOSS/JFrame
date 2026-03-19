@@ -12,10 +12,14 @@ dependencies {
     // Swagger annotations on jframe-core API — compileOnly (annotation types needed to compile against core classes)
     compileOnly("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
 
+    // Agroal DataSource API — compileOnly (provided by consumer's quarkus-agroal)
+    compileOnly("io.agroal", "agroal-api", "2.6.0")
+
     // DataSource proxy — CDI producer for SQL query logging
     implementation("net.ttddyy", "datasource-proxy", retrieve("datasourceProxyVersion"))
 
     // Test dependencies
+    testImplementation("io.agroal", "agroal-api", "2.6.0")
     testImplementation("io.quarkus", "quarkus-hibernate-orm-panache", retrieve("quarkusVersion"))
     testImplementation("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
     testImplementation("org.junit.jupiter", "junit-jupiter", retrieve("junitVersion"))
