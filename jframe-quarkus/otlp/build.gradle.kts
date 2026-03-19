@@ -7,6 +7,9 @@ fun retrieve(property: String): String =
 dependencies {
     api(project(":jframe-quarkus-core"))
 
+    // Quarkus OpenTelemetry extension — provides Tracer CDI bean, OTel SDK, OTLP exporter, auto HTTP instrumentation
+    api("io.quarkus", "quarkus-opentelemetry", retrieve("quarkusVersion"))
+
     // OpenTelemetry API — api (transitive to consumers)
     api(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:${retrieve("openTelemetryVersion")}"))
     api("io.opentelemetry", "opentelemetry-api")
