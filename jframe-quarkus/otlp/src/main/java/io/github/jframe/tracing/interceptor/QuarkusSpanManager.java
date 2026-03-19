@@ -4,6 +4,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.quarkus.arc.properties.IfBuildProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -13,8 +14,15 @@ import jakarta.ws.rs.core.MultivaluedMap;
  *
  * <p>Provides methods to create, enrich, and finish {@link Span} instances for tracing
  * outbound CLIENT requests. Spans are marked as errors for 4xx/5xx HTTP status codes.
+ *
+ * <p>Only activated when {@code quarkus.otel.enabled=true}; otherwise the bean is not
+ * registered, avoiding an unsatisfied {@link Tracer} dependency when OTel is disabled.
  */
 @ApplicationScoped
+@IfBuildProperty(
+    name = "quarkus.otel.enabled",
+    stringValue = "true"
+)
 public class QuarkusSpanManager {
 
     /** HTTP status codes at or above this value are considered errors. */

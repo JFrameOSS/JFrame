@@ -2,6 +2,7 @@ package io.github.jframe.tracing.interceptor;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
+import io.quarkus.arc.properties.IfBuildProperty;
 
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
@@ -13,9 +14,16 @@ import jakarta.interceptor.InvocationContext;
  * <p>Activated on methods or types annotated with {@link Traced}.
  * The span is always closed in a {@code finally} block so that it is finished even when the
  * intercepted method throws.
+ *
+ * <p>Only activated when {@code quarkus.otel.enabled=true}; otherwise the interceptor is not
+ * registered, avoiding an unsatisfied {@link Tracer} dependency when OTel is disabled.
  */
 @Interceptor
 @Traced
+@IfBuildProperty(
+    name = "quarkus.otel.enabled",
+    stringValue = "true"
+)
 public class TracingInterceptor {
 
     private final Tracer tracer;
