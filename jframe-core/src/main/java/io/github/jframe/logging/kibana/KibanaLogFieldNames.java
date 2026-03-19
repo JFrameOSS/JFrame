@@ -133,7 +133,34 @@ public enum KibanaLogFieldNames implements KibanaLogField {
     LOG_LOCATION("log_loc"),
 
     /** The log message. */
-    MESSAGE("message");
+    MESSAGE("message"),
+
+    /** The event reason (ECS). */
+    EVENT_REASON("event.reason"),
+
+    /** The event type (ECS). */
+    EVENT_TYPE("event.type"),
+
+    /** The HTTP client request method (ECS). */
+    HTTP_CLIENT_REQUEST_METHOD("http.client.request.method"),
+
+    /** The HTTP client request MIME type (ECS). */
+    HTTP_CLIENT_REQUEST_MIME_TYPE("http.client.request.mime_type"),
+
+    /** The HTTP client request body size in bytes (ECS). */
+    HTTP_CLIENT_REQUEST_BODY_BYTES("http.client.request.body.bytes"),
+
+    /** The HTTP client response status code (ECS). */
+    HTTP_CLIENT_RESPONSE_STATUS_CODE("http.client.response.status_code"),
+
+    /** The HTTP client response MIME type (ECS). */
+    HTTP_CLIENT_RESPONSE_MIME_TYPE("http.client.response.mime_type"),
+
+    /** The HTTP client response body size in bytes (ECS). */
+    HTTP_CLIENT_RESPONSE_BODY_BYTES("http.client.response.body.bytes"),
+
+    /** The full URL (ECS). */
+    URL_FULL("url.full");
 
     /** The logging key for this MDC entry. */
     private final String fieldName;

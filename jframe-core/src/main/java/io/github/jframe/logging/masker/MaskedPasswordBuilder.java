@@ -127,7 +127,7 @@ public class MaskedPasswordBuilder {
      * @return {@code true} if there is another password to be found in the string to mask.
      */
     public boolean findNextPassword() {
-        final int index = stringToMask.indexOf(pattern, currentIndex);
+        final int index = stringToMask.toLowerCase().indexOf(pattern.toLowerCase(), currentIndex);
         if (index == -1) {
             return false;
         }

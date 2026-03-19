@@ -25,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SpringHttpStatus` — converts `HttpStatusCode` to/from Spring `HttpStatus`
   - `SpringDataSearchSpecification` — wraps `SearchSpecification<T>` as Spring `Specification<T>`
   - `SpringPageAdapter` — converts query results to `PageResource<T>`
+- **Jandex indexing** for all Quarkus modules — generates `META-INF/jandex.idx` for build-time CDI and `@ConfigMapping` discovery
+- **`PasswordMaskerProducer`** CDI bean in `jframe-quarkus-core` — auto-wires `PasswordMasker` from `LoggingConfig.fieldsToMask()`, matching Spring's `CoreAutoConfiguration` behavior
+- **`KibanaLogFields` `long` overloads** — `tag(field, long)`, `tagCloseable(field, long)`, and `and(field, long)` for logging numeric identifiers without manual `String.valueOf()` conversion
+- **ECS event fields** in `KibanaLogFieldNames` — `EVENT_REASON`, `EVENT_TYPE` for Elastic Common Schema compliance
+- **ECS HTTP client fields** in `KibanaLogFieldNames` — `HTTP_CLIENT_REQUEST_METHOD`, `HTTP_CLIENT_REQUEST_MIME_TYPE`, `HTTP_CLIENT_REQUEST_BODY_BYTES`, `HTTP_CLIENT_RESPONSE_STATUS_CODE`, `HTTP_CLIENT_RESPONSE_MIME_TYPE`, `HTTP_CLIENT_RESPONSE_BODY_BYTES`, `URL_FULL`
+
+### Fixed
+- **`PasswordMasker` break-on-first-match** — masking loop no longer overwrites match result with subsequent masker evaluations; short-circuits on first successful match
+- **Case-insensitive password field matching** — `MaskedPasswordBuilder` now matches field names case-insensitively (e.g., `"Password"` and `"password"` both masked)
 
 ### Changed
 - **Module rename** — Spring modules renamed for multi-framework clarity

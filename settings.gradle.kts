@@ -33,6 +33,7 @@ pluginManagement {
     val dependencyUpdatesPluginVersion: String by settings
     val publishingVersion: String by settings
     val nmcpPluginVersion: String by settings
+    val jandexPluginVersion: String by settings
 
     plugins {
         id("org.springframework.boot") version springBootPluginVersion
@@ -45,5 +46,6 @@ pluginManagement {
         id("com.github.ben-manes.versions") version dependencyUpdatesPluginVersion
         id("publishing") version publishingVersion
         id("com.gradleup.nmcp.aggregation") version nmcpPluginVersion
+        id("com.github.vlsi.jandex") version jandexPluginVersion
     }
 }

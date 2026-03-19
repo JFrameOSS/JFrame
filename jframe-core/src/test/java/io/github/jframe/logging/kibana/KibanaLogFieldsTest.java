@@ -376,6 +376,66 @@ class KibanaLogFieldsTest extends UnitTest {
         assertThat(result, is(REQUEST_ID));
     }
 
+    @Test
+    @DisplayName("Should set MDC field when tagging with long value")
+    void shouldSetMdcFieldWhenTaggingWithLong() {
+        // Given: A long value to tag
+        final long value = 123L;
+
+        // When: Setting the field with long value
+        KibanaLogFields.tag(REQUEST_ID, value);
+
+        // Then: Value is stored as string and can be retrieved from MDC
+        assertThat(MDC.get(REQUEST_ID.getLogName()), is("123"));
+    }
+
+    @Test
+    @DisplayName("Should set MDC field when tagging with Long.MAX_VALUE to ensure no truncation")
+    void shouldSetMdcFieldWhenTaggingWithLongMaxValue() {
+        // Given: Long.MAX_VALUE to verify no truncation occurs
+        final long value = Long.MAX_VALUE;
+
+        // When: Setting the field with Long.MAX_VALUE
+        KibanaLogFields.tag(HTTP_STATUS, value);
+
+        // Then: Full long value is stored without truncation
+        assertThat(MDC.get(HTTP_STATUS.getLogName()), is(Long.toString(Long.MAX_VALUE)));
+    }
+
+    @Test
+    @DisplayName("Should create auto-closeable field with long value")
+    @SuppressWarnings("try")
+    void shouldSetMdcFieldWhenTaggingCloseableWithLong() {
+        // Given: A long value for a closeable field
+
+        // When: Creating auto-closeable field with long value
+        try (AutoCloseableKibanaLogField field = KibanaLogFields.tagCloseable(HTTP_STATUS, 123L)) {
+            // Then: Field is set within the try block
+            assertThat(KibanaLogFields.get(HTTP_STATUS), is("123"));
+        }
+
+        // Then: Field is automatically cleared after try block
+        assertThat(KibanaLogFields.get(HTTP_STATUS), is(nullValue()));
+    }
+
+    @Test
+    @DisplayName("Should chain fields when using and() with long value")
+    @SuppressWarnings("try")
+    void shouldChainFieldsWhenUsingAndWithLong() {
+        // Given: Two long values to chain in closeable fields
+
+        // When: Creating closeable and chaining with long value
+        try (AutoCloseableKibanaLogField field = KibanaLogFields.tagCloseable(HTTP_STATUS, 200).and(TX_ID, 456L)) {
+            // Then: Both fields are set within the try block
+            assertThat(KibanaLogFields.get(HTTP_STATUS), is("200"));
+            assertThat(KibanaLogFields.get(TX_ID), is("456"));
+        }
+
+        // Then: Both fields are automatically cleared after try block
+        assertThat(KibanaLogFields.get(HTTP_STATUS), is(nullValue()));
+        assertThat(KibanaLogFields.get(TX_ID), is(nullValue()));
+    }
+
     // Test enum for testing enum values
     private enum TestEnum {
         SUCCESS,

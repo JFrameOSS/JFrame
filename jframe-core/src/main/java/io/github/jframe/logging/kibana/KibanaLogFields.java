@@ -45,6 +45,17 @@ public class KibanaLogFields {
     /**
      * Sets the Kibana log field {@code field} to the {@code value}.
      *
+     * @param field the Kibana log field
+     * @param value the long value
+     * @return the tagged field
+     */
+    public static KibanaLogField tag(final KibanaLogField field, final long value) {
+        return tag(field, String.valueOf(value));
+    }
+
+    /**
+     * Sets the Kibana log field {@code field} to the {@code value}.
+     *
      * @param field The field to set.
      * @param value The value to set.
      * @return The field, set.
@@ -96,6 +107,17 @@ public class KibanaLogFields {
      */
     public static AutoCloseableKibanaLogField tagCloseable(final KibanaLogField field, final int value) {
         return tagCloseable(field, Integer.toString(value));
+    }
+
+    /**
+     * Sets the Kibana log field {@code field} to the {@code value}, returns an auto closeable.
+     *
+     * @param field the Kibana log field
+     * @param value the long value
+     * @return the auto-closeable tagged field
+     */
+    public static AutoCloseableKibanaLogField tagCloseable(final KibanaLogField field, final long value) {
+        return tagCloseable(field, String.valueOf(value));
     }
 
     /**

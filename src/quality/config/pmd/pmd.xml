@@ -90,6 +90,11 @@
             <property name="reportLevel" value="201"/>
         </properties>
     </rule>
+    <rule ref="category/java/design.xml/ExcessivePublicCount">
+        <properties>
+            <property name="minimum" value="60"/>
+        </properties>
+    </rule>
     <rule ref="category/java/design.xml/TooManyMethods" message="Avoid classes longer than 20 methods">
         <properties>
             <property name="maxmethods" value="20"/>

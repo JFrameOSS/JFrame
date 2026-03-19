@@ -34,6 +34,17 @@ public interface AutoCloseableKibanaLogField extends KibanaLogField, AutoCloseab
     }
 
     /**
+     * Chains another {@link KibanaLogField} with a {@code long} value.
+     *
+     * @param field the Kibana log field
+     * @param value the long value
+     * @return the chained auto-closeable field
+     */
+    default AutoCloseableKibanaLogField and(final KibanaLogField field, final long value) {
+        return and(field, String.valueOf(value));
+    }
+
+    /**
      * Chain the closeable.
      *
      * @param field The field to set.

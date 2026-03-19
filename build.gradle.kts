@@ -18,6 +18,8 @@ plugins {
     id("org.springframework.boot") apply false
     id("io.spring.dependency-management") apply false
 
+    id("com.github.vlsi.jandex") apply false
+
     id("com.diffplug.spotless") apply true
     id("project-report") apply true
     id("ru.vyarus.quality") apply true
@@ -52,6 +54,14 @@ subprojects {
     if (project.name.startsWith("jframe-spring-")) {
         apply(plugin = "org.springframework.boot")
         apply(plugin = "io.spring.dependency-management")
+    }
+
+    if (project.name.startsWith("jframe-quarkus-")) {
+        apply(plugin = "com.github.vlsi.jandex")
+        afterEvaluate {
+            tasks.matching { it.name == "checkstyleMain" || it.name == "pmdMain" || it.name == "spotbugsMain" }
+                .configureEach { mustRunAfter(tasks.named("processJandexIndex")) }
+        }
     }
 
     java {
