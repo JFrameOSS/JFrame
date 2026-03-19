@@ -9,7 +9,7 @@ dependencies {
 
     // Quarkus APIs — compileOnly (provided by consumer's Quarkus runtime)
     compileOnly("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
-    compileOnly("jakarta.validation", "jakarta.validation-api", "3.1.1")
+    compileOnly("jakarta.validation", "jakarta.validation-api", retrieve("jakartaValidationVersion"))
     compileOnly("tools.jackson.core", "jackson-databind", retrieve("jacksonVersion"))
     compileOnly("org.slf4j", "slf4j-api", retrieve("slf4jVersion"))
     compileOnly("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
@@ -20,7 +20,7 @@ dependencies {
     // Test dependencies
     testImplementation("tools.jackson.core", "jackson-databind", retrieve("jacksonVersion"))
     testImplementation("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
-    testImplementation("jakarta.validation", "jakarta.validation-api", "3.1.1")
+    testImplementation("jakarta.validation", "jakarta.validation-api", retrieve("jakartaValidationVersion"))
     testImplementation("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
     testImplementation("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
     testImplementation("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))

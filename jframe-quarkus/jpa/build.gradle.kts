@@ -13,13 +13,13 @@ dependencies {
     compileOnly("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
 
     // Agroal DataSource API — compileOnly (provided by consumer's quarkus-agroal)
-    compileOnly("io.agroal", "agroal-api", "2.6.0")
+    compileOnly("io.agroal", "agroal-api", retrieve("agroalVersion"))
 
     // DataSource proxy — CDI producer for SQL query logging
     implementation("net.ttddyy", "datasource-proxy", retrieve("datasourceProxyVersion"))
 
     // Test dependencies
-    testImplementation("io.agroal", "agroal-api", "2.6.0")
+    testImplementation("io.agroal", "agroal-api", retrieve("agroalVersion"))
     testImplementation("io.quarkus", "quarkus-hibernate-orm-panache", retrieve("quarkusVersion"))
     testImplementation("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
     testImplementation("org.junit.jupiter", "junit-jupiter", retrieve("junitVersion"))
