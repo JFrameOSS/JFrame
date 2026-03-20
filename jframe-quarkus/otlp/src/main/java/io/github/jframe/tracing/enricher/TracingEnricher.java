@@ -3,10 +3,13 @@ package io.github.jframe.tracing.enricher;
 import io.github.jframe.exception.enricher.ErrorResponseEnricher;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.security.QuarkusAuthenticationUtil;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
+import io.quarkus.security.identity.SecurityIdentity;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
@@ -18,6 +21,8 @@ import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_M
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_CONTENT_TYPE;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_METHOD;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_QUERY;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_STATUS_CODE;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
@@ -34,8 +39,32 @@ import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_UR
  * </ul>
  *
  * <p>If no active span exists or the span context is invalid, enrichment is gracefully skipped.
+ *
+ * <p>Note: {@code http.content_length} is not set by this enricher because the
+ * {@code doEnrich} contract only provides the {@link ContainerRequestContext} (inbound request),
+ * not the response context. Content-length is a response attribute and is not available
+ * at error-enrichment time without buffering the response body.
  */
 public class TracingEnricher implements ErrorResponseEnricher {
+
+    private final Instance<SecurityIdentity> securityIdentityInstance;
+
+    /**
+     * Creates a new {@code TracingEnricher} without security identity support.
+     * Used when instantiated directly (e.g., in tests without CDI context).
+     */
+    public TracingEnricher() {
+        this.securityIdentityInstance = null;
+    }
+
+    /**
+     * Creates a new {@code TracingEnricher} with CDI security identity support.
+     *
+     * @param securityIdentityInstance the optional CDI security identity instance
+     */
+    public TracingEnricher(final Instance<SecurityIdentity> securityIdentityInstance) {
+        this.securityIdentityInstance = securityIdentityInstance;
+    }
 
     /**
      * {@inheritDoc}
@@ -53,8 +82,12 @@ public class TracingEnricher implements ErrorResponseEnricher {
         final String method = requestContext.getMethod();
         final UriInfo uriInfo = requestContext.getUriInfo();
         final String uri = uriInfo != null ? uriInfo.getRequestUri().getPath() : null;
+        final String query = resolveQuery(uriInfo);
         final MediaType mediaType = requestContext.getMediaType();
         final String contentType = mediaType != null ? mediaType.getType() + "/" + mediaType.getSubtype() : null;
+        final SecurityIdentity securityIdentity =
+            securityIdentityInstance != null && securityIdentityInstance.isResolvable()
+                ? securityIdentityInstance.get() : null;
 
         final Span span = Span.current();
         if (span != null) {
@@ -68,11 +101,22 @@ public class TracingEnricher implements ErrorResponseEnricher {
                 span.setAttribute(ERROR_MESSAGE, throwable.getMessage());
                 span.setAttribute(HTTP_TRANSACTION_ID, KibanaLogFields.get(TX_ID));
                 span.setAttribute(HTTP_REQUEST_ID, KibanaLogFields.get(REQUEST_ID));
+                span.setAttribute(HTTP_REMOTE_USER, QuarkusAuthenticationUtil.getSubject(securityIdentity));
                 span.setAttribute(HTTP_URI, uri);
                 span.setAttribute(HTTP_METHOD, method);
                 span.setAttribute(HTTP_STATUS_CODE, (long) statusCode);
                 span.setAttribute(HTTP_CONTENT_TYPE, contentType);
+                if (query != null) {
+                    span.setAttribute(HTTP_QUERY, query);
+                }
             }
         }
+    }
+
+    private static String resolveQuery(final UriInfo uriInfo) {
+        if (uriInfo == null) {
+            return null;
+        }
+        return uriInfo.getRequestUri().getQuery();
     }
 }

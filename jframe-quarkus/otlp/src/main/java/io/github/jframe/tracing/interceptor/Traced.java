@@ -5,6 +5,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.interceptor.InterceptorBinding;
 
 /**
@@ -12,6 +13,9 @@ import jakarta.interceptor.InterceptorBinding;
  *
  * <p>Methods or classes annotated with {@code @Traced} will have a new OTEL span created and
  * closed around each invocation by {@link TracingInterceptor}.
+ *
+ * <p>For programmatic use (e.g. from a CDI portable extension), use the {@link Literal} singleton
+ * to add this binding without reflective annotation proxies.
  */
 @InterceptorBinding
 @Inherited
@@ -23,4 +27,11 @@ import jakarta.interceptor.InterceptorBinding;
     }
 )
 public @interface Traced {
+
+    /** {@link AnnotationLiteral} for programmatic addition of {@code @Traced}. */
+    final class Literal extends AnnotationLiteral<Traced> implements Traced {
+
+        /** Singleton instance. */
+        public static final Literal INSTANCE = new Literal();
+    }
 }

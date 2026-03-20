@@ -1,10 +1,10 @@
 package io.github.jframe.tracing.filter;
 
 import io.github.jframe.logging.filter.TracingFilterConfig;
+import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.tracing.OpenTelemetryConfig;
 import io.github.jframe.tracing.interceptor.QuarkusSpanManager;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -17,11 +17,24 @@ import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Logging.LINE_BREAK;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Logging.REQUEST_PREFIX;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Logging.RESPONSE_PREFIX;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Logging.TAB;
+import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
+import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
+import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
+
 /**
  * JAX-RS client filter that creates and manages OpenTelemetry CLIENT spans for outbound HTTP calls.
  *
  * <p>On the request side: creates a span via {@link QuarkusSpanManager}, stores it as a property
- * on the request context, and injects the W3C {@code traceparent} header into the outbound request.
+ * on the request context, injects W3C trace context headers via
+ * {@link QuarkusSpanManager#injectTraceContext(MultivaluedMap)}, and propagates correlation headers
+ * ({@code x-transaction-id}, {@code x-request-id}, {@code x-trace-id}) from the current
+ * {@link KibanaLogFields} context.
  * On the response side: enriches the span with the HTTP response status code and finishes it in
  * a {@code finally} block to ensure spans are always closed even when enrichment fails.
  *
@@ -45,7 +58,7 @@ public class OutboundTracingFilter implements ClientRequestFilter, ClientRespons
     /**
      * Creates a new {@code OutboundTracingFilter}.
      *
-     * @param spanManager         manages span lifecycle (create, enrich, finish)
+     * @param spanManager         manages span lifecycle (create, enrich, finish) and trace propagation
      * @param openTelemetryConfig configuration for enabling/disabling tracing and excluded paths
      * @param tracingFilterConfig configuration for enabling/disabling this specific filter
      */
@@ -69,7 +82,9 @@ public class OutboundTracingFilter implements ClientRequestFilter, ClientRespons
         }
         final Span span = spanManager.createOutboundSpan(method, url, serviceName);
         requestContext.setProperty(SPAN_PROPERTY_KEY, span);
-        injectTraceparent(headers, span);
+        spanManager.injectTraceContext(headers);
+        addCorrelationHeaders(headers, span);
+        logRequest(method, url, headers);
     }
 
     @Override
@@ -86,6 +101,7 @@ public class OutboundTracingFilter implements ClientRequestFilter, ClientRespons
         } finally {
             spanManager.finishSpan(span);
         }
+        logResponse(status, headers);
     }
 
     private boolean isExcluded(final String path) {
@@ -93,11 +109,45 @@ public class OutboundTracingFilter implements ClientRequestFilter, ClientRespons
             .anyMatch(path::contains);
     }
 
-    private void injectTraceparent(final MultivaluedMap<String, Object> headers, final Span span) {
-        final SpanContext spanContext = span.getSpanContext();
-        final String traceparent = "00-" + spanContext.getTraceId()
-            + "-" + spanContext.getSpanId()
-            + "-01";
-        headers.add("traceparent", traceparent);
+    private static void addCorrelationHeaders(final MultivaluedMap<String, Object> headers, final Span span) {
+        final String txId = KibanaLogFields.get(TX_ID);
+        final String requestId = KibanaLogFields.get(REQUEST_ID);
+        final String traceId = span != null ? span.getSpanContext().getTraceId() : null;
+        if (txId != null) {
+            headers.putSingle(TX_ID_HEADER, txId);
+        }
+        if (requestId != null) {
+            headers.putSingle(REQ_ID_HEADER, requestId);
+        }
+        if (traceId != null) {
+            headers.putSingle(TRACE_ID_HEADER, traceId);
+        }
+    }
+
+    private void logRequest(final String method, final String uri,
+        final MultivaluedMap<String, Object> headers) {
+        if (log.isDebugEnabled()) {
+            log.debug(
+                "{}Method: {}{}URI: {}{}Headers: {}",
+                REQUEST_PREFIX,
+                method,
+                LINE_BREAK + TAB,
+                uri,
+                LINE_BREAK + TAB,
+                headers
+            );
+        }
+    }
+
+    private void logResponse(final int status, final MultivaluedMap<String, String> headers) {
+        if (log.isDebugEnabled()) {
+            log.debug(
+                "{}Status: {}{}Headers: {}",
+                RESPONSE_PREFIX,
+                status,
+                LINE_BREAK + TAB,
+                headers
+            );
+        }
     }
 }

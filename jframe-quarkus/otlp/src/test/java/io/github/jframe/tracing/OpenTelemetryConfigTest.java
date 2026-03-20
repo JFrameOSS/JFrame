@@ -234,6 +234,36 @@ public class OpenTelemetryConfigTest extends UnitTest {
     }
 
     // -------------------------------------------------------------------------
+    // autoTrace()
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Should have 'autoTrace' method returning boolean")
+    public void shouldHaveAutoTraceMethodReturningBoolean() throws NoSuchMethodException {
+        // Given: The OpenTelemetryConfig interface
+
+        // When: Retrieving the autoTrace() method
+        final Method method = OpenTelemetryConfig.class.getMethod("autoTrace");
+
+        // Then: Return type is boolean
+        assertThat(method.getReturnType(), is(equalTo(boolean.class)));
+    }
+
+    @Test
+    @DisplayName("Should have @WithDefault('true') on 'autoTrace' method")
+    public void shouldHaveWithDefaultTrueOnAutoTraceMethod() throws NoSuchMethodException {
+        // Given: The autoTrace() method on OpenTelemetryConfig
+
+        // When: Inspecting its @WithDefault annotation
+        final Method method = OpenTelemetryConfig.class.getMethod("autoTrace");
+        final WithDefault withDefault = method.getAnnotation(WithDefault.class);
+
+        // Then: @WithDefault is present with value "true"
+        assertThat(withDefault, is(notNullValue()));
+        assertThat(withDefault.value(), is(equalTo("true")));
+    }
+
+    // -------------------------------------------------------------------------
     // Interface contract
     // -------------------------------------------------------------------------
 
@@ -249,14 +279,14 @@ public class OpenTelemetryConfigTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should declare exactly six configuration methods")
+    @DisplayName("Should declare exactly seven configuration methods")
     public void shouldDeclareExactlySixConfigurationMethods() {
         // Given: The OpenTelemetryConfig interface
 
         // When: Counting declared methods
         final int methodCount = OpenTelemetryConfig.class.getDeclaredMethods().length;
 
-        // Then: Exactly six methods are declared
-        assertThat(methodCount, is(equalTo(6)));
+        // Then: Exactly seven methods are declared (added autoTrace() in v2)
+        assertThat(methodCount, is(equalTo(7)));
     }
 }

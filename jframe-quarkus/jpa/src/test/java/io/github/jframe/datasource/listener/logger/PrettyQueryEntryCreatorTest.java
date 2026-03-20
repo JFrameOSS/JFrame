@@ -1,4 +1,4 @@
-package io.github.jframe.datasource.config;
+package io.github.jframe.datasource.listener.logger;
 
 import io.github.support.UnitTest;
 
@@ -33,17 +33,17 @@ public class PrettyQueryEntryCreatorTest extends UnitTest {
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("Should format SELECT query with newline breaks using Hibernate formatter")
-    public void shouldFormatSelectQueryWithNewlineBreaksUsingHibernateFormatter() {
+    @DisplayName("Should format SELECT query with ANSI highlight codes using Hibernate formatter")
+    public void shouldFormatSelectQueryWithHighlightCodesUsingHibernateFormatter() {
         // Given: A simple SELECT SQL query
         final String rawQuery = "select id, name from users where id = 1";
 
         // When: Formatting the query
         final String formattedQuery = prettyQueryEntryCreator.formatQuery(rawQuery);
 
-        // Then: The formatted result should contain a newline (multi-line formatting)
+        // Then: The formatted result should contain ANSI escape codes (highlight formatting)
         assertThat(formattedQuery, is(notNullValue()));
-        assertThat(formattedQuery, containsString("\n"));
+        assertThat(formattedQuery, containsString("\u001B["));
     }
 
     // -------------------------------------------------------------------------

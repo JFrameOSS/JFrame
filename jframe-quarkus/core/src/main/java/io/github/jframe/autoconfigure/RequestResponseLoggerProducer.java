@@ -30,7 +30,7 @@ public class RequestResponseLoggerProducer {
     private final PasswordMasker passwordMasker;
 
     /**
-     * Produces a {@link RequestResponseLogger} configured with headers/body loggers,
+     * Produces a {@link RequestResponseLogger} configured with headers/body listener,
      * a debug logger, and media type voters derived from {@link LoggingConfig}.
      *
      * @return the configured {@link RequestResponseLogger}

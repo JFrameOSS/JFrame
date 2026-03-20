@@ -22,6 +22,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
+import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
+import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
+import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,7 +45,8 @@ import static org.mockito.Mockito.when;
  * <ul>
  * <li>Creating a CLIENT span via {@link QuarkusSpanManager#createOutboundSpan(String, String, String)}</li>
  * <li>Storing the span as a property on {@link ClientRequestContext} for the response filter</li>
- * <li>Injecting W3C traceparent header into outbound request headers</li>
+ * <li>Injecting W3C trace context via {@link QuarkusSpanManager#injectTraceContext(MultivaluedMap)}</li>
+ * <li>Adding correlation headers (TX_ID, REQ_ID, TRACE_ID) to outbound requests</li>
  * <li>Skipping span creation when tracing is disabled</li>
  * <li>Skipping span creation when the URI path matches an excluded segment</li>
  * <li>Enriching the span with the response status code</li>
@@ -117,8 +121,8 @@ public class OutboundTracingFilterTest extends UnitTest {
         }
 
         @Test
-        @DisplayName("Should inject traceparent header into outbound request headers")
-        public void shouldInjectTraceparentHeaderIntoOutboundRequestHeaders() throws Exception {
+        @DisplayName("Should call spanManager.injectTraceContext to propagate W3C trace context")
+        public void shouldCallSpanManagerInjectTraceContextToPropagateW3cTraceContext() throws Exception {
             // Given: Tracing is enabled and a valid span is created
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
@@ -132,9 +136,71 @@ public class OutboundTracingFilterTest extends UnitTest {
             // When: Filter processes the outbound request
             filter.filter(requestContext);
 
-            // Then: W3C traceparent header is injected into the outbound headers
-            // (The header key injected depends on the W3C propagator format: "traceparent")
-            assertThat(headers.containsKey("traceparent"), is(true));
+            // Then: W3C trace context injection is delegated to SpanManager
+            verify(spanManager).injectTraceContext(headers);
+        }
+
+        @Test
+        @DisplayName("Should add correlation headers when KibanaLogFields are populated")
+        public void shouldAddCorrelationHeadersWhenKibanaLogFieldsArePopulated() throws Exception {
+            // Given: Tracing is enabled, span exists, and KibanaLogFields have TX_ID and REQUEST_ID
+            setupKibanaFields();
+            final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+            final ClientRequestContext requestContext = mock(ClientRequestContext.class);
+            when(requestContext.getUri()).thenReturn(URI.create("https://api.example.com/api/data"));
+            when(requestContext.getMethod()).thenReturn("GET");
+            when(requestContext.getHeaders()).thenReturn(headers);
+            final Span span = aValidSpan();
+            when(spanManager.createOutboundSpan(anyString(), anyString(), anyString())).thenReturn(span);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
+
+            // When: Filter processes the outbound request
+            filter.filter(requestContext);
+
+            // Then: Correlation headers are added from KibanaLogFields
+            assertThat(headers.containsKey(TX_ID_HEADER), is(true));
+            assertThat(headers.containsKey(REQ_ID_HEADER), is(true));
+        }
+
+        @Test
+        @DisplayName("Should add TRACE_ID header from span context when span is present")
+        public void shouldAddTraceIdHeaderFromSpanContextWhenSpanIsPresent() throws Exception {
+            // Given: Tracing is enabled and a valid span with a known trace ID is created
+            final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+            final ClientRequestContext requestContext = mock(ClientRequestContext.class);
+            when(requestContext.getUri()).thenReturn(URI.create("https://api.example.com/api/data"));
+            when(requestContext.getMethod()).thenReturn("GET");
+            when(requestContext.getHeaders()).thenReturn(headers);
+            final Span span = aValidSpan();
+            when(spanManager.createOutboundSpan(anyString(), anyString(), anyString())).thenReturn(span);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
+
+            // When: Filter processes the outbound request
+            filter.filter(requestContext);
+
+            // Then: TRACE_ID header is added from the span context
+            assertThat(headers.containsKey(TRACE_ID_HEADER), is(true));
+        }
+
+        @Test
+        @DisplayName("Should NOT add correlation headers when KibanaLogFields are not populated")
+        public void shouldNotAddCorrelationHeadersWhenKibanaLogFieldsAreNotPopulated() throws Exception {
+            // Given: Tracing is enabled but KibanaLogFields are empty (TX_ID and REQUEST_ID not set)
+            final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+            final ClientRequestContext requestContext = mock(ClientRequestContext.class);
+            when(requestContext.getUri()).thenReturn(URI.create("https://api.example.com/api/data"));
+            when(requestContext.getMethod()).thenReturn("GET");
+            when(requestContext.getHeaders()).thenReturn(headers);
+            final Span span = aValidSpan();
+            when(spanManager.createOutboundSpan(anyString(), anyString(), anyString())).thenReturn(span);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
+
+            // When: Filter processes the outbound request (no KibanaLogFields set)
+            filter.filter(requestContext);
+
+            // Then: TX_ID and REQ_ID correlation headers are NOT added
+            assertThat(headers.containsKey(TX_ID_HEADER), is(false));
+            assertThat(headers.containsKey(REQ_ID_HEADER), is(false));
         }
 
         @Test

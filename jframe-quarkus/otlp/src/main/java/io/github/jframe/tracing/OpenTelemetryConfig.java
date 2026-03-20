@@ -76,4 +76,13 @@ public interface OpenTelemetryConfig {
      */
     @WithDefault("health,actuator,ping,status")
     Set<String> excludedMethods();
+
+    /**
+     * Whether to automatically add {@code @Traced} to all {@code @ApplicationScoped} beans.
+     * When enabled, all application-scoped CDI beans are traced without explicit annotation.
+     *
+     * @return {@code true} (default) to enable auto-tracing; {@code false} to require explicit {@code @Traced}
+     */
+    @WithDefault("true")
+    boolean autoTrace();
 }

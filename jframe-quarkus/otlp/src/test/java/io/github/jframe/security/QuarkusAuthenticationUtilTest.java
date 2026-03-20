@@ -13,7 +13,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,7 +46,7 @@ public class QuarkusAuthenticationUtilTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should return null for anonymous identity")
+    @DisplayName("Should return anonymous sentinel for anonymous identity")
     public void shouldReturnNullForAnonymousIdentity() {
         // Given: An anonymous SecurityIdentity
         when(securityIdentity.isAnonymous()).thenReturn(true);
@@ -55,24 +54,26 @@ public class QuarkusAuthenticationUtilTest extends UnitTest {
         // When: Getting the authenticated subject
         final String subject = QuarkusAuthenticationUtil.getSubject(securityIdentity);
 
-        // Then: Null is returned for anonymous users
-        assertThat(subject, is(nullValue()));
+        // Then: Anonymous sentinel string is returned
+        assertThat(subject, is(notNullValue()));
+        assertThat(subject, is(equalTo("ANONYMOUS - NO AUTHENTICATION")));
     }
 
     @Test
-    @DisplayName("Should return null when SecurityIdentity is null")
+    @DisplayName("Should return anonymous sentinel when SecurityIdentity is null")
     public void shouldReturnNullWhenSecurityIdentityIsNull() {
         // Given: A null SecurityIdentity
 
         // When: Getting the authenticated subject
         final String subject = QuarkusAuthenticationUtil.getSubject(null);
 
-        // Then: Null is returned
-        assertThat(subject, is(nullValue()));
+        // Then: Anonymous sentinel string is returned
+        assertThat(subject, is(notNullValue()));
+        assertThat(subject, is(equalTo("ANONYMOUS - NO AUTHENTICATION")));
     }
 
     @Test
-    @DisplayName("Should return empty string when principal name is empty")
+    @DisplayName("Should return incomplete auth sentinel when principal name is empty")
     public void shouldReturnEmptyStringWhenPrincipalNameIsEmpty() {
         // Given: A SecurityIdentity with an empty principal name
         final Principal principal = mock(Principal.class);
@@ -83,9 +84,26 @@ public class QuarkusAuthenticationUtilTest extends UnitTest {
         // When: Getting the authenticated subject
         final String subject = QuarkusAuthenticationUtil.getSubject(securityIdentity);
 
-        // Then: Empty string is returned (not null)
+        // Then: Incomplete auth sentinel is returned
         assertThat(subject, is(notNullValue()));
-        assertThat(subject, is(equalTo("")));
+        assertThat(subject, is(equalTo("INCOMPLETE AUTHENTICATION - NO NAME")));
+    }
+
+    @Test
+    @DisplayName("Should return incomplete auth sentinel when principal name is blank")
+    public void shouldReturnIncompleteAuthForBlankName() {
+        // Given: A SecurityIdentity with a blank (whitespace-only) principal name
+        final Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn(" ");
+        when(securityIdentity.isAnonymous()).thenReturn(false);
+        when(securityIdentity.getPrincipal()).thenReturn(principal);
+
+        // When: Getting the authenticated subject
+        final String subject = QuarkusAuthenticationUtil.getSubject(securityIdentity);
+
+        // Then: Incomplete auth sentinel is returned
+        assertThat(subject, is(notNullValue()));
+        assertThat(subject, is(equalTo("INCOMPLETE AUTHENTICATION - NO NAME")));
     }
 
     @Test

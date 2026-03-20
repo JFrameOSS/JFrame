@@ -1,6 +1,7 @@
 package io.github.jframe.datasource.config;
 
 import io.agroal.api.AgroalDataSource;
+import io.github.jframe.datasource.listener.DefaultQueryExecutionListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.ttddyy.dsproxy.listener.logging.SLF4JQueryLoggingListener;
@@ -39,18 +40,9 @@ public class DatasourceProxyProducer {
     @Priority(1)
     @ApplicationScoped
     public DataSource proxiedDataSource() {
-        log.info("Wrapping DataSource with ProxyDataSource for query logging");
+        log.info("Wrapping DataSource {} with proxy for SQL query logging", dataSource);
         return create(dataSource)
-            .name("Datasource Query Logger")
-            .listener(buildLoggingListener())
+            .listener(new DefaultQueryExecutionListener())
             .build();
-    }
-
-    private SLF4JQueryLoggingListener buildLoggingListener() {
-        final SLF4JQueryLoggingListener loggingListener = new SLF4JQueryLoggingListener();
-        final PrettyQueryEntryCreator prettyQueryEntryCreator = new PrettyQueryEntryCreator();
-        prettyQueryEntryCreator.setMultiline(true);
-        loggingListener.setQueryLogEntryCreator(prettyQueryEntryCreator);
-        return loggingListener;
     }
 }

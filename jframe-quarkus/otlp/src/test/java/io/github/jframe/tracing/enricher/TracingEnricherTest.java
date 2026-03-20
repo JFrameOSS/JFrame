@@ -8,8 +8,11 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.api.trace.TraceState;
+import io.quarkus.security.identity.SecurityIdentity;
 
 import java.net.URI;
+import java.security.Principal;
+import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
@@ -26,6 +29,8 @@ import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_M
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_CONTENT_TYPE;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_METHOD;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_QUERY;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_STATUS_CODE;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
@@ -391,6 +396,113 @@ public class TracingEnricherTest extends UnitTest {
             assertThat(resource.getSpanId(), is(equalTo(TEST_SPAN_ID)));
         }
     }
+
+    // ─── HTTP_REMOTE_USER: authenticated user ────────────────────────────────
+
+    @Test
+    @DisplayName("Should set HTTP_REMOTE_USER attribute when authenticated user is present")
+    public void shouldSetHttpRemoteUserAttributeWhenAuthenticatedUserIsPresent() {
+        // Given: A valid span and an authenticated security identity
+        try (MockedStatic<Span> spanMock = mockStatic(Span.class)) {
+            final Span span = aValidSpan(TEST_TRACE_ID, TEST_SPAN_ID);
+            spanMock.when(Span::current).thenReturn(span);
+
+            final SecurityIdentity identity = mock(SecurityIdentity.class);
+            final Principal principal = mock(Principal.class);
+            when(identity.isAnonymous()).thenReturn(false);
+            when(identity.getPrincipal()).thenReturn(principal);
+            when(principal.getName()).thenReturn("john.doe");
+
+            @SuppressWarnings("unchecked") final Instance<SecurityIdentity> identityInstance = mock(Instance.class);
+            when(identityInstance.isResolvable()).thenReturn(true);
+            when(identityInstance.get()).thenReturn(identity);
+
+            final TracingEnricher enricherWithSecurity = new TracingEnricher(identityInstance);
+            final ErrorResponseResource resource = new ErrorResponseResource();
+            final Throwable throwable = new RuntimeException("error");
+            final ContainerRequestContext requestContext = aRequestContext("GET", "/api/users", null);
+
+            // When: Enriching with an authenticated user
+            enricherWithSecurity.doEnrich(resource, throwable, requestContext, 500);
+
+            // Then: HTTP_REMOTE_USER is set to the principal name
+            verify(span).setAttribute(HTTP_REMOTE_USER, "john.doe");
+        }
+    }
+
+    @Test
+    @DisplayName("Should set HTTP_REMOTE_USER to ANONYMOUS when security identity is not resolvable")
+    public void shouldSetHttpRemoteUserToAnonymousWhenSecurityIdentityIsNotResolvable() {
+        // Given: A valid span and no security identity (null from no-arg constructor)
+        try (MockedStatic<Span> spanMock = mockStatic(Span.class)) {
+            final Span span = aValidSpan(TEST_TRACE_ID, TEST_SPAN_ID);
+            spanMock.when(Span::current).thenReturn(span);
+
+            final ErrorResponseResource resource = new ErrorResponseResource();
+            final Throwable throwable = new RuntimeException("error");
+            final ContainerRequestContext requestContext = aRequestContext("GET", "/api/users", null);
+
+            // When: Enriching with no security identity (no-arg enricher)
+            enricher.doEnrich(resource, throwable, requestContext, 500);
+
+            // Then: HTTP_REMOTE_USER is set to the anonymous sentinel
+            verify(span).setAttribute(HTTP_REMOTE_USER, "ANONYMOUS - NO AUTHENTICATION");
+        }
+    }
+
+    // ─── HTTP_QUERY: query string ─────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Should set HTTP_QUERY attribute when query string is present")
+    public void shouldSetHttpQueryAttributeWhenQueryStringIsPresent() {
+        // Given: A valid span and a request context with a query string
+        try (MockedStatic<Span> spanMock = mockStatic(Span.class)) {
+            final Span span = aValidSpan(TEST_TRACE_ID, TEST_SPAN_ID);
+            spanMock.when(Span::current).thenReturn(span);
+
+            final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
+            final UriInfo uriInfo = mock(UriInfo.class);
+            when(requestContext.getMethod()).thenReturn("GET");
+            when(requestContext.getUriInfo()).thenReturn(uriInfo);
+            when(uriInfo.getRequestUri()).thenReturn(URI.create("http://localhost/api/users?name=john&role=admin"));
+            when(requestContext.getMediaType()).thenReturn(null);
+
+            final ErrorResponseResource resource = new ErrorResponseResource();
+            final Throwable throwable = new RuntimeException("error");
+
+            // When: Enriching the resource
+            enricher.doEnrich(resource, throwable, requestContext, 400);
+
+            // Then: HTTP_QUERY attribute is set with the query string
+            verify(span).setAttribute(HTTP_QUERY, "name=john&role=admin");
+        }
+    }
+
+    @Test
+    @DisplayName("Should NOT set HTTP_QUERY attribute when query string is null")
+    public void shouldNotSetHttpQueryAttributeWhenQueryStringIsNull() {
+        // Given: A valid span and a request context without a query string
+        try (MockedStatic<Span> spanMock = mockStatic(Span.class)) {
+            final Span span = aValidSpan(TEST_TRACE_ID, TEST_SPAN_ID);
+            spanMock.when(Span::current).thenReturn(span);
+
+            final ContainerRequestContext requestContext = aRequestContext("GET", "/api/users", null);
+            final ErrorResponseResource resource = new ErrorResponseResource();
+            final Throwable throwable = new RuntimeException("error");
+
+            // When: Enriching the resource
+            enricher.doEnrich(resource, throwable, requestContext, 400);
+
+            // Then: HTTP_QUERY attribute is NOT set (null query is skipped)
+            verify(span, never()).setAttribute(HTTP_QUERY, (String) null);
+        }
+    }
+
+    // ─── HTTP_CONTENT_LENGTH: not implemented ────────────────────────────────
+    // NOTE: HTTP_CONTENT_LENGTH is intentionally not set by this enricher.
+    // The doEnrich contract only provides ContainerRequestContext (inbound request),
+    // not the response context. Content-length is a response attribute and is not
+    // available at error-enrichment time without buffering the entire response.
 
     // ─── Factory / helper methods ────────────────────────────────────────────
 

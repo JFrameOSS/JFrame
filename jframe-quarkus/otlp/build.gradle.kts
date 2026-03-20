@@ -14,6 +14,7 @@ dependencies {
     api(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:${retrieve("openTelemetryVersion")}"))
     api("io.opentelemetry", "opentelemetry-api")
     api("io.opentelemetry", "opentelemetry-context")
+    api("io.opentelemetry", "opentelemetry-extension-trace-propagators")
 
     // SmallRye Config — compileOnly (provided by consumer's Quarkus runtime)
     compileOnly("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))

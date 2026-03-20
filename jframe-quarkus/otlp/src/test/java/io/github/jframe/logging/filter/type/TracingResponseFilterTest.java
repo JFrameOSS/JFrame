@@ -29,6 +29,7 @@ import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -41,10 +42,9 @@ import static org.mockito.Mockito.when;
  * <p>Verifies the TracingResponseFilter functionality including:
  * <ul>
  * <li>Adding trace ID and span ID to response headers</li>
- * <li>Populating MDC (KibanaLogFields) with trace and span IDs</li>
+ * <li>Populating MDC (KibanaLogFields) with trace and span IDs during the request phase</li>
  * <li>Handling valid and invalid span contexts</li>
  * <li>Preventing duplicate headers</li>
- * <li>Filter chain execution (JAX-RS proceed)</li>
  * <li>MDC cleanup after filter execution</li>
  * </ul>
  */
@@ -67,6 +67,96 @@ public class TracingResponseFilterTest extends UnitTest {
         lenient().when(tracingResponseConfig.enabled()).thenReturn(true);
         lenient().when(openTelemetryConfig.disabled()).thenReturn(false);
     }
+
+    // -------------------------------------------------------------------------
+    // Request filter tests
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Should tag MDC with trace and span IDs on request when span is valid")
+    public void shouldTagMdcWithTraceAndSpanIdsOnRequestWhenSpanIsValid() throws Exception {
+        // Given: A tracing filter with valid active span (span created before static mock)
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
+        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
+        final Span validSpan = aValidSpan(TEST_TRACE_ID, TEST_SPAN_ID);
+
+        try (MockedStatic<Span> spanMock = mockStatic(Span.class)) {
+            spanMock.when(Span::current).thenReturn(validSpan);
+
+            // When: Filter processes the request
+            filter.filter(requestContext);
+
+            // Then: MDC is populated with trace and span IDs
+            assertThat(KibanaLogFields.get(TRACE_ID), is(notNullValue()));
+            assertThat(KibanaLogFields.get(SPAN_ID), is(notNullValue()));
+        }
+    }
+
+    @Test
+    @DisplayName("Should not tag MDC when span context is invalid")
+    public void shouldNotTagMdcWhenSpanContextIsInvalid() throws Exception {
+        // Given: A tracing filter with invalid span context (span created before static mock)
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
+        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
+        final Span invalidSpan = anInvalidSpan();
+
+        try (MockedStatic<Span> spanMock = mockStatic(Span.class)) {
+            spanMock.when(Span::current).thenReturn(invalidSpan);
+
+            // When: Filter processes the request
+            filter.filter(requestContext);
+
+            // Then: MDC is not populated
+            assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
+            assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
+        }
+    }
+
+    @Test
+    @DisplayName("Should not tag MDC when tracing filter is disabled")
+    public void shouldNotTagMdcWhenTracingFilterIsDisabled() throws Exception {
+        // Given: Tracing filter disabled (stub before opening static mock)
+        when(tracingResponseConfig.enabled()).thenReturn(false);
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
+        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
+        final Span validSpan = aValidSpan(TEST_TRACE_ID, TEST_SPAN_ID);
+
+        try (MockedStatic<Span> spanMock = mockStatic(Span.class)) {
+            spanMock.when(Span::current).thenReturn(validSpan);
+
+            // When: Filter processes the request
+            filter.filter(requestContext);
+
+            // Then: MDC is not populated
+            assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
+            assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
+        }
+    }
+
+    @Test
+    @DisplayName("Should not tag MDC when OpenTelemetry is disabled")
+    public void shouldNotTagMdcWhenOpenTelemetryIsDisabled() throws Exception {
+        // Given: OpenTelemetry disabled (stub before opening static mock)
+        when(openTelemetryConfig.disabled()).thenReturn(true);
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
+        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
+        final Span validSpan = aValidSpan(TEST_TRACE_ID, TEST_SPAN_ID);
+
+        try (MockedStatic<Span> spanMock = mockStatic(Span.class)) {
+            spanMock.when(Span::current).thenReturn(validSpan);
+
+            // When: Filter processes the request
+            filter.filter(requestContext);
+
+            // Then: MDC is not populated
+            assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
+            assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Response filter tests
+    // -------------------------------------------------------------------------
 
     @Test
     @DisplayName("Should add trace and span IDs to response headers when span is valid")
