@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.filter.JFrameFilter;
 import io.github.jframe.logging.kibana.AutoCloseableKibanaLogField;
 import io.github.jframe.logging.kibana.KibanaLogFields;
@@ -9,10 +10,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.ext.Provider;
 
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.LOG_TYPE;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_DURATION;
@@ -25,6 +29,9 @@ import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_DURATION;
  * On the outbound response: retrieves the timestamp, computes the elapsed duration, and logs it.
  * Uses {@link FilterVoter} to determine whether duration logging is enabled for a given request.
  */
+@Provider
+@ApplicationScoped
+@Priority(300)
 @RequiredArgsConstructor
 @Slf4j
 public class RequestDurationFilter implements ContainerRequestFilter, ContainerResponseFilter, JFrameFilter {
@@ -32,15 +39,22 @@ public class RequestDurationFilter implements ContainerRequestFilter, ContainerR
     private static final String START_TIMESTAMP = "start_timestamp";
 
     private final FilterVoter filterVoter;
+    private final FilterConfig filterConfig;
 
     @Override
     public void filter(final ContainerRequestContext requestContext) throws IOException {
+        if (!filterConfig.requestDuration().enabled()) {
+            return;
+        }
         requestContext.setProperty(START_TIMESTAMP, System.nanoTime());
     }
 
     @Override
     public void filter(final ContainerRequestContext requestContext,
         final ContainerResponseContext responseContext) throws IOException {
+        if (!filterConfig.requestDuration().enabled()) {
+            return;
+        }
         if (filterVoter.enabled(requestContext)) {
             logEnd(requestContext);
         }

@@ -1,6 +1,7 @@
 package io.github.jframe.logging.filter.client;
 
 import io.github.jframe.logging.LoggingConfig;
+import io.github.jframe.logging.filter.FilterConfig;
 import io.github.support.UnitTest;
 
 import java.net.URI;
@@ -10,16 +11,20 @@ import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -39,11 +44,24 @@ import static org.mockito.Mockito.when;
  * <li>Skipping all logging when {@code LoggingConfig.disabled()} is {@code true}</li>
  * </ul>
  */
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Unit Test - Outbound Logging Filter")
 public class OutboundLoggingFilterTest extends UnitTest {
 
     @Mock
     private LoggingConfig loggingConfig;
+
+    @Mock
+    private FilterConfig filterConfig;
+
+    @Mock
+    private FilterConfig.OutboundLoggingConfig outboundLoggingConfig;
+
+    @BeforeEach
+    public void setUp() {
+        lenient().when(filterConfig.outboundLogging()).thenReturn(outboundLoggingConfig);
+        lenient().when(outboundLoggingConfig.enabled()).thenReturn(true);
+    }
 
     // ─── Request filter: logging enabled ─────────────────────────────────────
 
@@ -58,7 +76,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             when(loggingConfig.disabled()).thenReturn(false);
             when(loggingConfig.excludePaths()).thenReturn(List.of("/actuator/*"));
             final ClientRequestContext requestContext = aClientRequestContext("GET", "https://api.example.com/api/users");
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(requestContext);
@@ -80,7 +98,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             when(requestContext.getUri()).thenReturn(URI.create("https://api.example.com/api/orders"));
             when(requestContext.getMethod()).thenReturn("POST");
             when(requestContext.getHeaders()).thenReturn(reqHeaders);
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(requestContext);
@@ -96,7 +114,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             when(loggingConfig.disabled()).thenReturn(false);
             when(loggingConfig.excludePaths()).thenReturn(List.of("/actuator/*", "/health"));
             final ClientRequestContext requestContext = aClientRequestContext("GET", "https://api.example.com/health");
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the outbound request to an excluded path
             filter.filter(requestContext);
@@ -113,7 +131,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             when(loggingConfig.disabled()).thenReturn(true);
             when(loggingConfig.excludePaths()).thenReturn(List.of());
             final ClientRequestContext requestContext = aClientRequestContext("GET", "https://api.example.com/api/users");
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(requestContext);
@@ -132,7 +150,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             when(requestContext.getUri()).thenReturn(URI.create("https://api.example.com/api/data"));
             when(requestContext.getMethod()).thenReturn("GET");
             when(requestContext.getHeaders()).thenReturn(new MultivaluedHashMap<>());
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(requestContext);
@@ -151,7 +169,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             when(requestContext.getUri()).thenReturn(URI.create("https://api.example.com/health"));
             when(requestContext.getMethod()).thenReturn("GET");
             when(requestContext.getHeaders()).thenReturn(new MultivaluedHashMap<>());
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the outbound request to an excluded path
             filter.filter(requestContext);
@@ -177,7 +195,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(true);
             final ClientResponseContext responseContext = aClientResponseContext(200);
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the incoming response
             filter.filter(requestContext, responseContext);
@@ -199,7 +217,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             final ClientResponseContext responseContext = mock(ClientResponseContext.class);
             when(responseContext.getStatus()).thenReturn(200);
             when(responseContext.getHeaders()).thenReturn(respHeaders);
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the incoming response
             filter.filter(requestContext, responseContext);
@@ -217,7 +235,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(false);
             final ClientResponseContext responseContext = mock(ClientResponseContext.class);
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the incoming response for an excluded request
             filter.filter(requestContext, responseContext);
@@ -236,7 +254,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(null);
             final ClientResponseContext responseContext = mock(ClientResponseContext.class);
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the incoming response
             filter.filter(requestContext, responseContext);
@@ -254,7 +272,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(true);
             final ClientResponseContext responseContext = aClientResponseContext(400);
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the 400 response
             filter.filter(requestContext, responseContext);
@@ -272,7 +290,7 @@ public class OutboundLoggingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(true);
             final ClientResponseContext responseContext = aClientResponseContext(500);
-            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig);
+            final OutboundLoggingFilter filter = new OutboundLoggingFilter(loggingConfig, filterConfig);
 
             // When: Filter processes the 500 response
             filter.filter(requestContext, responseContext);

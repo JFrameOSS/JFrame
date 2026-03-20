@@ -1,16 +1,21 @@
 package io.github.jframe.tracing.filter;
 
+import io.github.jframe.logging.filter.TracingFilterConfig;
 import io.github.jframe.tracing.OpenTelemetryConfig;
 import io.github.jframe.tracing.interceptor.QuarkusSpanManager;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * JAX-RS client filter that creates and manages OpenTelemetry CLIENT spans for outbound HTTP calls.
@@ -20,9 +25,14 @@ import jakarta.ws.rs.core.MultivaluedMap;
  * On the response side: enriches the span with the HTTP response status code and finishes it in
  * a {@code finally} block to ensure spans are always closed even when enrichment fails.
  *
- * <p>Span creation is skipped when {@link OpenTelemetryConfig#disabled()} is {@code true} or when
- * the URI path contains any segment listed in {@link OpenTelemetryConfig#excludedMethods()}.
+ * <p>Span creation is skipped when {@link TracingFilterConfig.OutboundTracingConfig#enabled()} is
+ * {@code false}, when {@link OpenTelemetryConfig#disabled()} is {@code true}, or when the URI path
+ * contains any segment listed in {@link OpenTelemetryConfig#excludedMethods()}.
  */
+@Provider
+@ApplicationScoped
+@Priority(200)
+@Slf4j
 public class OutboundTracingFilter implements ClientRequestFilter, ClientResponseFilter {
 
     private static final String SPAN_PROPERTY_KEY =
@@ -30,17 +40,21 @@ public class OutboundTracingFilter implements ClientRequestFilter, ClientRespons
 
     private final QuarkusSpanManager spanManager;
     private final OpenTelemetryConfig openTelemetryConfig;
+    private final TracingFilterConfig tracingFilterConfig;
 
     /**
      * Creates a new {@code OutboundTracingFilter}.
      *
      * @param spanManager         manages span lifecycle (create, enrich, finish)
      * @param openTelemetryConfig configuration for enabling/disabling tracing and excluded paths
+     * @param tracingFilterConfig configuration for enabling/disabling this specific filter
      */
     public OutboundTracingFilter(final QuarkusSpanManager spanManager,
-                                 final OpenTelemetryConfig openTelemetryConfig) {
+                                 final OpenTelemetryConfig openTelemetryConfig,
+                                 final TracingFilterConfig tracingFilterConfig) {
         this.spanManager = spanManager;
         this.openTelemetryConfig = openTelemetryConfig;
+        this.tracingFilterConfig = tracingFilterConfig;
     }
 
     @Override
@@ -50,7 +64,7 @@ public class OutboundTracingFilter implements ClientRequestFilter, ClientRespons
         final String path = requestContext.getUri().getPath();
         final String serviceName = requestContext.getUri().getHost();
         final MultivaluedMap<String, Object> headers = requestContext.getHeaders();
-        if (openTelemetryConfig.disabled() || isExcluded(path)) {
+        if (!tracingFilterConfig.outboundTracing().enabled() || openTelemetryConfig.disabled() || isExcluded(path)) {
             return;
         }
         final Span span = spanManager.createOutboundSpan(method, url, serviceName);

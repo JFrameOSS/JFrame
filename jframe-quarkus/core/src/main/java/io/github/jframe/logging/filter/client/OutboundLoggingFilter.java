@@ -1,15 +1,19 @@
 package io.github.jframe.logging.filter.client;
 
 import io.github.jframe.logging.LoggingConfig;
+import io.github.jframe.logging.filter.FilterConfig;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URI;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * JAX-RS client filter that logs outbound HTTP requests and their corresponding responses.
@@ -19,6 +23,9 @@ import jakarta.ws.rs.core.MultivaluedMap;
  * A boolean property is stored on the request context so that the response-side filter knows
  * whether the request was actually logged.
  */
+@Provider
+@ApplicationScoped
+@Priority(300)
 @Slf4j
 public class OutboundLoggingFilter implements ClientRequestFilter, ClientResponseFilter {
 
@@ -26,18 +33,24 @@ public class OutboundLoggingFilter implements ClientRequestFilter, ClientRespons
         "io.github.jframe.logging.filter.client.OutboundLoggingFilter.LOGGING_ENABLED";
 
     private final LoggingConfig loggingConfig;
+    private final FilterConfig filterConfig;
 
     /**
-     * Creates a new {@code OutboundLoggingFilter} with the given logging configuration.
+     * Creates a new {@code OutboundLoggingFilter} with the given logging and filter configuration.
      *
      * @param loggingConfig the logging configuration used to determine whether logging is enabled
+     * @param filterConfig  the filter configuration used to determine whether the filter is enabled
      */
-    public OutboundLoggingFilter(final LoggingConfig loggingConfig) {
+    public OutboundLoggingFilter(final LoggingConfig loggingConfig, final FilterConfig filterConfig) {
         this.loggingConfig = loggingConfig;
+        this.filterConfig = filterConfig;
     }
 
     @Override
     public void filter(final ClientRequestContext requestContext) throws IOException {
+        if (!filterConfig.outboundLogging().enabled()) {
+            return;
+        }
         final URI uri = requestContext.getUri();
         final String method = requestContext.getMethod();
         final MultivaluedMap<String, Object> headers = requestContext.getHeaders();
@@ -51,6 +64,9 @@ public class OutboundLoggingFilter implements ClientRequestFilter, ClientRespons
     @Override
     public void filter(final ClientRequestContext requestContext,
         final ClientResponseContext responseContext) throws IOException {
+        if (!filterConfig.outboundLogging().enabled()) {
+            return;
+        }
         if (isLoggingConfiguredAsEnabled() && Boolean.TRUE.equals(requestContext.getProperty(PROPERTY_KEY))) {
             log.debug(
                 "[EXTERNAL] Incoming response is: {} {}",

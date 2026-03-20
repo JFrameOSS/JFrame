@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.voter.FilterVoter;
 import io.github.support.UnitTest;
@@ -8,6 +9,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -19,6 +21,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -46,6 +49,19 @@ public class RequestDurationFilterTest extends UnitTest {
     @Mock
     private FilterVoter filterVoter;
 
+    @Mock
+    private FilterConfig filterConfig;
+
+    @Mock
+    private FilterConfig.RequestDurationConfig requestDurationConfig;
+
+    @Override
+    @BeforeEach
+    public void setUp() {
+        lenient().when(filterConfig.requestDuration()).thenReturn(requestDurationConfig);
+        lenient().when(requestDurationConfig.enabled()).thenReturn(true);
+    }
+
     @AfterEach
     public void tearDown() {
         // Clean up MDC to avoid test pollution
@@ -56,7 +72,7 @@ public class RequestDurationFilterTest extends UnitTest {
     @DisplayName("Should set start timestamp property on request context")
     public void shouldSetStartTimestampPropertyOnRequestContext() throws Exception {
         // Given: A request duration filter with a filter voter and mocked request context
-        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter);
+        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter, filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         // When: Filter processes the incoming request
@@ -70,7 +86,7 @@ public class RequestDurationFilterTest extends UnitTest {
     @DisplayName("Should retrieve start timestamp from request context when logging response")
     public void shouldRetrieveStartTimestampFromRequestContextWhenLoggingResponse() throws Exception {
         // Given: A request duration filter with a start timestamp already set
-        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter);
+        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter, filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final Long startTimestamp = System.nanoTime();
@@ -89,7 +105,7 @@ public class RequestDurationFilterTest extends UnitTest {
     @DisplayName("Should not fail when start timestamp is missing from request context")
     public void shouldNotFailWhenStartTimestampIsMissingFromRequestContext() throws Exception {
         // Given: A request duration filter and no start timestamp set
-        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter);
+        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter, filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
 
@@ -107,7 +123,7 @@ public class RequestDurationFilterTest extends UnitTest {
     @DisplayName("Should create filter instance successfully")
     public void shouldCreateFilterInstanceSuccessfully() {
         // Given / When: A request duration filter is constructed with a filter voter
-        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter);
+        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter, filterConfig);
 
         // Then: Filter is instantiated
         assertThat(filter, is(notNullValue()));
@@ -117,7 +133,7 @@ public class RequestDurationFilterTest extends UnitTest {
     @DisplayName("Should not log duration when filter voter is disabled")
     public void shouldNotLogDurationWhenFilterVoterIsDisabled() throws Exception {
         // Given: A request duration filter where the voter is disabled
-        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter);
+        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter, filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final Long startTimestamp = System.nanoTime();
@@ -136,7 +152,7 @@ public class RequestDurationFilterTest extends UnitTest {
     @DisplayName("Should log duration at info level when voter is enabled and timestamp is present")
     public void shouldLogDurationAtInfoLevelWhenVoterEnabled() throws Exception {
         // Given: A request duration filter, voter enabled, start timestamp present
-        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter);
+        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter, filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final Long startTimestamp = System.nanoTime();
@@ -156,7 +172,7 @@ public class RequestDurationFilterTest extends UnitTest {
     @DisplayName("Should set tx_duration MDC field when voter is enabled and timestamp is present")
     public void shouldSetTxDurationMdcFieldWhenVoterEnabledAndTimestampPresent() throws Exception {
         // Given: A request duration filter, voter enabled, start timestamp set well before
-        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter);
+        final RequestDurationFilter filter = new RequestDurationFilter(filterVoter, filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
 

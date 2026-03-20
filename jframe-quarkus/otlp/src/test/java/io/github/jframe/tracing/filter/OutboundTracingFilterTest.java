@@ -1,5 +1,6 @@
 package io.github.jframe.tracing.filter;
 
+import io.github.jframe.logging.filter.TracingFilterConfig;
 import io.github.jframe.tracing.OpenTelemetryConfig;
 import io.github.jframe.tracing.interceptor.QuarkusSpanManager;
 import io.github.support.UnitTest;
@@ -58,12 +59,20 @@ public class OutboundTracingFilterTest extends UnitTest {
     @Mock
     private OpenTelemetryConfig openTelemetryConfig;
 
+    @Mock
+    private TracingFilterConfig tracingFilterConfig;
+
+    @Mock
+    private TracingFilterConfig.OutboundTracingConfig outboundTracingConfig;
+
     @Override
     @BeforeEach
     public void setUp() {
         // Default: tracing is enabled with no excluded paths
         lenient().when(openTelemetryConfig.disabled()).thenReturn(false);
         lenient().when(openTelemetryConfig.excludedMethods()).thenReturn(Set.of("health", "actuator", "ping", "status"));
+        lenient().when(tracingFilterConfig.outboundTracing()).thenReturn(outboundTracingConfig);
+        lenient().when(outboundTracingConfig.enabled()).thenReturn(true);
     }
 
     // ─── Request filter: span creation ───────────────────────────────────────
@@ -79,7 +88,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = aClientRequestContext("GET", "https://api.example.com/api/users");
             final Span span = aValidSpan();
             when(spanManager.createOutboundSpan(anyString(), anyString(), anyString())).thenReturn(span);
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(requestContext);
@@ -98,7 +107,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             when(requestContext.getHeaders()).thenReturn(new MultivaluedHashMap<>());
             final Span span = aValidSpan();
             when(spanManager.createOutboundSpan(anyString(), anyString(), anyString())).thenReturn(span);
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(requestContext);
@@ -118,7 +127,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             when(requestContext.getHeaders()).thenReturn(headers);
             final Span span = aValidSpan();
             when(spanManager.createOutboundSpan(anyString(), anyString(), anyString())).thenReturn(span);
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(requestContext);
@@ -134,7 +143,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             // Given: Tracing is globally disabled
             when(openTelemetryConfig.disabled()).thenReturn(true);
             final ClientRequestContext requestContext = aClientRequestContext("GET", "https://api.example.com/api/users");
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(requestContext);
@@ -149,7 +158,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             // Given: Tracing is enabled but the path contains an excluded segment ("health")
             when(openTelemetryConfig.excludedMethods()).thenReturn(Set.of("health", "actuator", "ping"));
             final ClientRequestContext requestContext = aClientRequestContext("GET", "https://api.example.com/health");
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the outbound request to an excluded path
             filter.filter(requestContext);
@@ -164,7 +173,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             // Given: Tracing is enabled but the deep path contains "actuator"
             when(openTelemetryConfig.excludedMethods()).thenReturn(Set.of("health", "actuator"));
             final ClientRequestContext requestContext = aClientRequestContext("GET", "https://api.example.com/actuator/metrics");
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(requestContext);
@@ -189,7 +198,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(span);
             final ClientResponseContext responseContext = aClientResponseContext(200);
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the incoming response
             filter.filter(requestContext, responseContext);
@@ -206,7 +215,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(span);
             final ClientResponseContext responseContext = aClientResponseContext(200);
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the incoming response
             filter.filter(requestContext, responseContext);
@@ -225,7 +234,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             final ClientResponseContext responseContext = aClientResponseContext(500);
             doThrow(new RuntimeException("enrichment failure"))
                 .when(spanManager).enrichOutboundSpan(any(Span.class), any(Integer.class), any());
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the response (enrichment will throw)
             // Then: The exception is swallowed/handled and finishSpan is still called
@@ -245,7 +254,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(null);
             final ClientResponseContext responseContext = aClientResponseContext(200);
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the response without a stored span
             filter.filter(requestContext, responseContext);
@@ -263,7 +272,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(span);
             final ClientResponseContext responseContext = aClientResponseContext(404);
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the 404 response
             filter.filter(requestContext, responseContext);
@@ -281,7 +290,7 @@ public class OutboundTracingFilterTest extends UnitTest {
             final ClientRequestContext requestContext = mock(ClientRequestContext.class);
             when(requestContext.getProperty(anyString())).thenReturn(span);
             final ClientResponseContext responseContext = aClientResponseContext(500);
-            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig);
+            final OutboundTracingFilter filter = new OutboundTracingFilter(spanManager, openTelemetryConfig, tracingFilterConfig);
 
             // When: Filter processes the 500 response
             filter.filter(requestContext, responseContext);

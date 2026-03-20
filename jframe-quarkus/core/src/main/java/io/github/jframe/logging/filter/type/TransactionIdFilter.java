@@ -1,21 +1,26 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.filter.JFrameFilter;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.TransactionId;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.UUID;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.Provider;
 
 import org.apache.commons.lang3.StringUtils;
 
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 
 /**
  * JAX-RS filter that resolves or generates a transaction ID for each HTTP request.
@@ -25,10 +30,22 @@ import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
  * {@link TransactionId} ThreadLocal.
  * On the outbound response: adds the transaction ID to the response header (if not already present).
  */
-@RequiredArgsConstructor
+@Provider
+@ApplicationScoped
+@Priority(100)
+@Slf4j
 public class TransactionIdFilter implements ContainerRequestFilter, ContainerResponseFilter, JFrameFilter {
 
-    private final String headerName;
+    private final FilterConfig filterConfig;
+
+    /**
+     * Creates a new {@code TransactionIdFilter} with the given filter configuration.
+     *
+     * @param filterConfig the filter configuration used to determine whether the filter is enabled
+     */
+    public TransactionIdFilter(final FilterConfig filterConfig) {
+        this.filterConfig = filterConfig;
+    }
 
     /**
      * Resolves a {@link UUID} from the supplied header value string.
@@ -56,7 +73,10 @@ public class TransactionIdFilter implements ContainerRequestFilter, ContainerRes
 
     @Override
     public void filter(final ContainerRequestContext requestContext) throws IOException {
-        final String headerValue = requestContext.getHeaderString(headerName);
+        if (!filterConfig.transactionId().enabled()) {
+            return;
+        }
+        final String headerValue = requestContext.getHeaderString(TX_ID_HEADER);
         final UUID transactionId = resolve(headerValue);
         TransactionId.set(transactionId);
         KibanaLogFields.tag(TX_ID, TransactionId.get());
@@ -65,10 +85,13 @@ public class TransactionIdFilter implements ContainerRequestFilter, ContainerRes
     @Override
     public void filter(final ContainerRequestContext requestContext,
         final ContainerResponseContext responseContext) throws IOException {
+        if (!filterConfig.transactionId().enabled()) {
+            return;
+        }
         final MultivaluedMap<String, Object> headers = responseContext.getHeaders();
         final String transactionId = TransactionId.get();
-        if (transactionId != null && !headers.containsKey(headerName)) {
-            headers.putSingle(headerName, transactionId);
+        if (transactionId != null && !headers.containsKey(TX_ID_HEADER)) {
+            headers.putSingle(TX_ID_HEADER, transactionId);
         }
     }
 }

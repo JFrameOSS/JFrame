@@ -6,6 +6,7 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.Tracer;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.interceptor.InvocationContext;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,9 @@ public class TracingInterceptorTest extends UnitTest {
     private Tracer tracer;
 
     @Mock
+    private Instance<Tracer> tracerInstance;
+
+    @Mock
     private SpanBuilder spanBuilder;
 
     @Mock
@@ -54,7 +58,9 @@ public class TracingInterceptorTest extends UnitTest {
     @Override
     @BeforeEach
     public void setUp() {
-        interceptor = new TracingInterceptor(tracer);
+        when(tracerInstance.isResolvable()).thenReturn(true);
+        when(tracerInstance.get()).thenReturn(tracer);
+        interceptor = new TracingInterceptor(tracerInstance);
         setupSpanBuilderMocks();
     }
 

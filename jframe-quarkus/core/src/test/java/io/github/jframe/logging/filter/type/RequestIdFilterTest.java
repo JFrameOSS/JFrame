@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.RequestId;
 import io.github.support.UnitTest;
@@ -11,8 +12,12 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
 import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
@@ -21,6 +26,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -37,8 +43,22 @@ import static org.mockito.Mockito.when;
  * <li>MDC integration via KibanaLogFields</li>
  * </ul>
  */
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Quarkus Logging Filters - Request ID Filter")
 public class RequestIdFilterTest extends UnitTest {
+
+    @Mock
+    private FilterConfig filterConfig;
+
+    @Mock
+    private FilterConfig.RequestIdConfig requestIdConfig;
+
+    @Override
+    @BeforeEach
+    public void setUp() {
+        lenient().when(filterConfig.requestId()).thenReturn(requestIdConfig);
+        lenient().when(requestIdConfig.enabled()).thenReturn(true);
+    }
 
     @AfterEach
     public void tearDown() {
@@ -51,7 +71,7 @@ public class RequestIdFilterTest extends UnitTest {
     @DisplayName("Should generate and set request ID in ThreadLocal")
     public void shouldGenerateAndSetRequestIdInThreadLocal() throws Exception {
         // Given: A request ID filter and mocked JAX-RS request context
-        final RequestIdFilter filter = new RequestIdFilter(REQ_ID_HEADER);
+        final RequestIdFilter filter = new RequestIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         // When: Filter processes the incoming request
@@ -66,7 +86,7 @@ public class RequestIdFilterTest extends UnitTest {
     @DisplayName("Should add request ID to response header")
     public void shouldAddRequestIdToResponseHeader() throws Exception {
         // Given: A request ID filter with mocked request/response contexts
-        final RequestIdFilter filter = new RequestIdFilter(REQ_ID_HEADER);
+        final RequestIdFilter filter = new RequestIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -86,7 +106,7 @@ public class RequestIdFilterTest extends UnitTest {
     @DisplayName("Should not add request ID to response header if already present")
     public void shouldNotAddRequestIdToResponseHeaderIfAlreadyPresent() throws Exception {
         // Given: A request ID filter, response already has the header
-        final RequestIdFilter filter = new RequestIdFilter(REQ_ID_HEADER);
+        final RequestIdFilter filter = new RequestIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -104,7 +124,7 @@ public class RequestIdFilterTest extends UnitTest {
     @DisplayName("Should generate unique request IDs for different requests")
     public void shouldGenerateUniqueRequestIdsForDifferentRequests() throws Exception {
         // Given: A request ID filter and two separate request contexts
-        final RequestIdFilter filter = new RequestIdFilter(REQ_ID_HEADER);
+        final RequestIdFilter filter = new RequestIdFilter(filterConfig);
         final ContainerRequestContext requestContext1 = mock(ContainerRequestContext.class);
 
         // When: First filter execution
@@ -127,7 +147,7 @@ public class RequestIdFilterTest extends UnitTest {
     @DisplayName("Should generate a valid UUID as request ID")
     public void shouldGenerateValidUuidAsRequestId() throws Exception {
         // Given: A request ID filter and mocked request context
-        final RequestIdFilter filter = new RequestIdFilter(REQ_ID_HEADER);
+        final RequestIdFilter filter = new RequestIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         // When: Filter processes the request
@@ -144,7 +164,7 @@ public class RequestIdFilterTest extends UnitTest {
     @DisplayName("Should set req_id MDC field when filtering request")
     public void shouldSetRequestIdMdcFieldWhenFilteringRequest() throws Exception {
         // Given: A request ID filter and mocked JAX-RS request context
-        final RequestIdFilter filter = new RequestIdFilter(REQ_ID_HEADER);
+        final RequestIdFilter filter = new RequestIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         // When: Filter processes the incoming request

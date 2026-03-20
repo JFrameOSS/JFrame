@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.filter.JFrameFilter;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.logger.RequestResponseLogger;
@@ -11,10 +12,13 @@ import io.github.jframe.logging.wrapper.CachingResponseContext;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * JAX-RS filter that logs full request and response details including body capture and masking.
@@ -23,6 +27,9 @@ import jakarta.ws.rs.container.ContainerResponseFilter;
  * Delegates actual logging to {@link RequestResponseLogger}.
  * Cleans up ThreadLocal and MDC fields in the response phase.
  */
+@Provider
+@ApplicationScoped
+@Priority(400)
 @RequiredArgsConstructor
 public class RequestResponseLogFilter implements ContainerRequestFilter, ContainerResponseFilter, JFrameFilter {
 
@@ -31,9 +38,13 @@ public class RequestResponseLogFilter implements ContainerRequestFilter, Contain
 
     private final RequestResponseLogger requestResponseLogger;
     private final FilterVoter filterVoter;
+    private final FilterConfig filterConfig;
 
     @Override
     public void filter(final ContainerRequestContext requestContext) throws IOException {
+        if (!filterConfig.requestResponse().enabled()) {
+            return;
+        }
         if (filterVoter.enabled(requestContext)) {
             final CachingRequestContext cachingRequest = new CachingRequestContext(requestContext);
             requestContext.setProperty(CACHING_REQUEST_PROPERTY, cachingRequest);
@@ -45,6 +56,9 @@ public class RequestResponseLogFilter implements ContainerRequestFilter, Contain
     public void filter(final ContainerRequestContext requestContext,
         final ContainerResponseContext responseContext) throws IOException {
         try {
+            if (!filterConfig.requestResponse().enabled()) {
+                return;
+            }
             if (filterVoter.enabled(requestContext)) {
                 final CachingResponseContext cachingResponse = new CachingResponseContext(responseContext);
                 requestResponseLogger.logResponse(requestContext, cachingResponse);

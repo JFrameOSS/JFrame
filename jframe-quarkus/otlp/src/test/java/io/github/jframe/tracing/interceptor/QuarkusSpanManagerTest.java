@@ -7,6 +7,7 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
@@ -26,6 +27,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link QuarkusSpanManager}.
@@ -45,6 +47,9 @@ public class QuarkusSpanManagerTest extends UnitTest {
     private Tracer tracer;
 
     @Mock
+    private Instance<Tracer> tracerInstance;
+
+    @Mock
     private SpanBuilder spanBuilder;
 
     @Mock
@@ -58,7 +63,9 @@ public class QuarkusSpanManagerTest extends UnitTest {
     @Override
     @BeforeEach
     public void setUp() {
-        spanManager = new QuarkusSpanManager(tracer);
+        when(tracerInstance.isResolvable()).thenReturn(true);
+        when(tracerInstance.get()).thenReturn(tracer);
+        spanManager = new QuarkusSpanManager(tracerInstance);
         setupSpanBuilderMocks();
         setupKibanaFields();
     }

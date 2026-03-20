@@ -15,6 +15,7 @@ dependencies {
     compileOnly("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     compileOnly("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
     compileOnly("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
+    compileOnly("io.quarkus", "quarkus-arc", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))
 
     // Test dependencies
@@ -23,6 +24,7 @@ dependencies {
     testImplementation("jakarta.validation", "jakarta.validation-api", retrieve("jakartaValidationVersion"))
     testImplementation("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
     testImplementation("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
+    testImplementation("io.quarkus", "quarkus-arc", retrieve("quarkusVersion"))
     testImplementation("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))
     testImplementation("org.junit.jupiter", "junit-jupiter", retrieve("junitVersion"))
     testImplementation("org.mockito", "mockito-core", retrieve("mockitoVersion"))

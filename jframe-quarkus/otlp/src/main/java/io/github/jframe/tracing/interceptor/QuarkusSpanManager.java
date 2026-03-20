@@ -4,9 +4,10 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
-import io.quarkus.arc.properties.IfBuildProperty;
+import lombok.extern.slf4j.Slf4j;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.core.MultivaluedMap;
 
 /**
@@ -15,14 +16,11 @@ import jakarta.ws.rs.core.MultivaluedMap;
  * <p>Provides methods to create, enrich, and finish {@link Span} instances for tracing
  * outbound CLIENT requests. Spans are marked as errors for 4xx/5xx HTTP status codes.
  *
- * <p>Only activated when {@code quarkus.otel.enabled=true}; otherwise the bean is not
- * registered, avoiding an unsatisfied {@link Tracer} dependency when OTel is disabled.
+ * <p>When OpenTelemetry is disabled ({@code quarkus.otel.enabled=false}), the injected
+ * {@link Tracer} is unavailable and all span operations become no-ops.
  */
 @ApplicationScoped
-@IfBuildProperty(
-    name = "quarkus.otel.enabled",
-    stringValue = "true"
-)
+@Slf4j
 public class QuarkusSpanManager {
 
     /** HTTP status codes at or above this value are considered errors. */
@@ -34,23 +32,38 @@ public class QuarkusSpanManager {
     private final Tracer tracer;
 
     /**
-     * Constructs a new {@code QuarkusSpanManager} with the given {@link Tracer}.
+     * Constructs a new {@code QuarkusSpanManager} with an optional {@link Tracer}.
+     * When OpenTelemetry is disabled, the tracer instance is not available and
+     * all span operations become no-ops.
      *
-     * @param tracer the OpenTelemetry tracer used to create and manage spans
+     * @param tracerInstance the optional OpenTelemetry tracer
      */
-    public QuarkusSpanManager(final Tracer tracer) {
-        this.tracer = tracer;
+    public QuarkusSpanManager(final Instance<Tracer> tracerInstance) {
+        this.tracer = tracerInstance.isResolvable() ? tracerInstance.get() : null;
+    }
+
+    /**
+     * Returns whether a {@link Tracer} is available for span creation.
+     *
+     * @return {@code true} if OpenTelemetry tracing is active
+     */
+    public boolean isAvailable() {
+        return tracer != null;
     }
 
     /**
      * Creates a new CLIENT span for an outbound HTTP request.
+     * Returns {@code null} when no {@link Tracer} is available.
      *
      * @param method      HTTP method (e.g. "GET", "POST")
      * @param url         target URL
      * @param serviceName name of the downstream service
-     * @return the started {@link Span}
+     * @return the started {@link Span}, or {@code null} if tracing is unavailable
      */
     public Span createOutboundSpan(final String method, final String url, final String serviceName) {
+        if (tracer == null) {
+            return null;
+        }
         return tracer.spanBuilder(method + " " + url)
             .setSpanKind(SpanKind.CLIENT)
             .setAttribute(ATTR_PEER_SERVICE, serviceName)
@@ -60,12 +73,16 @@ public class QuarkusSpanManager {
     /**
      * Enriches an existing span with HTTP response attributes.
      * Marks the span as {@link StatusCode#ERROR} for status codes &gt;= 400.
+     * No-op when {@code span} is {@code null}.
      *
-     * @param span       the span to enrich
+     * @param span       the span to enrich (may be {@code null})
      * @param statusCode HTTP response status code
      * @param headers    response headers (reserved for future enrichment)
      */
     public void enrichOutboundSpan(final Span span, final int statusCode, final MultivaluedMap<String, String> headers) {
+        if (span == null) {
+            return;
+        }
         span.setAttribute(ATTR_RESPONSE_STATUS_CODE, statusCode);
         if (statusCode >= HTTP_ERROR_THRESHOLD) {
             span.setStatus(StatusCode.ERROR);
@@ -74,10 +91,13 @@ public class QuarkusSpanManager {
 
     /**
      * Finishes the given span by calling {@link Span#end()}.
+     * No-op when {@code span} is {@code null}.
      *
-     * @param span the span to finish
+     * @param span the span to finish (may be {@code null})
      */
     public void finishSpan(final Span span) {
-        span.end();
+        if (span != null) {
+            span.end();
+        }
     }
 }

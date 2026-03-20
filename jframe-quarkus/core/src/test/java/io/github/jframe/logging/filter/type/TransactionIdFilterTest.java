@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.TransactionId;
 import io.github.support.UnitTest;
@@ -11,8 +12,12 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
 import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
@@ -21,6 +26,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,8 +44,22 @@ import static org.mockito.Mockito.when;
  * <li>MDC integration via KibanaLogFields</li>
  * </ul>
  */
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Quarkus Logging Filters - Transaction ID Filter")
 public class TransactionIdFilterTest extends UnitTest {
+
+    @Mock
+    private FilterConfig filterConfig;
+
+    @Mock
+    private FilterConfig.TransactionIdConfig transactionIdConfig;
+
+    @Override
+    @BeforeEach
+    public void setUp() {
+        lenient().when(filterConfig.transactionId()).thenReturn(transactionIdConfig);
+        lenient().when(transactionIdConfig.enabled()).thenReturn(true);
+    }
 
     @AfterEach
     public void tearDown() {
@@ -52,7 +72,7 @@ public class TransactionIdFilterTest extends UnitTest {
     @DisplayName("Should generate and set transaction ID in ThreadLocal when no header present")
     public void shouldGenerateAndSetTransactionIdInThreadLocalWhenNoHeaderPresent() throws Exception {
         // Given: A transaction ID filter, mocked request context without header
-        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final TransactionIdFilter filter = new TransactionIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         when(requestContext.getHeaderString(TX_ID_HEADER)).thenReturn(null);
@@ -70,7 +90,7 @@ public class TransactionIdFilterTest extends UnitTest {
     public void shouldUseExistingTransactionIdFromRequestHeader() throws Exception {
         // Given: A transaction ID filter, mocked request context with valid UUID header
         final UUID existingTxId = UUID.randomUUID();
-        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final TransactionIdFilter filter = new TransactionIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         when(requestContext.getHeaderString(TX_ID_HEADER)).thenReturn(existingTxId.toString());
@@ -87,7 +107,7 @@ public class TransactionIdFilterTest extends UnitTest {
     @DisplayName("Should add transaction ID to response header")
     public void shouldAddTransactionIdToResponseHeader() throws Exception {
         // Given: A transaction ID filter — first process request to populate ThreadLocal
-        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final TransactionIdFilter filter = new TransactionIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -108,7 +128,7 @@ public class TransactionIdFilterTest extends UnitTest {
     @DisplayName("Should not add transaction ID to response header if already present")
     public void shouldNotAddTransactionIdToResponseHeaderIfAlreadyPresent() throws Exception {
         // Given: A transaction ID filter, response already has the TX header
-        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final TransactionIdFilter filter = new TransactionIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -127,7 +147,7 @@ public class TransactionIdFilterTest extends UnitTest {
     @DisplayName("Should generate new UUID when header contains invalid UUID")
     public void shouldGenerateNewUuidWhenHeaderContainsInvalidUuid() throws Exception {
         // Given: A transaction ID filter, request context with invalid UUID in header
-        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final TransactionIdFilter filter = new TransactionIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         when(requestContext.getHeaderString(TX_ID_HEADER)).thenReturn("not-a-valid-uuid");
@@ -145,7 +165,7 @@ public class TransactionIdFilterTest extends UnitTest {
     @DisplayName("Should generate new UUID when header is blank")
     public void shouldGenerateNewUuidWhenHeaderIsBlank() throws Exception {
         // Given: A transaction ID filter, request context with blank header
-        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final TransactionIdFilter filter = new TransactionIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         when(requestContext.getHeaderString(TX_ID_HEADER)).thenReturn("   ");
@@ -162,7 +182,7 @@ public class TransactionIdFilterTest extends UnitTest {
     @DisplayName("Should generate unique transaction IDs for different requests")
     public void shouldGenerateUniqueTransactionIdsForDifferentRequests() throws Exception {
         // Given: A transaction ID filter and two separate requests without headers
-        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final TransactionIdFilter filter = new TransactionIdFilter(filterConfig);
         final ContainerRequestContext requestContext1 = mock(ContainerRequestContext.class);
         when(requestContext1.getHeaderString(TX_ID_HEADER)).thenReturn(null);
 
@@ -225,7 +245,7 @@ public class TransactionIdFilterTest extends UnitTest {
     @DisplayName("Should set tx_id MDC field when filtering request")
     public void shouldSetTxIdMdcFieldWhenFilteringRequest() throws Exception {
         // Given: A transaction ID filter and mocked request context without header
-        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final TransactionIdFilter filter = new TransactionIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         when(requestContext.getHeaderString(TX_ID_HEADER)).thenReturn(null);
@@ -245,7 +265,7 @@ public class TransactionIdFilterTest extends UnitTest {
     public void shouldSetTxIdMdcFieldToExistingHeaderValueWhenPresent() throws Exception {
         // Given: A transaction ID filter and request context with a valid UUID header
         final UUID existingTxId = UUID.randomUUID();
-        final TransactionIdFilter filter = new TransactionIdFilter(TX_ID_HEADER);
+        final TransactionIdFilter filter = new TransactionIdFilter(filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         when(requestContext.getHeaderString(TX_ID_HEADER)).thenReturn(existingTxId.toString());

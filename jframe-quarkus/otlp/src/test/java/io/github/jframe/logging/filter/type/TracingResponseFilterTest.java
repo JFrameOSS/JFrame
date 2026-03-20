@@ -1,6 +1,8 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.filter.TracingFilterConfig;
 import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.tracing.OpenTelemetryConfig;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
@@ -12,9 +14,13 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.SPAN_ID;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
@@ -24,6 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -41,14 +48,31 @@ import static org.mockito.Mockito.when;
  * <li>MDC cleanup after filter execution</li>
  * </ul>
  */
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Quarkus OTLP - Tracing Response Filter")
 public class TracingResponseFilterTest extends UnitTest {
+
+    @Mock
+    private TracingFilterConfig tracingFilterConfig;
+
+    @Mock
+    private TracingFilterConfig.TracingResponseConfig tracingResponseConfig;
+
+    @Mock
+    private OpenTelemetryConfig openTelemetryConfig;
+
+    @BeforeEach
+    public void setUp() {
+        lenient().when(tracingFilterConfig.tracingResponse()).thenReturn(tracingResponseConfig);
+        lenient().when(tracingResponseConfig.enabled()).thenReturn(true);
+        lenient().when(openTelemetryConfig.disabled()).thenReturn(false);
+    }
 
     @Test
     @DisplayName("Should add trace and span IDs to response headers when span is valid")
     public void shouldAddTraceAndSpanIdsToResponseHeadersWhenSpanIsValid() throws Exception {
         // Given: A tracing filter with valid active span
-        final TracingResponseFilter filter = new TracingResponseFilter(TRACE_ID_HEADER, SPAN_ID_HEADER);
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -72,7 +96,7 @@ public class TracingResponseFilterTest extends UnitTest {
     @DisplayName("Should populate MDC with trace and span IDs when span is valid")
     public void shouldPopulateMdcWithTraceAndSpanIdsWhenSpanIsValid() throws Exception {
         // Given: A tracing filter with valid active span
-        final TracingResponseFilter filter = new TracingResponseFilter(TRACE_ID_HEADER, SPAN_ID_HEADER);
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -97,7 +121,7 @@ public class TracingResponseFilterTest extends UnitTest {
     @DisplayName("Should not add headers if they already exist in response")
     public void shouldNotAddHeadersIfTheyAlreadyExistInResponse() throws Exception {
         // Given: Response already has trace and span headers
-        final TracingResponseFilter filter = new TracingResponseFilter(TRACE_ID_HEADER, SPAN_ID_HEADER);
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -123,7 +147,7 @@ public class TracingResponseFilterTest extends UnitTest {
     @DisplayName("Should handle null span gracefully")
     public void shouldHandleNullSpanGracefully() throws Exception {
         // Given: A tracing filter and no active span
-        final TracingResponseFilter filter = new TracingResponseFilter(TRACE_ID_HEADER, SPAN_ID_HEADER);
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -146,7 +170,7 @@ public class TracingResponseFilterTest extends UnitTest {
     @DisplayName("Should handle invalid span context gracefully")
     public void shouldHandleInvalidSpanContextGracefully() throws Exception {
         // Given: A tracing filter with invalid span context
-        final TracingResponseFilter filter = new TracingResponseFilter(TRACE_ID_HEADER, SPAN_ID_HEADER);
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -170,7 +194,7 @@ public class TracingResponseFilterTest extends UnitTest {
     @DisplayName("Should clean up MDC after filter execution")
     public void shouldCleanUpMdcAfterFilterExecution() throws Exception {
         // Given: A tracing filter with valid span
-        final TracingResponseFilter filter = new TracingResponseFilter(TRACE_ID_HEADER, SPAN_ID_HEADER);
+        final TracingResponseFilter filter = new TracingResponseFilter(tracingFilterConfig, openTelemetryConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
         final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
         final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -187,32 +211,6 @@ public class TracingResponseFilterTest extends UnitTest {
             // Then: MDC is cleaned up after execution
             assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
             assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
-        }
-    }
-
-    @Test
-    @DisplayName("Should use custom header names when provided")
-    public void shouldUseCustomHeaderNamesWhenProvided() throws Exception {
-        // Given: A tracing filter with custom header names
-        final String customTraceHeader = "Custom-Trace-Id";
-        final String customSpanHeader = "Custom-Span-Id";
-        final TracingResponseFilter filter = new TracingResponseFilter(customTraceHeader, customSpanHeader);
-        final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
-        final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
-        final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
-        when(responseContext.getHeaders()).thenReturn(headers);
-
-        // And: Mock static Span.current() to return valid span
-        try (MockedStatic<Span> spanMock = mockStatic(Span.class)) {
-            final Span span = aValidSpan(TEST_TRACE_ID, TEST_SPAN_ID);
-            spanMock.when(Span::current).thenReturn(span);
-
-            // When: Filter processes the response
-            filter.filter(requestContext, responseContext);
-
-            // Then: Custom header names are used
-            assertThat(headers.containsKey(customTraceHeader), is(true));
-            assertThat(headers.containsKey(customSpanHeader), is(true));
         }
     }
 

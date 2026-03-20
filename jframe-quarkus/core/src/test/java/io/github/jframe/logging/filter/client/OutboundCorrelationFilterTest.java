@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.client;
 
+import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.support.UnitTest;
 
@@ -8,10 +9,13 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
@@ -23,6 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -36,11 +41,24 @@ import static org.mockito.Mockito.when;
  * <li>Not overwriting existing headers that are already set on the outbound request</li>
  * </ul>
  */
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Unit Test - Outbound Correlation Filter")
 public class OutboundCorrelationFilterTest extends UnitTest {
 
     @Mock
     private ClientRequestContext clientRequestContext;
+
+    @Mock
+    private FilterConfig filterConfig;
+
+    @Mock
+    private FilterConfig.OutboundCorrelationConfig outboundCorrelationConfig;
+
+    @BeforeEach
+    public void setUp() {
+        lenient().when(filterConfig.outboundCorrelation()).thenReturn(outboundCorrelationConfig);
+        lenient().when(outboundCorrelationConfig.enabled()).thenReturn(true);
+    }
 
     @AfterEach
     public void tearDown() {
@@ -60,7 +78,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             KibanaLogFields.tag(TX_ID, "test-tx-id");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -77,7 +95,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             KibanaLogFields.tag(REQUEST_ID, "test-req-id");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -94,7 +112,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             KibanaLogFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -113,7 +131,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             KibanaLogFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -139,7 +157,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             // KibanaLogFields deliberately NOT populated for TX_ID
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -154,7 +172,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             // Given: MDC does not contain a request ID (null)
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -169,7 +187,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             // Given: MDC does not contain a trace ID (null)
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -184,7 +202,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             // Given: MDC is completely empty (no correlation IDs)
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -203,7 +221,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             KibanaLogFields.tag(TX_ID, "   ");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -228,7 +246,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             headers.putSingle(TX_ID_HEADER, "existing-tx-id");
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -246,7 +264,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             headers.putSingle(REQ_ID_HEADER, "existing-req-id");
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
@@ -264,7 +282,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             headers.putSingle(TRACE_ID_HEADER, "existing-trace-id");
             when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter();
+            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
 
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
