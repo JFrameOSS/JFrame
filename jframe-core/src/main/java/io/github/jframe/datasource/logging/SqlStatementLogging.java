@@ -1,4 +1,4 @@
-package io.github.jframe.datasource.listener.logger;
+package io.github.jframe.datasource.logging;
 
 /** Utility class to suppress sql logging. */
 public final class SqlStatementLogging {

@@ -1,4 +1,4 @@
-package io.github.jframe.datasource.listener.logger;
+package io.github.jframe.datasource.logging;
 
 /** Auto closeable state of sql statement logging. */
 public class SqlLoggingState implements AutoCloseable {

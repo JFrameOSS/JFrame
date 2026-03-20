@@ -1,7 +1,7 @@
 package io.github.jframe.datasource.config;
 
+import io.github.jframe.datasource.listener.DefaultQueryExecutionListener;
 import lombok.extern.slf4j.Slf4j;
-import net.ttddyy.dsproxy.listener.logging.SLF4JQueryLoggingListener;
 import net.ttddyy.dsproxy.support.ProxyDataSource;
 
 import javax.sql.DataSource;
@@ -27,15 +27,9 @@ public class DatasourceProxyConfiguration implements BeanPostProcessor {
     public Object postProcessAfterInitialization(@NonNull final Object bean, @NonNull final String beanName) throws BeansException {
         if (!(bean instanceof ProxyDataSource) && bean instanceof DataSource dataSourceBean) {
             log.info("Wrapping DataSource '{}' with ProxyDataSource for query logging", beanName);
-            final SLF4JQueryLoggingListener loggingListener = new SLF4JQueryLoggingListener();
-
-            final PrettyQueryEntryCreator prettyQueryEntryCreator = new PrettyQueryEntryCreator();
-            prettyQueryEntryCreator.setMultiline(true);
-            loggingListener.setQueryLogEntryCreator(prettyQueryEntryCreator);
-
             return create(dataSourceBean)
                 .name("Datasource Query Logger")
-                .listener(loggingListener)
+                .listener(new DefaultQueryExecutionListener())
                 .build();
         }
         return bean;
