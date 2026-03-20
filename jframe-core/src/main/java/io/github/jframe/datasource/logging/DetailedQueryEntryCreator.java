@@ -1,26 +1,7 @@
-/*
- * Copyright 2015-2020 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package io.github.jframe.datasource.logging;
 
-package io.github.jframe.datasource.listener;
-
-import io.github.jframe.datasource.logging.SqlStatementLogging;
-import lombok.extern.slf4j.Slf4j;
-import net.ttddyy.dsproxy.ExecutionInfo;
 import net.ttddyy.dsproxy.QueryInfo;
-import net.ttddyy.dsproxy.listener.logging.SLF4JQueryLoggingListener;
+import net.ttddyy.dsproxy.listener.logging.DefaultQueryLogEntryCreator;
 import net.ttddyy.dsproxy.proxy.ParameterSetOperation;
 
 import java.util.List;
@@ -29,17 +10,28 @@ import static io.github.jframe.util.IndentUtil.indent;
 import static io.github.jframe.util.constants.Constants.Characters.SYSTEM_NEW_LINE;
 import static net.ttddyy.dsproxy.proxy.ParameterSetOperation.isSetNullParameterOperation;
 
-/** A listener for logging purposes. */
-@Slf4j
-public class CustomQueryExecutionListener extends SLF4JQueryLoggingListener {
+/**
+ * A query log entry creator that produces detailed output including SQL query text
+ * and all bound parameter values.
+ *
+ * <p>Output format:
+ * <pre>
+ * SELECT * FROM users WHERE id = ?
+ *
+ * parameters:
+ * '42',
+ * 'John'
+ * </pre>
+ */
+public class DetailedQueryEntryCreator extends DefaultQueryLogEntryCreator {
 
-    @Override
-    public void beforeQuery(final ExecutionInfo execInfo, final List<QueryInfo> queryInfoList) {
-        if (SqlStatementLogging.isSuppressed()) {
-            return;
-        }
-
-        final QueryInfo queryInfo = queryInfoList.getFirst();
+    /**
+     * Formats a single query with its bound parameters.
+     *
+     * @param queryInfo the query info containing SQL and parameters
+     * @return formatted string with query and parameters
+     */
+    public String formatQueryWithParameters(final QueryInfo queryInfo) {
         final StringBuilder builder = new StringBuilder(128);
         builder.append(queryInfo.getQuery());
 
@@ -68,13 +60,6 @@ public class CustomQueryExecutionListener extends SLF4JQueryLoggingListener {
         if (value.endsWith("," + SYSTEM_NEW_LINE)) {
             value = value.substring(0, value.length() - 1 - SYSTEM_NEW_LINE.length());
         }
-        log.info("Executing query: {}{}", SYSTEM_NEW_LINE, indent(value));
-    }
-
-    @Override
-    public void afterQuery(final ExecutionInfo execInfo, final List<QueryInfo> queryInfoList) {
-        if (SqlStatementLogging.isSuppressed()) {
-            log.debug("SQL statement logging is currently suppressed; skipping logging for this query.");
-        }
+        return indent(value);
     }
 }

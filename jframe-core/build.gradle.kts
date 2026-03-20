@@ -18,6 +18,7 @@ dependencies {
     compileOnly("jakarta.annotation", "jakarta.annotation-api", retrieve("jakartaAnnotationVersion"))
     compileOnly("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
     compileOnly("org.jspecify", "jspecify", retrieve("jspecifyVersion"))
+    compileOnly("net.ttddyy", "datasource-proxy", retrieve("datasourceProxyVersion"))
 
     // ======= IMPLEMENTATION =======
     implementation("org.slf4j", "slf4j-api", retrieve("slf4jVersion"))
@@ -28,6 +29,7 @@ dependencies {
     testImplementation("org.junit.jupiter", "junit-jupiter", retrieve("junitVersion"))
     testImplementation("org.mockito", "mockito-junit-jupiter", retrieve("mockitoVersion"))
     testImplementation("jakarta.persistence", "jakarta.persistence-api", retrieve("jakartaPersistenceVersion"))
+    testImplementation("net.ttddyy", "datasource-proxy", retrieve("datasourceProxyVersion"))
     testCompileOnly("io.swagger.core.v3", "swagger-annotations-jakarta", retrieve("swaggerVersion"))
     testCompileOnly("jakarta.annotation", "jakarta.annotation-api", retrieve("jakartaAnnotationVersion"))
     testRuntimeOnly("org.junit.platform", "junit-platform-launcher", retrieve("junitVersion"))
