@@ -4,7 +4,7 @@ import io.github.jframe.exception.HttpException;
 
 import java.io.Serial;
 
-import static io.github.jframe.http.HttpStatusCode.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 
 /**
  * A Bad Request exception.

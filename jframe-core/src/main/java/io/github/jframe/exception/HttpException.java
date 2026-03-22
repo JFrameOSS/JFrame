@@ -1,9 +1,9 @@
 package io.github.jframe.exception;
 
-import io.github.jframe.http.HttpStatusCode;
 import lombok.Getter;
 
 import java.io.Serial;
+import jakarta.ws.rs.core.Response;
 
 import static java.util.Objects.requireNonNull;
 
@@ -17,32 +17,32 @@ public class HttpException extends JFrameException {
     @Serial
     private static final long serialVersionUID = -5505430727908889048L;
 
-    private final HttpStatusCode httpStatus;
+    private final Response.Status httpStatus;
 
-    /** Constructs a new {@code HttpException} with the supplied {@link HttpStatusCode}. */
-    public HttpException(final HttpStatusCode httpStatus) {
+    /** Constructs a new {@code HttpException} with the supplied {@link Response.Status}. */
+    public HttpException(final Response.Status httpStatus) {
         super();
         this.httpStatus = requireNonNull(httpStatus);
     }
 
-    /** Constructs a new {@code HttpException} with the supplied message and {@link HttpStatusCode}. */
-    public HttpException(final String message, final HttpStatusCode httpStatus) {
+    /** Constructs a new {@code HttpException} with the supplied message and {@link Response.Status}. */
+    public HttpException(final String message, final Response.Status httpStatus) {
         super(message);
         this.httpStatus = requireNonNull(httpStatus);
     }
 
     /**
-     * Constructs a new {@code HttpException} with the supplied message, {@link Throwable} and {@link HttpStatusCode}.
+     * Constructs a new {@code HttpException} with the supplied message, {@link Throwable} and {@link Response.Status}.
      */
-    public HttpException(final String message, final Throwable cause, final HttpStatusCode httpStatus) {
+    public HttpException(final String message, final Throwable cause, final Response.Status httpStatus) {
         super(message, cause);
         this.httpStatus = requireNonNull(httpStatus);
     }
 
     /**
-     * Constructs a new {@code HttpException} with the supplied {@link Throwable} and {@link HttpStatusCode}.
+     * Constructs a new {@code HttpException} with the supplied {@link Throwable} and {@link Response.Status}.
      */
-    public HttpException(final Throwable cause, final HttpStatusCode httpStatus) {
+    public HttpException(final Throwable cause, final Response.Status httpStatus) {
         super(cause);
         this.httpStatus = requireNonNull(httpStatus);
     }

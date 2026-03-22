@@ -1,5 +1,6 @@
-package io.github.jframe.exception.resource;
+package io.github.jframe.exception.assembler;
 
+import io.github.jframe.exception.resource.ValidationErrorResource;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.PropertyNamingStrategy;
 import tools.jackson.databind.SerializationConfig;
@@ -8,15 +9,17 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 
 /**
- * Assembler that converts a {@link Set} of {@link ConstraintViolation} to a list of
- * {@link ValidationErrorResource}.
+ * Assembler that converts a {@link Set} of {@link ConstraintViolation} to a list of {@link ValidationErrorResource}.
  *
  * <p>Applies the {@link PropertyNamingStrategy} configured on the {@link ObjectMapper}
  * to field names only. Error codes are taken from the annotation's simple name as-is.
  */
+@ApplicationScoped
 public class ConstraintViolationResourceAssembler {
 
     /** The Jackson ObjectMapper (Jackson 3.x). */
@@ -27,6 +30,7 @@ public class ConstraintViolationResourceAssembler {
      *
      * @param objectMapper the Jackson 3.x ObjectMapper
      */
+    @Inject
     public ConstraintViolationResourceAssembler(final ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
@@ -58,6 +62,7 @@ public class ConstraintViolationResourceAssembler {
         if (annotationType != null) {
             return annotationType.getSimpleName();
         }
+
         // Fallback for mocks/proxies: use first implemented interface
         final Class<?>[] interfaces = annotation.getClass().getInterfaces();
         return interfaces.length > 0 ? interfaces[0].getSimpleName() : annotation.getClass().getSimpleName();

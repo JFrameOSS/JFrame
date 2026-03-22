@@ -1,9 +1,10 @@
 package io.github.jframe.exception.core;
 
 import io.github.jframe.exception.HttpException;
-import io.github.jframe.http.HttpStatusCode;
 
 import java.io.Serial;
+
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
 /**
  * A resource not found exception.
@@ -16,7 +17,7 @@ public class ResourceNotFoundException extends HttpException {
 
     /** Constructs a new {@code ResourceNotFoundException}. */
     public ResourceNotFoundException() {
-        super(HttpStatusCode.NOT_FOUND);
+        super(NOT_FOUND);
     }
 
     /**
@@ -25,7 +26,7 @@ public class ResourceNotFoundException extends HttpException {
      * @param message The message to set.
      */
     public ResourceNotFoundException(final String message) {
-        super(message, HttpStatusCode.NOT_FOUND);
+        super(message, NOT_FOUND);
     }
 
     /**
@@ -35,7 +36,7 @@ public class ResourceNotFoundException extends HttpException {
      * @param cause   The cause.
      */
     public ResourceNotFoundException(final String message, final Throwable cause) {
-        super(message, cause, HttpStatusCode.NOT_FOUND);
+        super(message, cause, NOT_FOUND);
     }
 
     /**
@@ -44,6 +45,6 @@ public class ResourceNotFoundException extends HttpException {
      * @param cause The cause.
      */
     public ResourceNotFoundException(final Throwable cause) {
-        super(cause, HttpStatusCode.NOT_FOUND);
+        super(cause, NOT_FOUND);
     }
 }

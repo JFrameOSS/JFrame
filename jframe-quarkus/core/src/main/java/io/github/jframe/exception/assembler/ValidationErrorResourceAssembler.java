@@ -1,5 +1,6 @@
-package io.github.jframe.exception.resource;
+package io.github.jframe.exception.assembler;
 
+import io.github.jframe.exception.resource.ValidationErrorResource;
 import io.github.jframe.validation.ValidationError;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.PropertyNamingStrategy;
@@ -7,6 +8,8 @@ import tools.jackson.databind.SerializationConfig;
 
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 /**
  * Assembler that converts {@link ValidationError} list to {@link ValidationErrorResource} list.
@@ -14,6 +17,7 @@ import java.util.List;
  * <p>Applies the {@link PropertyNamingStrategy} configured on the {@link ObjectMapper}
  * to both field names and error codes.
  */
+@ApplicationScoped
 public class ValidationErrorResourceAssembler {
 
     /** The Jackson ObjectMapper (Jackson 3.x). */
@@ -24,6 +28,7 @@ public class ValidationErrorResourceAssembler {
      *
      * @param objectMapper the Jackson 3.x ObjectMapper
      */
+    @Inject
     public ValidationErrorResourceAssembler(final ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }

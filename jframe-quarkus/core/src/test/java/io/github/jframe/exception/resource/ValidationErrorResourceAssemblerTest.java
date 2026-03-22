@@ -1,5 +1,6 @@
 package io.github.jframe.exception.resource;
 
+import io.github.jframe.exception.assembler.ValidationErrorResourceAssembler;
 import io.github.jframe.validation.ValidationError;
 import io.github.support.UnitTest;
 import tools.jackson.databind.ObjectMapper;

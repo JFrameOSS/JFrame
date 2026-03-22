@@ -8,8 +8,11 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
 import io.quarkus.security.identity.SecurityIdentity;
+import lombok.extern.slf4j.Slf4j;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
@@ -45,6 +48,8 @@ import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_UR
  * not the response context. Content-length is a response attribute and is not available
  * at error-enrichment time without buffering the response body.
  */
+@Slf4j
+@ApplicationScoped
 public class TracingEnricher implements ErrorResponseEnricher {
 
     private final Instance<SecurityIdentity> securityIdentityInstance;
@@ -53,7 +58,7 @@ public class TracingEnricher implements ErrorResponseEnricher {
      * Creates a new {@code TracingEnricher} without security identity support.
      * Used when instantiated directly (e.g., in tests without CDI context).
      */
-    public TracingEnricher() {
+    TracingEnricher() {
         this.securityIdentityInstance = null;
     }
 
@@ -62,6 +67,7 @@ public class TracingEnricher implements ErrorResponseEnricher {
      *
      * @param securityIdentityInstance the optional CDI security identity instance
      */
+    @Inject
     public TracingEnricher(final Instance<SecurityIdentity> securityIdentityInstance) {
         this.securityIdentityInstance = securityIdentityInstance;
     }

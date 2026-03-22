@@ -1,15 +1,14 @@
-package io.github.jframe.exception.resource;
+package io.github.jframe.exception.assembler;
 
+import lombok.experimental.UtilityClass;
 import tools.jackson.databind.PropertyNamingStrategy;
 import tools.jackson.databind.SerializationConfig;
 
 /**
  * Utility for translating field names using a Jackson {@link PropertyNamingStrategy}.
  */
+@UtilityClass
 final class PropertyNamingUtil {
-
-    private PropertyNamingUtil() {
-    }
 
     /**
      * Translates the given name using the provided naming strategy.

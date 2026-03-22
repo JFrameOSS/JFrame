@@ -3,11 +3,13 @@ package io.github.jframe.exception.enricher;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.logging.model.TransactionId;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
 /**
  * Enricher that sets the transaction ID from the current {@link TransactionId} ThreadLocal.
  */
+@ApplicationScoped
 public class TransactionIdResponseEnricher implements ErrorResponseEnricher {
 
     @Override

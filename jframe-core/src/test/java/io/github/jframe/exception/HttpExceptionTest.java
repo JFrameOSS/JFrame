@@ -1,7 +1,8 @@
 package io.github.jframe.exception;
 
-import io.github.jframe.http.HttpStatusCode;
 import io.github.support.UnitTest;
+
+import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,9 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  *
  * <p>Verifies the HTTP exception functionality including:
  * <ul>
- * <li>Constructor variations with HttpStatusCode parameter</li>
- * <li>HttpStatusCode storage and retrieval</li>
- * <li>Null safety for HttpStatusCode parameter</li>
+ * <li>Constructor variations with Response.Status parameter</li>
+ * <li>Response.Status storage and retrieval</li>
+ * <li>Null safety for Response.Status parameter</li>
  * <li>Support for different HTTP status codes</li>
  * </ul>
  */
@@ -31,7 +32,7 @@ public class HttpExceptionTest extends UnitTest {
     @DisplayName("Should create exception with HTTP status")
     public void shouldCreateExceptionWithHttpStatus() {
         // Given: An HTTP status code
-        final HttpStatusCode status = HttpStatusCode.BAD_REQUEST;
+        final Response.Status status = Response.Status.BAD_REQUEST;
 
         // When: Creating exception with HTTP status only
         final HttpException exception = new HttpException(status);
@@ -47,7 +48,7 @@ public class HttpExceptionTest extends UnitTest {
     public void shouldCreateExceptionWithMessageAndHttpStatus() {
         // Given: An error message and HTTP status
         final String message = "Bad request error";
-        final HttpStatusCode status = HttpStatusCode.BAD_REQUEST;
+        final Response.Status status = Response.Status.BAD_REQUEST;
 
         // When: Creating exception with message and HTTP status
         final HttpException exception = new HttpException(message, status);
@@ -64,7 +65,7 @@ public class HttpExceptionTest extends UnitTest {
         // Given: An error message, root cause and HTTP status
         final String message = "Bad request error";
         final Throwable cause = new RuntimeException("Root cause");
-        final HttpStatusCode status = HttpStatusCode.BAD_REQUEST;
+        final Response.Status status = Response.Status.BAD_REQUEST;
 
         // When: Creating exception with message, cause and HTTP status
         final HttpException exception = new HttpException(message, cause, status);
@@ -80,7 +81,7 @@ public class HttpExceptionTest extends UnitTest {
     public void shouldCreateExceptionWithCauseAndHttpStatus() {
         // Given: A root cause and HTTP status
         final Throwable cause = new RuntimeException("Root cause");
-        final HttpStatusCode status = HttpStatusCode.INTERNAL_SERVER_ERROR;
+        final Response.Status status = Response.Status.INTERNAL_SERVER_ERROR;
 
         // When: Creating exception with cause and HTTP status
         final HttpException exception = new HttpException(cause, status);
@@ -98,7 +99,7 @@ public class HttpExceptionTest extends UnitTest {
 
         // When: Creating exception with null HTTP status
         // Then: NullPointerException is thrown
-        assertThrows(NullPointerException.class, () -> new HttpException(null));
+        assertThrows(NullPointerException.class, () -> new HttpException((Response.Status) null));
     }
 
     @Test
@@ -108,7 +109,7 @@ public class HttpExceptionTest extends UnitTest {
 
         // When: Creating exception with message and null HTTP status
         // Then: NullPointerException is thrown
-        assertThrows(NullPointerException.class, () -> new HttpException("message", null));
+        assertThrows(NullPointerException.class, () -> new HttpException("message", (Response.Status) null));
     }
 
     @Test
@@ -118,12 +119,12 @@ public class HttpExceptionTest extends UnitTest {
 
         // When: Creating exceptions with different HTTP status codes
         // Then: Each exception correctly stores its HTTP status
-        assertThat(new HttpException(HttpStatusCode.OK).getHttpStatus(), is(equalTo(HttpStatusCode.OK)));
-        assertThat(new HttpException(HttpStatusCode.NOT_FOUND).getHttpStatus(), is(equalTo(HttpStatusCode.NOT_FOUND)));
-        assertThat(new HttpException(HttpStatusCode.UNAUTHORIZED).getHttpStatus(), is(equalTo(HttpStatusCode.UNAUTHORIZED)));
+        assertThat(new HttpException(Response.Status.OK).getHttpStatus(), is(equalTo(Response.Status.OK)));
+        assertThat(new HttpException(Response.Status.NOT_FOUND).getHttpStatus(), is(equalTo(Response.Status.NOT_FOUND)));
+        assertThat(new HttpException(Response.Status.UNAUTHORIZED).getHttpStatus(), is(equalTo(Response.Status.UNAUTHORIZED)));
         assertThat(
-            new HttpException(HttpStatusCode.INTERNAL_SERVER_ERROR).getHttpStatus(),
-            is(equalTo(HttpStatusCode.INTERNAL_SERVER_ERROR))
+            new HttpException(Response.Status.INTERNAL_SERVER_ERROR).getHttpStatus(),
+            is(equalTo(Response.Status.INTERNAL_SERVER_ERROR))
         );
     }
 }

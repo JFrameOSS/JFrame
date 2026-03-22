@@ -4,6 +4,7 @@ import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
 /**
@@ -12,6 +13,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
  * <p>Only enriches when the resource is a {@link RateLimitErrorResponseResource}
  * and the throwable is a {@link RateLimitExceededException}.
  */
+@ApplicationScoped
 public class RateLimitResponseEnricher implements ErrorResponseEnricher {
 
     @Override

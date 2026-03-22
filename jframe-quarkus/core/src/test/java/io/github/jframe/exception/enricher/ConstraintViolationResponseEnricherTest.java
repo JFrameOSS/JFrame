@@ -1,6 +1,6 @@
 package io.github.jframe.exception.enricher;
 
-import io.github.jframe.exception.resource.ConstraintViolationResourceAssembler;
+import io.github.jframe.exception.assembler.ConstraintViolationResourceAssembler;
 import io.github.jframe.exception.resource.ConstraintViolationResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResource;

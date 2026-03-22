@@ -1,11 +1,12 @@
 package io.github.jframe.exception.core;
 
 import io.github.jframe.exception.HttpException;
-import io.github.jframe.http.HttpStatusCode;
 import lombok.Getter;
 
 import java.io.Serial;
 import java.time.OffsetDateTime;
+
+import static jakarta.ws.rs.core.Response.Status.TOO_MANY_REQUESTS;
 
 /**
  * Exception thrown when a rate limit has been exceeded.
@@ -35,7 +36,7 @@ public class RateLimitExceededException extends HttpException {
 
     /** Constructs a new {@code RateLimitExceededException} with rate limit details. */
     public RateLimitExceededException(final int limit, final int remaining, final OffsetDateTime resetDate) {
-        super(HttpStatusCode.TOO_MANY_REQUESTS);
+        super(TOO_MANY_REQUESTS);
         this.limit = limit;
         this.remaining = remaining;
         this.resetDate = resetDate;
@@ -46,7 +47,7 @@ public class RateLimitExceededException extends HttpException {
                                       final int limit,
                                       final int remaining,
                                       final OffsetDateTime resetDate) {
-        super(message, HttpStatusCode.TOO_MANY_REQUESTS);
+        super(message, TOO_MANY_REQUESTS);
         this.limit = limit;
         this.remaining = remaining;
         this.resetDate = resetDate;
@@ -61,7 +62,7 @@ public class RateLimitExceededException extends HttpException {
                                       final int limit,
                                       final int remaining,
                                       final OffsetDateTime resetDate) {
-        super(message, cause, HttpStatusCode.TOO_MANY_REQUESTS);
+        super(message, cause, TOO_MANY_REQUESTS);
         this.limit = limit;
         this.remaining = remaining;
         this.resetDate = resetDate;
@@ -72,7 +73,7 @@ public class RateLimitExceededException extends HttpException {
                                       final int limit,
                                       final int remaining,
                                       final OffsetDateTime resetDate) {
-        super(cause, HttpStatusCode.TOO_MANY_REQUESTS);
+        super(cause, TOO_MANY_REQUESTS);
         this.limit = limit;
         this.remaining = remaining;
         this.resetDate = resetDate;

@@ -2,25 +2,30 @@ package io.github.jframe.exception.mapper;
 
 import io.github.jframe.exception.core.ValidationException;
 
-import jakarta.ws.rs.core.MediaType;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+
 /**
- * JAX-RS {@link ExceptionMapper} for {@link ValidationException}.
+ * JAX-RS {@link jakarta.ws.rs.ext.ExceptionMapper} for {@link ValidationException}.
  *
  * <p>Always returns HTTP 400 BAD_REQUEST with the {@link io.github.jframe.validation.ValidationResult}
- * as the response body.
+ * as the response body. Extends {@link AbstractExceptionMapper} which provides shared null-check and response-building logic.
  */
 @Provider
-public class ValidationExceptionMapper implements ExceptionMapper<ValidationException> {
+@ApplicationScoped
+public class ValidationExceptionMapper extends AbstractExceptionMapper<ValidationException> {
 
+    /**
+     * Maps the given {@link ValidationException} to an HTTP 400 response.
+     *
+     * @param exception the validation exception to map
+     * @return a 400 BAD_REQUEST response with an enriched error body
+     */
     @Override
     public Response toResponse(final ValidationException exception) {
-        return Response.status(Response.Status.BAD_REQUEST)
-            .type(MediaType.APPLICATION_JSON_TYPE)
-            .entity(exception.getValidationResult())
-            .build();
+        return buildResponse(exception, BAD_REQUEST.getStatusCode());
     }
 }

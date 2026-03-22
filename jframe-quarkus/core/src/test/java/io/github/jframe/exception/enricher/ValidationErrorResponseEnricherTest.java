@@ -1,9 +1,9 @@
 package io.github.jframe.exception.enricher;
 
+import io.github.jframe.exception.assembler.ValidationErrorResourceAssembler;
 import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResource;
-import io.github.jframe.exception.resource.ValidationErrorResourceAssembler;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;

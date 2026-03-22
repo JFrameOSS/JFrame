@@ -15,6 +15,8 @@ dependencies {
     compileOnly("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     compileOnly("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
     compileOnly("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
+    compileOnly("io.smallrye", "smallrye-open-api-core", retrieve("smallryeOpenApiVersion"))
+    compileOnly("io.quarkus", "quarkus-smallrye-openapi", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-arc", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))
 

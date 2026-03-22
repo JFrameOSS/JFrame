@@ -19,7 +19,11 @@ dependencies {
     // ======= OTHER DEPENDENCIES =======
     implementation("org.mapstruct","mapstruct", retrieve("mapStructVersion"))
 
+    // ======= COMPILE-ONLY =======
+    compileOnly("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
+
     // ======= TEST =======
     testImplementation("tools.jackson.core", "jackson-databind", retrieve("jacksonVersion"))
     testImplementation("org.springframework.security", "spring-security-test")
+    testImplementation("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
 }

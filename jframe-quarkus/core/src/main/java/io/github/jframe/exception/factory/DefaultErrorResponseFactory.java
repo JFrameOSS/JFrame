@@ -9,6 +9,7 @@ import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.validation.ConstraintViolationException;
 
 /**
@@ -16,7 +17,8 @@ import jakarta.validation.ConstraintViolationException;
  *
  * <p>Traverses the cause chain to find a known JFrame exception type.
  */
-public class DefaultErrorResponseFactory {
+@ApplicationScoped
+public class DefaultErrorResponseFactory implements ExceptionResponseFactory {
 
     /**
      * Creates an {@link ErrorResponseResource} for the given throwable.
@@ -27,26 +29,23 @@ public class DefaultErrorResponseFactory {
      * @param throwable the throwable to create a resource for
      * @return the appropriate error response resource
      */
+    @Override
     public ErrorResponseResource create(final Throwable throwable) {
         final Throwable resolved = resolve(throwable);
-        final ErrorResponseResource resource;
-
-        if (resolved instanceof ApiException) {
-            resource = new ApiErrorResponseResource((ApiException) resolved);
-        } else if (resolved instanceof ValidationException) {
-            resource = new ValidationErrorResponseResource((ValidationException) resolved);
-        } else if (resolved instanceof RateLimitExceededException) {
-            resource = new RateLimitErrorResponseResource(resolved);
-        } else if (resolved instanceof ConstraintViolationException) {
-            resource = new ConstraintViolationResponseResource(resolved);
-        } else {
-            resource = new ErrorResponseResource(throwable);
-        }
-
-        return resource;
+        return getErrorResponseResource(resolved, throwable);
     }
 
-    private Throwable resolve(final Throwable throwable) {
+    private static ErrorResponseResource getErrorResponseResource(final Throwable resolved, final Throwable original) {
+        return switch (resolved) {
+            case final ApiException e -> new ApiErrorResponseResource(e);
+            case final ValidationException e -> new ValidationErrorResponseResource(e);
+            case final RateLimitExceededException e -> new RateLimitErrorResponseResource(e);
+            case final ConstraintViolationException e -> new ConstraintViolationResponseResource(e);
+            case null, default -> new ErrorResponseResource(original);
+        };
+    }
+
+    private static Throwable resolve(final Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
             if (current instanceof ApiException

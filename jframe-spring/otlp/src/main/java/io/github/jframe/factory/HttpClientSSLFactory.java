@@ -24,8 +24,8 @@ import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 
-import static io.github.jframe.http.HttpStatusCode.INTERNAL_SERVER_ERROR;
 import static io.github.jframe.util.constants.Constants.Protocols.TLS;
+import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static java.security.KeyStore.getDefaultType;
 import static javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm;
 

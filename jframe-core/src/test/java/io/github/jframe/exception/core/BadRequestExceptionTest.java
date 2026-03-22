@@ -1,7 +1,8 @@
 package io.github.jframe.exception.core;
 
-import io.github.jframe.http.HttpStatusCode;
 import io.github.support.UnitTest;
+
+import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ public class BadRequestExceptionTest extends UnitTest {
         final BadRequestException exception = new BadRequestException();
 
         // Then: Exception is created with BAD_REQUEST status and null message and cause
-        assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.BAD_REQUEST)));
+        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
         assertThat(exception.getMessage(), is(nullValue()));
         assertThat(exception.getCause(), is(nullValue()));
     }
@@ -48,7 +49,7 @@ public class BadRequestExceptionTest extends UnitTest {
         final BadRequestException exception = new BadRequestException(message);
 
         // Then: Exception is created with BAD_REQUEST status, message and null cause
-        assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.BAD_REQUEST)));
+        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
         assertThat(exception.getMessage(), is(equalTo(message)));
         assertThat(exception.getCause(), is(nullValue()));
     }
@@ -64,7 +65,7 @@ public class BadRequestExceptionTest extends UnitTest {
         final BadRequestException exception = new BadRequestException(message, cause);
 
         // Then: Exception is created with BAD_REQUEST status, message and cause
-        assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.BAD_REQUEST)));
+        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
         assertThat(exception.getMessage(), is(equalTo(message)));
         assertThat(exception.getCause(), is(equalTo(cause)));
     }
@@ -79,7 +80,7 @@ public class BadRequestExceptionTest extends UnitTest {
         final BadRequestException exception = new BadRequestException(cause);
 
         // Then: Exception is created with BAD_REQUEST status, cause and message derived from cause
-        assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.BAD_REQUEST)));
+        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
         assertThat(exception.getCause(), is(equalTo(cause)));
         assertThat(exception.getMessage(), containsString("Parameter validation failed"));
     }

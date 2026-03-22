@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `jframe-quarkus-otlp`: OpenTelemetry CDI interceptors (`@Traced`, `@LogExecutionTime`), W3C trace propagation, outbound tracing filter, span management
 - **`jframe-core` module** — framework-agnostic shared library extracted from Spring modules
   - Exception hierarchy (`JFrameException`, `HttpException`, `ApiException`, `ValidationException`, `RateLimitExceededException`)
-  - `HttpStatusCode` enum (framework-independent HTTP status codes)
+  - `ExceptionResponseFactory` interface for pluggable exception-to-response mapping
+  - `ConstraintViolationResponseResource` for constraint violation error responses
   - Fluent validation API (`Validator<T>`, `ValidationResult`, `FieldRejection` DSL)
   - Search specification framework (`SearchSpecification<T>`, `BaseSearchSpecification`, 10 field types)
   - Pagination models (`SortablePageInput`, `PageResource<T>`, `SearchCriterium`)
@@ -22,9 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `KibanaLogFields` MDC integration (40+ structured log fields)
   - JSON utilities (`ObjectMappers`), model converters, constants
 - **Spring adapter classes** for bridging `jframe-core` types to Spring equivalents
-  - `SpringHttpStatus` — converts `HttpStatusCode` to/from Spring `HttpStatus`
   - `SpringDataSearchSpecification` — wraps `SearchSpecification<T>` as Spring `Specification<T>`
   - `SpringPageAdapter` — converts query results to `PageResource<T>`
+- **`AbstractExceptionMapper<T>`** base class in `jframe-quarkus-core` — eliminates boilerplate across 5 JAX-RS exception mappers (shared injection fields, null-check fallback, response building)
+- **`JFrameErrorResponseFilter`** (OASFilter) in `jframe-quarkus-core` — automatically adds 400/429/500 error responses to all OpenAPI operations, achieving parity with Spring's `@ApiResponse` annotations
 - **Jandex indexing** for all Quarkus modules — generates `META-INF/jandex.idx` for build-time CDI and `@ConfigMapping` discovery
 - **`PasswordMaskerProducer`** CDI bean in `jframe-quarkus-core` — auto-wires `PasswordMasker` from `LoggingConfig.fieldsToMask()`, matching Spring's `CoreAutoConfiguration` behavior
 - **`KibanaLogFields` `long` overloads** — `tag(field, long)`, `tagCloseable(field, long)`, and `and(field, long)` for logging numeric identifiers without manual `String.valueOf()` conversion
@@ -47,9 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `starter-core` → `jframe-spring-core`
   - `starter-jpa` → `jframe-spring-jpa`
   - `starter-otlp` → `jframe-spring-otlp`
-- `HttpException` now uses `HttpStatusCode` (from `jframe-core`) instead of Spring's `HttpStatus`
+- `HttpException` now uses `jakarta.ws.rs.core.Response.Status` instead of Spring's `HttpStatus`
 - `JpaSearchSpecification` now extends `BaseSearchSpecification` from `jframe-core`
 - All Spring modules now transitively depend on `jframe-core`
+
+### Removed
+- **`HttpStatusCode`** enum — replaced by `jakarta.ws.rs.core.Response.Status` (framework-independent, standard Jakarta API)
+- **`SpringHttpStatus`** adapter — no longer needed after `HttpStatusCode` removal
+- **`QuarkusHttpStatus`** adapter — no longer needed after `HttpStatusCode` removal
 
 ### Migration
 See the [Spring Migration Guide](../../docs/migration/spring-migration-1.0.0.md) for upgrade instructions.

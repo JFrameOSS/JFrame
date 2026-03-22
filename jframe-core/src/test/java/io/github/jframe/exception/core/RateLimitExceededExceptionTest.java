@@ -1,9 +1,9 @@
 package io.github.jframe.exception.core;
 
-import io.github.jframe.http.HttpStatusCode;
 import io.github.support.UnitTest;
 
 import java.time.OffsetDateTime;
+import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ public class RateLimitExceededExceptionTest extends UnitTest {
         final RateLimitExceededException exception = new RateLimitExceededException(LIMIT, REMAINING, RESET_DATE);
 
         // Then: Exception is created with TOO_MANY_REQUESTS status and correct rate limit details
-        assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.TOO_MANY_REQUESTS)));
+        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.TOO_MANY_REQUESTS)));
         assertThat(exception.getLimit(), is(equalTo(LIMIT)));
         assertThat(exception.getRemaining(), is(equalTo(REMAINING)));
         assertThat(exception.getResetDate(), is(equalTo(RESET_DATE)));
@@ -58,7 +58,7 @@ public class RateLimitExceededExceptionTest extends UnitTest {
         final RateLimitExceededException exception = new RateLimitExceededException(message, LIMIT, REMAINING, RESET_DATE);
 
         // Then: Exception is created with TOO_MANY_REQUESTS status, message and rate limit details
-        assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.TOO_MANY_REQUESTS)));
+        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.TOO_MANY_REQUESTS)));
         assertThat(exception.getMessage(), is(equalTo(message)));
         assertThat(exception.getLimit(), is(equalTo(LIMIT)));
         assertThat(exception.getRemaining(), is(equalTo(REMAINING)));
@@ -77,7 +77,7 @@ public class RateLimitExceededExceptionTest extends UnitTest {
         final RateLimitExceededException exception = new RateLimitExceededException(message, cause, LIMIT, REMAINING, RESET_DATE);
 
         // Then: Exception is created with TOO_MANY_REQUESTS status, message, cause and rate limit details
-        assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.TOO_MANY_REQUESTS)));
+        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.TOO_MANY_REQUESTS)));
         assertThat(exception.getMessage(), is(equalTo(message)));
         assertThat(exception.getCause(), is(equalTo(cause)));
         assertThat(exception.getLimit(), is(equalTo(LIMIT)));
@@ -95,7 +95,7 @@ public class RateLimitExceededExceptionTest extends UnitTest {
         final RateLimitExceededException exception = new RateLimitExceededException(cause, LIMIT, REMAINING, RESET_DATE);
 
         // Then: Exception is created with TOO_MANY_REQUESTS status, cause and rate limit details
-        assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.TOO_MANY_REQUESTS)));
+        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.TOO_MANY_REQUESTS)));
         assertThat(exception.getCause(), is(equalTo(cause)));
         assertThat(exception.getMessage(), containsString("Too many requests"));
         assertThat(exception.getLimit(), is(equalTo(LIMIT)));
@@ -112,7 +112,7 @@ public class RateLimitExceededExceptionTest extends UnitTest {
         final RateLimitExceededException exception = new RateLimitExceededException(LIMIT, REMAINING, null);
 
         // Then: Exception is created with null resetDate
-        assertThat(exception.getHttpStatus(), is(equalTo(HttpStatusCode.TOO_MANY_REQUESTS)));
+        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.TOO_MANY_REQUESTS)));
         assertThat(exception.getLimit(), is(equalTo(LIMIT)));
         assertThat(exception.getRemaining(), is(equalTo(REMAINING)));
         assertThat(exception.getResetDate(), is(nullValue()));

@@ -1,5 +1,6 @@
 package io.github.jframe.exception.resource;
 
+import io.github.jframe.exception.assembler.ConstraintViolationResourceAssembler;
 import io.github.support.UnitTest;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.PropertyNamingStrategies;

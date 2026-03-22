@@ -4,7 +4,7 @@ import io.github.jframe.exception.HttpException;
 
 import java.io.Serial;
 
-import static io.github.jframe.http.HttpStatusCode.INTERNAL_SERVER_ERROR;
+import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 /**
  * An internal service error exception.

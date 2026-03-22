@@ -1,9 +1,10 @@
 package io.github.jframe.exception.core;
 
 import io.github.jframe.exception.HttpException;
-import io.github.jframe.http.HttpStatusCode;
 
 import java.io.Serial;
+
+import static jakarta.ws.rs.core.Response.Status.UNAUTHORIZED;
 
 /**
  * Exception thrown when the requested resource is not available for the user performing the request.
@@ -16,7 +17,7 @@ public class UnauthorizedRequestException extends HttpException {
 
     /** Default constructor. */
     public UnauthorizedRequestException() {
-        super(HttpStatusCode.UNAUTHORIZED);
+        super(UNAUTHORIZED);
     }
 
     /**
@@ -25,7 +26,7 @@ public class UnauthorizedRequestException extends HttpException {
      * @param message The message to set.
      */
     public UnauthorizedRequestException(final String message) {
-        super(message, HttpStatusCode.UNAUTHORIZED);
+        super(message, UNAUTHORIZED);
     }
 
     /**
@@ -35,7 +36,7 @@ public class UnauthorizedRequestException extends HttpException {
      * @param cause   The cause.
      */
     public UnauthorizedRequestException(final String message, final Throwable cause) {
-        super(message, cause, HttpStatusCode.UNAUTHORIZED);
+        super(message, cause, UNAUTHORIZED);
     }
 
     /**
@@ -44,6 +45,6 @@ public class UnauthorizedRequestException extends HttpException {
      * @param cause The cause.
      */
     public UnauthorizedRequestException(final Throwable cause) {
-        super(cause, HttpStatusCode.UNAUTHORIZED);
+        super(cause, UNAUTHORIZED);
     }
 }

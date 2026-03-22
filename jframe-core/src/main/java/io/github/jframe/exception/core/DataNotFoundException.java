@@ -5,7 +5,7 @@ import io.github.jframe.exception.HttpException;
 
 import java.io.Serial;
 
-import static io.github.jframe.http.HttpStatusCode.NOT_FOUND;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
 /**
  * Placeholder exception for data not found. These exceptions translate to 404 errors in the controller.

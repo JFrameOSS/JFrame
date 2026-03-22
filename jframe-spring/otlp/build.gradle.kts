@@ -20,5 +20,6 @@ dependencies {
     // ======= OTHER DEPENDENCIES =======
     compileOnly("org.apache.commons", "commons-lang3", retrieve("commonsLangVersion"))
     compileOnly("jakarta.servlet", "jakarta.servlet-api", retrieve("jakartaServletVersion"))
+    compileOnly("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
     compileOnly("org.aspectj", "aspectjweaver", retrieve("aspectjVersion"))
 }

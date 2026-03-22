@@ -3,6 +3,7 @@ package io.github.jframe.exception.enricher;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 
 import java.net.URI;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MediaType;
 
@@ -11,6 +12,7 @@ import jakarta.ws.rs.core.MediaType;
  *
  * <p>Extracts method, URI, query string, and content type from the JAX-RS request context.
  */
+@ApplicationScoped
 public class RequestInfoResponseEnricher implements ErrorResponseEnricher {
 
     @Override

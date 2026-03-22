@@ -1,23 +1,29 @@
 package io.github.jframe.exception.mapper;
 
-import jakarta.ws.rs.core.MediaType;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
+import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+
 /**
- * JAX-RS {@link ExceptionMapper} for any {@link Throwable} not handled by a more specific mapper.
+ * JAX-RS {@link jakarta.ws.rs.ext.ExceptionMapper} for any {@link Throwable} not handled by a more specific mapper.
  *
  * <p>Always returns HTTP 500 INTERNAL_SERVER_ERROR with a non-null response entity.
+ * Extends {@link AbstractExceptionMapper} which provides shared null-check and response-building logic.
  */
 @Provider
-public class ThrowableMapper implements ExceptionMapper<Throwable> {
+@ApplicationScoped
+public class ThrowableMapper extends AbstractExceptionMapper<Throwable> {
 
+    /**
+     * Maps the given {@link Throwable} to an HTTP 500 response.
+     *
+     * @param throwable the unhandled throwable
+     * @return a 500 INTERNAL_SERVER_ERROR response with an enriched error body
+     */
     @Override
     public Response toResponse(final Throwable throwable) {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-            .type(MediaType.APPLICATION_JSON_TYPE)
-            .entity(throwable.getMessage() != null ? throwable.getMessage() : "Internal server error")
-            .build();
+        return buildResponse(throwable, INTERNAL_SERVER_ERROR.getStatusCode());
     }
 }
