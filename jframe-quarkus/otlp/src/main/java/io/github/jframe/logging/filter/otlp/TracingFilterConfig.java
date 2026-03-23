@@ -1,4 +1,4 @@
-package io.github.jframe.logging.filter;
+package io.github.jframe.logging.filter.otlp;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;

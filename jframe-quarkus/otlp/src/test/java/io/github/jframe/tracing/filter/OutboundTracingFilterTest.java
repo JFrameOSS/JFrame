@@ -1,6 +1,6 @@
 package io.github.jframe.tracing.filter;
 
-import io.github.jframe.logging.filter.TracingFilterConfig;
+import io.github.jframe.logging.filter.otlp.TracingFilterConfig;
 import io.github.jframe.tracing.OpenTelemetryConfig;
 import io.github.jframe.tracing.interceptor.QuarkusSpanManager;
 import io.github.support.UnitTest;

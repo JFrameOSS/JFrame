@@ -1,5 +1,6 @@
 package io.github.jframe.logging;
 
+import io.github.jframe.logging.otlp.HttpLogger;
 import io.github.support.UnitTest;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;

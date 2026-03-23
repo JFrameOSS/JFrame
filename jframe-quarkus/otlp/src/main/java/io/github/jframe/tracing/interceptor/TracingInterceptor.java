@@ -9,6 +9,7 @@ import io.opentelemetry.context.Scope;
 import io.quarkus.security.identity.SecurityIdentity;
 import lombok.extern.slf4j.Slf4j;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.Instance;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
@@ -38,6 +39,7 @@ import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE
 @Slf4j
 @Traced
 @Interceptor
+@Priority(Interceptor.Priority.LIBRARY_BEFORE)
 public class TracingInterceptor {
 
     private final Tracer tracer;

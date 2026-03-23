@@ -1,4 +1,4 @@
-package io.github.jframe.logging;
+package io.github.jframe.logging.otlp;
 
 import lombok.extern.slf4j.Slf4j;
 

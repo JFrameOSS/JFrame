@@ -1,4 +1,4 @@
-package io.github.jframe.autoconfigure;
+package io.github.jframe.autoconfigure.otlp;
 
 import io.github.jframe.tracing.OpenTelemetryConfig;
 import io.quarkus.runtime.StartupEvent;

@@ -1,7 +1,7 @@
-package io.github.jframe.logging.filter.type;
+package io.github.jframe.logging.filter.type.otlp;
 
 import io.github.jframe.logging.filter.JFrameFilter;
-import io.github.jframe.logging.filter.TracingFilterConfig;
+import io.github.jframe.logging.filter.otlp.TracingFilterConfig;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.tracing.OpenTelemetryConfig;
 import io.opentelemetry.api.trace.Span;
