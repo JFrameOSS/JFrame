@@ -7,6 +7,9 @@ fun retrieve(property: String): String =
 dependencies {
     api(project(":jframe-quarkus-core"))
 
+    // Jackson annotations — compileOnly (transitive from jframe-core, not visible via quarkus-core chain)
+    compileOnly("com.fasterxml.jackson.core", "jackson-annotations", retrieve("jacksonAnnotationsVersion"))
+
     // Quarkus APIs — compileOnly (provided by consumer's Quarkus runtime)
     compileOnly("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     compileOnly("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
@@ -18,6 +21,7 @@ dependencies {
     compileOnly("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
 
     // Test dependencies
+    testImplementation("com.fasterxml.jackson.core", "jackson-annotations", retrieve("jacksonAnnotationsVersion"))
     testImplementation("org.junit.jupiter", "junit-jupiter", retrieve("junitVersion"))
     testImplementation("org.mockito", "mockito-core", retrieve("mockitoVersion"))
     testImplementation("org.mockito", "mockito-junit-jupiter", retrieve("mockitoVersion"))
