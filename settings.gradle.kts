@@ -19,6 +19,12 @@ project(":jframe-quarkus-core").projectDir = file("jframe-quarkus/core")
 include("jframe-quarkus-jpa")
 project(":jframe-quarkus-jpa").projectDir = file("jframe-quarkus/jpa")
 
+include("jframe-quarkus-otlp")
+project(":jframe-quarkus-otlp").projectDir = file("jframe-quarkus/otlp")
+
+include("jframe-quarkus-otlp-deployment")
+project(":jframe-quarkus-otlp-deployment").projectDir = file("jframe-quarkus/otlp-deployment")
+
 
 pluginManagement {
     val springBootPluginVersion: String by settings
