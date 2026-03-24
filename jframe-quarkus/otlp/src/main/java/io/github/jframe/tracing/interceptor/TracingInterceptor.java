@@ -1,6 +1,8 @@
 package io.github.jframe.tracing.interceptor;
 
 import io.github.jframe.autoconfigure.OpenTelemetryConfig;
+import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.security.QuarkusAuthenticationUtil;
 import io.github.jframe.tracing.Traced;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
@@ -15,9 +17,14 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_METHOD;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_NAME;
 
@@ -34,6 +41,8 @@ import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE
  * <li>Creates a span named {@code ClassName.methodName}, or uses a custom name
  * from {@link Traced#value()} when non-empty</li>
  * <li>Sets {@code service.name} and {@code service.method} span attributes</li>
+ * <li>Enriches every span with {@code http.remote_user} (always), {@code http.transaction_id}
+ * and {@code http.request_id} (only when non-blank in MDC)</li>
  * <li>On exception: sets {@code error=true}, {@code error.type}, {@code error.message},
  * {@code StatusCode.ERROR}, then re-throws</li>
  * <li>Always ends the span and closes the scope in a {@code finally} block</li>
@@ -53,6 +62,9 @@ public class TracingInterceptor {
 
     @Inject
     private OpenTelemetryConfig config;
+
+    @Inject
+    private QuarkusAuthenticationUtil authenticationUtil;
 
     /**
      * Wraps the target method invocation in an OpenTelemetry span.
@@ -75,6 +87,10 @@ public class TracingInterceptor {
             .setAttribute(SERVICE_NAME, className)
             .setAttribute(SERVICE_METHOD, methodName)
             .startSpan();
+
+        span.setAttribute(HTTP_REMOTE_USER, authenticationUtil.getAuthenticatedSubject());
+        setAttributeIfPresent(span, HTTP_TRANSACTION_ID, KibanaLogFields.get(TX_ID));
+        setAttributeIfPresent(span, HTTP_REQUEST_ID, KibanaLogFields.get(REQUEST_ID));
 
         try (Scope scope = span.makeCurrent()) {
             log.trace("Entering method: {}.{} span: {} scope: {}", className, methodName, span.getSpanContext(), scope);
@@ -113,5 +129,11 @@ public class TracingInterceptor {
             return traced.value();
         }
         return className + "." + methodName;
+    }
+
+    private void setAttributeIfPresent(final Span span, final String key, final String value) {
+        if (value != null && !value.isBlank()) {
+            span.setAttribute(key, value);
+        }
     }
 }

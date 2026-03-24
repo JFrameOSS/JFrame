@@ -14,6 +14,7 @@ dependencies {
     compileOnly("io.quarkus", "quarkus-arc", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-opentelemetry", retrieve("quarkusVersion"))
+    compileOnly("io.quarkus", "quarkus-security", retrieve("quarkusVersion"))
 
     // Test dependencies
     testImplementation("org.junit.jupiter", "junit-jupiter", retrieve("junitVersion"))
@@ -23,6 +24,7 @@ dependencies {
     testImplementation("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     testImplementation("io.smallrye.config", "smallrye-config", retrieve("smallryeConfigVersion"))
     testImplementation("io.quarkus", "quarkus-opentelemetry", retrieve("quarkusVersion"))
+    testImplementation("io.quarkus", "quarkus-security", retrieve("quarkusVersion"))
     testImplementation("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
     testRuntimeOnly("org.junit.platform", "junit-platform-launcher", retrieve("junitVersion"))
 }

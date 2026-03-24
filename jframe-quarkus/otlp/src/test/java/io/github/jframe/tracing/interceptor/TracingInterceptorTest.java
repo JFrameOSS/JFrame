@@ -1,6 +1,8 @@
 package io.github.jframe.tracing.interceptor;
 
 import io.github.jframe.autoconfigure.OpenTelemetryConfig;
+import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.security.QuarkusAuthenticationUtil;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -13,6 +15,7 @@ import java.lang.reflect.Method;
 import java.util.Set;
 import jakarta.interceptor.InvocationContext;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,15 +23,21 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_METHOD;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -139,6 +148,9 @@ public class TracingInterceptorTest extends UnitTest {
     @Mock
     private OpenTelemetryConfig config;
 
+    @Mock
+    private QuarkusAuthenticationUtil authenticationUtil;
+
     @InjectMocks
     private TracingInterceptor interceptor;
 
@@ -156,6 +168,9 @@ public class TracingInterceptorTest extends UnitTest {
         when(spanBuilder.startSpan()).thenReturn(span);
         when(span.makeCurrent()).thenReturn(scope);
         when(span.getSpanContext()).thenReturn(spanContext);
+
+        // Default auth: anonymous (no user authenticated)
+        when(authenticationUtil.getAuthenticatedSubject()).thenReturn("ANONYMOUS - NO AUTHENTICATION");
     }
 
     // ======================== FACTORY METHODS ========================
@@ -795,6 +810,135 @@ public class TracingInterceptorTest extends UnitTest {
 
             // Then: Null is propagated without any NullPointerException
             assertThat(returnValue, is((Object) null));
+        }
+    }
+
+    // ======================== AC_ENRICHMENT: SPAN ENRICHMENT ========================
+
+
+    @Nested
+    @DisplayName("AC_ENRICHMENT - Span enrichment with authenticated user and correlation IDs")
+    class SpanEnrichment {
+
+        @AfterEach
+        public void clearMdc() {
+            // Clean MDC entries written by the test to avoid cross-test pollution
+            KibanaLogFields.clear();
+        }
+
+        @Test
+        @DisplayName("Should set http.remote_user attribute on span when authenticated user is present")
+        public void shouldSetHttpRemoteUserAttributeOnSpanWhenAuthenticatedUserIsPresent() throws Exception {
+            // Given: The authentication utility reports an authenticated user
+            when(authenticationUtil.getAuthenticatedSubject()).thenReturn("john.doe");
+            final SampleService target = new SampleService();
+            final Method method = SampleService.class.getMethod("doWork");
+            final InvocationContext context = aContextFor(target, method, "result");
+
+            // When: The interceptor processes the method
+            interceptor.aroundInvoke(context);
+
+            // Then: The span receives the authenticated principal name as http.remote_user
+            verify(span).setAttribute(HTTP_REMOTE_USER, "john.doe");
+        }
+
+        @Test
+        @DisplayName("Should set http.remote_user to anonymous message when no authentication exists")
+        public void shouldSetHttpRemoteUserToAnonymousMessageWhenNoAuthenticationExists() throws Exception {
+            // Given: The authentication utility reports an anonymous caller (default setUp stub)
+            final SampleService target = new SampleService();
+            final Method method = SampleService.class.getMethod("doWork");
+            final InvocationContext context = aContextFor(target, method, "result");
+
+            // When: The interceptor processes the method
+            interceptor.aroundInvoke(context);
+
+            // Then: The span receives the anonymous fallback message as http.remote_user
+            verify(span).setAttribute(HTTP_REMOTE_USER, "ANONYMOUS - NO AUTHENTICATION");
+        }
+
+        @Test
+        @DisplayName("Should set http.transaction_id attribute when transaction ID is present in MDC")
+        public void shouldSetHttpTransactionIdAttributeWhenTransactionIdIsPresentInMdc() throws Exception {
+            // Given: A transaction ID is stored in the MDC by a filter earlier in the call chain
+            KibanaLogFields.tag(TX_ID, "tx-123");
+            final SampleService target = new SampleService();
+            final Method method = SampleService.class.getMethod("doWork");
+            final InvocationContext context = aContextFor(target, method, "result");
+
+            // When: The interceptor processes the method
+            interceptor.aroundInvoke(context);
+
+            // Then: The span receives the transaction ID as http.transaction_id
+            verify(span).setAttribute(HTTP_TRANSACTION_ID, "tx-123");
+        }
+
+        @Test
+        @DisplayName("Should set http.request_id attribute when request ID is present in MDC")
+        public void shouldSetHttpRequestIdAttributeWhenRequestIdIsPresentInMdc() throws Exception {
+            // Given: A request ID is stored in the MDC by a filter earlier in the call chain
+            KibanaLogFields.tag(REQUEST_ID, "req-456");
+            final SampleService target = new SampleService();
+            final Method method = SampleService.class.getMethod("doWork");
+            final InvocationContext context = aContextFor(target, method, "result");
+
+            // When: The interceptor processes the method
+            interceptor.aroundInvoke(context);
+
+            // Then: The span receives the request ID as http.request_id
+            verify(span).setAttribute(HTTP_REQUEST_ID, "req-456");
+        }
+
+        @Test
+        @DisplayName("Should not set http.transaction_id when MDC value is null (e.g. scheduled tasks)")
+        public void shouldNotSetHttpTransactionIdWhenMdcValueIsNull() throws Exception {
+            // Given: No transaction ID has been set in the MDC (e.g. a background scheduled task)
+            // (MDC is clean — no KibanaLogFields.tag call for TX_ID)
+            final SampleService target = new SampleService();
+            final Method method = SampleService.class.getMethod("doWork");
+            final InvocationContext context = aContextFor(target, method, "result");
+
+            // When: The interceptor processes the method
+            interceptor.aroundInvoke(context);
+
+            // Then: The span does not receive an http.transaction_id attribute
+            verify(span, never()).setAttribute(eq(HTTP_TRANSACTION_ID), anyString());
+        }
+
+        @Test
+        @DisplayName("Should not set http.request_id when MDC value is null")
+        public void shouldNotSetHttpRequestIdWhenMdcValueIsNull() throws Exception {
+            // Given: No request ID has been set in the MDC
+            // (MDC is clean — no KibanaLogFields.tag call for REQUEST_ID)
+            final SampleService target = new SampleService();
+            final Method method = SampleService.class.getMethod("doWork");
+            final InvocationContext context = aContextFor(target, method, "result");
+
+            // When: The interceptor processes the method
+            interceptor.aroundInvoke(context);
+
+            // Then: The span does not receive an http.request_id attribute
+            verify(span, never()).setAttribute(eq(HTTP_REQUEST_ID), anyString());
+        }
+
+        @Test
+        @DisplayName("Should set all enrichment attributes when both MDC values and auth are present")
+        public void shouldSetAllEnrichmentAttributesWhenBothMdcValuesAndAuthArePresent() throws Exception {
+            // Given: A fully identified request — authenticated user and both correlation IDs in MDC
+            when(authenticationUtil.getAuthenticatedSubject()).thenReturn("jane.smith");
+            KibanaLogFields.tag(TX_ID, "tx-999");
+            KibanaLogFields.tag(REQUEST_ID, "req-888");
+            final SampleService target = new SampleService();
+            final Method method = SampleService.class.getMethod("doWork");
+            final InvocationContext context = aContextFor(target, method, "result");
+
+            // When: The interceptor processes the method
+            interceptor.aroundInvoke(context);
+
+            // Then: All three enrichment attributes are set on the span
+            verify(span).setAttribute(HTTP_REMOTE_USER, "jane.smith");
+            verify(span).setAttribute(HTTP_TRANSACTION_ID, "tx-999");
+            verify(span).setAttribute(HTTP_REQUEST_ID, "req-888");
         }
     }
 }
