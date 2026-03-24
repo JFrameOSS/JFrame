@@ -3,6 +3,8 @@ package io.github.support;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /**
  * Base class for all unit tests in the JFrame Quarkus OTLP module.
@@ -16,8 +18,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * <li><b>When:</b> Execute the action being tested</li>
  * <li><b>Then:</b> Verify the expected outcome</li>
  * </ul>
+ *
+ * <p>Strictness is set to {@link Strictness#LENIENT} to allow shared {@code @BeforeEach} stub
+ * definitions that are not necessarily consumed by every individual test (e.g. tracer chain stubs
+ * shared across exclusion, disabled, and normal execution tests).
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class UnitTest {
 
     /**

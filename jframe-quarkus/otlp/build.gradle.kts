@@ -22,5 +22,7 @@ dependencies {
     testImplementation("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
     testImplementation("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     testImplementation("io.smallrye.config", "smallrye-config", retrieve("smallryeConfigVersion"))
+    testImplementation("io.quarkus", "quarkus-opentelemetry", retrieve("quarkusVersion"))
+    testImplementation("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
     testRuntimeOnly("org.junit.platform", "junit-platform-launcher", retrieve("junitVersion"))
 }
