@@ -36,6 +36,7 @@ import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -162,8 +163,9 @@ public class TracingInterceptorTest extends UnitTest {
         when(config.disabled()).thenReturn(false);
         when(config.excludedMethods()).thenReturn(Set.of("health", "ping"));
 
-        // Default tracer/span chain
+        // Default Tracer → SpanBuilder → Span chain
         when(tracer.spanBuilder(anyString())).thenReturn(spanBuilder);
+        when(spanBuilder.setSpanKind(any())).thenReturn(spanBuilder);
         when(spanBuilder.setAttribute(anyString(), anyString())).thenReturn(spanBuilder);
         when(spanBuilder.startSpan()).thenReturn(span);
         when(span.makeCurrent()).thenReturn(scope);

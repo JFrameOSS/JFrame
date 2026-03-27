@@ -4,6 +4,12 @@ fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")
 
+tasks.named<ProcessResources>("processResources") {
+    filesMatching("META-INF/quarkus-extension.properties") {
+        expand("version" to project.version)
+    }
+}
+
 dependencies {
     api(project(":jframe-quarkus-core"))
 
@@ -11,7 +17,6 @@ dependencies {
     compileOnly("com.fasterxml.jackson.core", "jackson-annotations", retrieve("jacksonAnnotationsVersion"))
 
     // Quarkus APIs — compileOnly (provided by consumer's Quarkus runtime)
-    compileOnly("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     compileOnly("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
     compileOnly("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
     compileOnly("io.quarkus", "quarkus-arc", retrieve("quarkusVersion"))

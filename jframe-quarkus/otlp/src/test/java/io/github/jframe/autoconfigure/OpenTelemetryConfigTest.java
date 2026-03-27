@@ -1,11 +1,10 @@
 package io.github.jframe.autoconfigure;
 
 import io.github.support.UnitTest;
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
 
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,31 +17,32 @@ import static org.hamcrest.Matchers.is;
 /**
  * Unit tests for {@link OpenTelemetryConfig}.
  *
- * <p>Verifies the SmallRye {@code @ConfigMapping} contract including:
+ * <p>Verifies configuration reading via MicroProfile Config API including:
  * <ul>
- * <li>Default values defined via {@code @WithDefault}</li>
- * <li>Custom value overrides via programmatic config builder</li>
+ * <li>Default values when no system properties are set</li>
+ * <li>Custom value overrides via system properties (highest-priority MicroProfile Config source)</li>
  * <li>Correct parsing of comma-separated {@code Set<String>} properties</li>
  * </ul>
  */
-@DisplayName("Config Mapping - OpenTelemetryConfig")
+@DisplayName("Config - OpenTelemetryConfig")
 class OpenTelemetryConfigTest extends UnitTest {
 
     // ======================== HELPERS ========================
 
     private OpenTelemetryConfig buildDefaultConfig() {
-        final SmallRyeConfig config = new SmallRyeConfigBuilder()
-            .withMapping(OpenTelemetryConfig.class)
-            .build();
-        return config.getConfigMapping(OpenTelemetryConfig.class);
+        return new OpenTelemetryConfig();
     }
 
     private OpenTelemetryConfig buildConfigWith(final String key, final String value) {
-        final SmallRyeConfig config = new SmallRyeConfigBuilder()
-            .withMapping(OpenTelemetryConfig.class)
-            .withDefaultValue(key, value)
-            .build();
-        return config.getConfigMapping(OpenTelemetryConfig.class);
+        System.setProperty(key, value);
+        return new OpenTelemetryConfig();
+    }
+
+    @AfterEach
+    void clearSystemProperties() {
+        System.getProperties().stringPropertyNames().stream()
+            .filter(name -> name.startsWith("jframe.otlp."))
+            .forEach(System::clearProperty);
     }
 
     // ======================== DEFAULT VALUES ========================
@@ -131,16 +131,16 @@ class OpenTelemetryConfigTest extends UnitTest {
         }
 
         @Test
-        @DisplayName("Should return true for autoTrace by default")
-        public void shouldReturnTrueForAutoTraceByDefault() {
+        @DisplayName("Should return tracecontext,baggage as default propagators")
+        public void shouldReturnW3cAsDefaultPropagators() {
             // Given: Config built with no overrides
             final OpenTelemetryConfig otlpConfig = buildDefaultConfig();
 
-            // When: Accessing the autoTrace flag
-            final boolean autoTrace = otlpConfig.autoTrace();
+            // When: Accessing the propagators property
+            final String propagators = otlpConfig.propagators();
 
-            // Then: Default autoTrace is true — automatic instrumentation is active
-            assertThat(autoTrace, is(true));
+            // Then: Default propagators use W3C standard (no extra dependencies needed)
+            assertThat(propagators, is("tracecontext,baggage"));
         }
     }
 
@@ -232,16 +232,19 @@ class OpenTelemetryConfigTest extends UnitTest {
         }
 
         @Test
-        @DisplayName("Should reflect overridden autoTrace=false when provided")
-        public void shouldReflectOverriddenAutoTraceFalseWhenProvided() {
-            // Given: Config overriding autoTrace to false (manual tracing only)
-            final OpenTelemetryConfig otlpConfig = buildConfigWith("jframe.otlp.auto-trace", "false");
+        @DisplayName("Should reflect overridden propagators when provided")
+        public void shouldReflectOverriddenPropagatorsWhenProvided() {
+            // Given: Config overriding propagators to include B3
+            final OpenTelemetryConfig otlpConfig = buildConfigWith(
+                "jframe.otlp.propagators",
+                "tracecontext,baggage,b3"
+            );
 
-            // When: Accessing the autoTrace flag
-            final boolean autoTrace = otlpConfig.autoTrace();
+            // When: Accessing the propagators property
+            final String propagators = otlpConfig.propagators();
 
-            // Then: Automatic tracing is disabled
-            assertThat(autoTrace, is(false));
+            // Then: Propagators include B3
+            assertThat(propagators, is("tracecontext,baggage,b3"));
         }
     }
 
@@ -279,24 +282,6 @@ class OpenTelemetryConfigTest extends UnitTest {
             assertThat(samplingRate, is(0.0));
         }
 
-        @Test
-        @DisplayName("Should allow disabled=true with autoTrace=false simultaneously")
-        public void shouldAllowDisabledTrueWithAutoTraceFalseSimultaneously() {
-            // Given: Config with both disabled=true and autoTrace=false
-            final SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withMapping(OpenTelemetryConfig.class)
-                .withDefaultValue("jframe.otlp.disabled", "true")
-                .withDefaultValue("jframe.otlp.auto-trace", "false")
-                .build();
-            final OpenTelemetryConfig otlpConfig = config.getConfigMapping(OpenTelemetryConfig.class);
 
-            // When: Accessing both flags
-            final boolean disabled = otlpConfig.disabled();
-            final boolean autoTrace = otlpConfig.autoTrace();
-
-            // Then: Both flags reflect their configured values independently
-            assertThat(disabled, is(true));
-            assertThat(autoTrace, is(false));
-        }
     }
 }

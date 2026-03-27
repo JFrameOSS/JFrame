@@ -1,9 +1,11 @@
 package io.github.jframe.tracing.interceptor;
 
 import io.github.jframe.autoconfigure.OpenTelemetryConfig;
+import io.github.jframe.logging.kibana.KibanaLogField;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.security.QuarkusAuthenticationUtil;
 import io.github.jframe.tracing.Traced;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
@@ -18,6 +20,8 @@ import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.SPAN_ID;
+import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
@@ -56,8 +60,9 @@ public class TracingInterceptor {
 
     private static final Set<String> EXCLUDED_PREFIXES = Set.of("get", "set", "is");
     private static final Set<String> EXCLUDED_NAMES = Set.of("toString", "hashCode", "equals", "clone");
+    private static final String SUBCLASS_SUFFIX = "_Subclass";
 
-    @Inject
+    /** Lazily initialised; Mockito {@code @InjectMocks} injects a test double via reflection. */
     private Tracer tracer;
 
     @Inject
@@ -65,6 +70,13 @@ public class TracingInterceptor {
 
     @Inject
     private QuarkusAuthenticationUtil authenticationUtil;
+
+    private Tracer resolveTracer() {
+        if (tracer == null) {
+            tracer = GlobalOpenTelemetry.getTracer("jframe-otlp");
+        }
+        return tracer;
+    }
 
     /**
      * Wraps the target method invocation in an OpenTelemetry span.
@@ -74,6 +86,12 @@ public class TracingInterceptor {
      * @throws Exception if the intercepted method throws
      */
     @AroundInvoke
+    @SuppressWarnings(
+        {
+            "try",
+            "PMD.UnusedLocalVariable"
+        }
+    )
     public Object aroundInvoke(final InvocationContext context) throws Exception {
         final String className = resolveClassName(context.getTarget().getClass().getSimpleName());
         final String methodName = context.getMethod().getName();
@@ -83,27 +101,77 @@ public class TracingInterceptor {
         }
 
         final String spanName = resolveSpanName(context, className, methodName);
-        final Span span = tracer.spanBuilder(spanName)
+        final Span span = resolveTracer()
+            .spanBuilder(spanName)
             .setAttribute(SERVICE_NAME, className)
             .setAttribute(SERVICE_METHOD, methodName)
             .startSpan();
 
-        span.setAttribute(HTTP_REMOTE_USER, authenticationUtil.getAuthenticatedSubject());
-        setAttributeIfPresent(span, HTTP_TRANSACTION_ID, KibanaLogFields.get(TX_ID));
-        setAttributeIfPresent(span, HTTP_REQUEST_ID, KibanaLogFields.get(REQUEST_ID));
+        // Ensure traceId/spanId are in MDC so log lines include them
+        final String previousTraceId = KibanaLogFields.get(TRACE_ID);
+        final String previousSpanId = KibanaLogFields.get(SPAN_ID);
+        KibanaLogFields.tag(TRACE_ID, span.getSpanContext().getTraceId());
+        KibanaLogFields.tag(SPAN_ID, span.getSpanContext().getSpanId());
 
+        enrichSpanAndLog(span, className, methodName);
+
+        final long startTime = System.nanoTime();
         try (Scope scope = span.makeCurrent()) {
-            log.trace("Entering method: {}.{} span: {} scope: {}", className, methodName, span.getSpanContext(), scope);
-            return context.proceed();
+            final Object result = context.proceed();
+            final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
+            log.info("<< {}.{} ({}ms)", className, methodName, durationMs);
+            return result;
         } catch (final Exception exception) {
-            span.setAttribute(ERROR, true);
-            span.setAttribute(ERROR_TYPE, exception.getClass().getSimpleName());
-            span.setAttribute(ERROR_MESSAGE, exception.getMessage() != null ? exception.getMessage() : "");
-            span.setStatus(StatusCode.ERROR);
+            handleSpanError(span, className, methodName, startTime, exception);
             throw exception;
         } finally {
             span.end();
+            restoreMdcField(TRACE_ID, previousTraceId);
+            restoreMdcField(SPAN_ID, previousSpanId);
         }
+    }
+
+    private void enrichSpanAndLog(final Span span, final String className, final String methodName) {
+        final String user = authenticationUtil.getAuthenticatedSubject();
+        final String txId = KibanaLogFields.get(TX_ID);
+        final String requestId = KibanaLogFields.get(REQUEST_ID);
+
+        span.setAttribute(HTTP_REMOTE_USER, user);
+        setAttributeIfPresent(span, HTTP_TRANSACTION_ID, txId);
+        setAttributeIfPresent(span, HTTP_REQUEST_ID, requestId);
+
+        log.info(">> {}.{}", className, methodName);
+        log.info(
+            "   traceId={} spanId={} user={} txId={} requestId={}",
+            span.getSpanContext().getTraceId(),
+            span.getSpanContext().getSpanId(),
+            user,
+            txId,
+            requestId
+        );
+    }
+
+    private void handleSpanError(
+        final Span span,
+        final String className,
+        final String methodName,
+        final long startTime,
+        final Exception exception) {
+
+        final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
+        final String errorMessage = exception.getMessage() != null ? exception.getMessage() : "";
+        span.setAttribute(ERROR, true);
+        span.setAttribute(ERROR_TYPE, exception.getClass().getSimpleName());
+        span.setAttribute(ERROR_MESSAGE, errorMessage);
+        span.setStatus(StatusCode.ERROR);
+        log.info(
+            "<< {}.{} ({}ms) ERROR: {} - {}",
+            className,
+            methodName,
+            durationMs,
+            exception.getClass().getSimpleName(),
+            errorMessage
+        );
     }
 
     private boolean isExcluded(final String methodName) {
@@ -115,12 +183,17 @@ public class TracingInterceptor {
     }
 
     private String resolveClassName(final String simpleClassName) {
-        // CDI proxy classes may include suffixes like "$Proxy$..." — strip them
-        final int dollarIndex = simpleClassName.indexOf('$');
-        if (dollarIndex > 0) {
-            return simpleClassName.substring(0, dollarIndex);
+        // Strip Quarkus CDI subclass proxy suffix (e.g. "ApiKeyService_Subclass")
+        String name = simpleClassName;
+        if (name.endsWith(SUBCLASS_SUFFIX)) {
+            name = name.substring(0, name.length() - SUBCLASS_SUFFIX.length());
         }
-        return simpleClassName;
+        // Strip CDI proxy suffixes like "$Proxy$..." or "$ClientProxy"
+        final int dollarIndex = name.indexOf('$');
+        if (dollarIndex > 0) {
+            name = name.substring(0, dollarIndex);
+        }
+        return name;
     }
 
     private String resolveSpanName(final InvocationContext context, final String className, final String methodName) {
@@ -134,6 +207,14 @@ public class TracingInterceptor {
     private void setAttributeIfPresent(final Span span, final String key, final String value) {
         if (value != null && !value.isBlank()) {
             span.setAttribute(key, value);
+        }
+    }
+
+    private void restoreMdcField(final KibanaLogField field, final String previousValue) {
+        if (previousValue != null) {
+            KibanaLogFields.tag(field, previousValue);
+        } else {
+            KibanaLogFields.clear(field);
         }
     }
 }

@@ -7,7 +7,8 @@ fun retrieve(property: String): String =
 dependencies {
     implementation(project(":jframe-quarkus-otlp"))
 
-    // Quarkus deployment dependencies
-    compileOnly("io.quarkus", "quarkus-core-deployment", retrieve("quarkusVersion"))
-    compileOnly("io.quarkus", "quarkus-arc-deployment", retrieve("quarkusVersion"))
+    // Quarkus deployment dependencies — must be 'implementation' so they appear in the
+    // published POM; the Quarkus extension resolver needs them on the deployment classpath.
+    implementation("io.quarkus", "quarkus-core-deployment", retrieve("quarkusVersion"))
+    implementation("io.quarkus", "quarkus-arc-deployment", retrieve("quarkusVersion"))
 }
