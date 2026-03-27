@@ -2,7 +2,10 @@ package io.github.jframe.tracing.aspect;
 
 import io.github.jframe.autoconfigure.properties.OpenTelemetryProperties;
 import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.tracing.MethodExclusionRules;
+import io.github.jframe.tracing.SpanNamingUtil;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +20,14 @@ import org.springframework.stereotype.Component;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
 import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
 import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.*;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_METHOD;
+import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_NAME;
 
 /**
  * Aspect for tracing method execution using Micrometer Tracing. This aspect will create a span for each method annotated with @Traced.
@@ -55,15 +65,21 @@ public class TracingAspect {
             + "!execution(* hashCode()) && "
             + "!execution(* equals(..))"
     )
+    @SuppressWarnings(
+        {
+            "try",
+            "PMD.UnusedLocalVariable"
+        }
+    )
     public Object traceClass(final ProceedingJoinPoint joinPoint) throws Throwable {
-        final String className = joinPoint.getTarget().getClass().getSimpleName();
+        final String className = SpanNamingUtil.resolveClassName(joinPoint.getTarget().getClass().getSimpleName());
         final String methodName = joinPoint.getSignature().getName();
-        final String spanName = className + "." + methodName;
 
-        if (openTelemetryProperties.getExcludedMethods().contains(methodName.toLowerCase())) {
+        if (MethodExclusionRules.isExcluded(methodName, openTelemetryProperties.getExcludedMethods())) {
             return joinPoint.proceed();
         }
 
+        final String spanName = SpanNamingUtil.resolveSpanName(className, methodName, null);
         final Span span = tracer.spanBuilder(spanName)
             .setAttribute(SERVICE_NAME, className)
             .setAttribute(SERVICE_METHOD, methodName)
@@ -72,9 +88,33 @@ public class TracingAspect {
             .setAttribute(HTTP_REQUEST_ID, KibanaLogFields.get(REQUEST_ID))
             .startSpan();
 
+        final long startTime = System.nanoTime();
         try (Scope scope = span.makeCurrent()) {
-            log.trace("Entering method: {}.{} with span in current scope: {}-{}", className, methodName, span.getSpanContext(), scope);
-            return joinPoint.proceed();
+            log.debug(
+                "[jframe-otlp] Entering {} | user={} traceId={} spanId={}",
+                spanName,
+                getAuthenticatedSubject(),
+                span.getSpanContext().getTraceId(),
+                span.getSpanContext().getSpanId()
+            );
+            final Object result = joinPoint.proceed();
+            final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
+            log.debug("[jframe-otlp] Completed {} in {}ms", spanName, durationMs);
+            return result;
+        } catch (final Throwable throwable) {
+            final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
+            span.setAttribute(ERROR, true);
+            span.setAttribute(ERROR_TYPE, throwable.getClass().getSimpleName());
+            span.setAttribute(ERROR_MESSAGE, throwable.getMessage() != null ? throwable.getMessage() : "");
+            span.setStatus(StatusCode.ERROR);
+            log.error(
+                "[jframe-otlp] Failed {} in {}ms | error={} message={}",
+                spanName,
+                durationMs,
+                throwable.getClass().getSimpleName(),
+                throwable.getMessage() != null ? throwable.getMessage() : ""
+            );
+            throw throwable;
         } finally {
             span.end();
         }

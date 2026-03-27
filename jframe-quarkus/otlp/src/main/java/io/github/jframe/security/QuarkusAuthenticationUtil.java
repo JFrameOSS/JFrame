@@ -17,10 +17,7 @@ import jakarta.inject.Inject;
  * Security is not configured.
  */
 @ApplicationScoped
-public class QuarkusAuthenticationUtil {
-
-    private static final String ANONYMOUS = "ANONYMOUS - NO AUTHENTICATION";
-    private static final String INCOMPLETE = "INCOMPLETE AUTHENTICATION - NO NAME";
+public class QuarkusAuthenticationUtil implements AuthenticationResolver {
 
     @Inject
     private Instance<SecurityIdentity> securityIdentity;
@@ -30,23 +27,24 @@ public class QuarkusAuthenticationUtil {
      *
      * @return the name of the authenticated subject or a message indicating the authentication status.
      */
+    @Override
     @SuppressWarnings("ReturnCount")
     public String getAuthenticatedSubject() {
         if (securityIdentity.isUnsatisfied()) {
-            return ANONYMOUS;
+            return AuthenticationConstants.ANONYMOUS;
         }
 
         final SecurityIdentity identity = securityIdentity.get();
         if (identity.isAnonymous()) {
-            return ANONYMOUS;
+            return AuthenticationConstants.ANONYMOUS;
         }
 
         if (identity.getPrincipal() == null) {
-            return INCOMPLETE;
+            return AuthenticationConstants.INCOMPLETE;
         }
 
         if (identity.getPrincipal().getName().isBlank()) {
-            return INCOMPLETE;
+            return AuthenticationConstants.INCOMPLETE;
         }
 
         return identity.getPrincipal().getName();

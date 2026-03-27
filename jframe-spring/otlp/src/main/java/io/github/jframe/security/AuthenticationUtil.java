@@ -27,12 +27,12 @@ public final class AuthenticationUtil {
     public static String getAuthenticatedSubject() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (isNull(authentication) || !authentication.isAuthenticated()) {
-            return "ANONYMOUS - NO AUTHENTICATION";
+            return AuthenticationConstants.ANONYMOUS;
         }
 
         if (isBlank(authentication.getName())) {
             log.warn("Authentication name is blank, please check your authentication configuration.");
-            return "INCOMPLETE AUTHENTICATION - NO NAME";
+            return AuthenticationConstants.INCOMPLETE;
         }
         return authentication.getName();
     }

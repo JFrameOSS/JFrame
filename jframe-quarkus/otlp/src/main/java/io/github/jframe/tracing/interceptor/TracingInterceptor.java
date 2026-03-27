@@ -4,6 +4,8 @@ import io.github.jframe.autoconfigure.OpenTelemetryConfig;
 import io.github.jframe.logging.kibana.KibanaLogField;
 import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.security.QuarkusAuthenticationUtil;
+import io.github.jframe.tracing.MethodExclusionRules;
+import io.github.jframe.tracing.SpanNamingUtil;
 import io.github.jframe.tracing.Traced;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -12,7 +14,6 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Set;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
@@ -56,11 +57,8 @@ import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE
 @Interceptor
 @Priority(Interceptor.Priority.LIBRARY_BEFORE)
 @Traced
+@SuppressWarnings("PMD.ExcessiveImports")
 public class TracingInterceptor {
-
-    private static final Set<String> EXCLUDED_PREFIXES = Set.of("get", "set", "is");
-    private static final Set<String> EXCLUDED_NAMES = Set.of("toString", "hashCode", "equals", "clone");
-    private static final String SUBCLASS_SUFFIX = "_Subclass";
 
     /** Lazily initialised; Mockito {@code @InjectMocks} injects a test double via reflection. */
     private Tracer tracer;
@@ -113,16 +111,16 @@ public class TracingInterceptor {
         KibanaLogFields.tag(TRACE_ID, span.getSpanContext().getTraceId());
         KibanaLogFields.tag(SPAN_ID, span.getSpanContext().getSpanId());
 
-        enrichSpanAndLog(span, className, methodName);
+        enrichSpanAndLog(span, spanName);
 
         final long startTime = System.nanoTime();
         try (Scope scope = span.makeCurrent()) {
             final Object result = context.proceed();
             final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            log.info("<< {}.{} ({}ms)", className, methodName, durationMs);
+            log.debug("[jframe-otlp] Completed {} in {}ms", spanName, durationMs);
             return result;
         } catch (final Exception exception) {
-            handleSpanError(span, className, methodName, startTime, exception);
+            handleSpanError(span, spanName, startTime, exception);
             throw exception;
         } finally {
             span.end();
@@ -131,7 +129,7 @@ public class TracingInterceptor {
         }
     }
 
-    private void enrichSpanAndLog(final Span span, final String className, final String methodName) {
+    private void enrichSpanAndLog(final Span span, final String spanName) {
         final String user = authenticationUtil.getAuthenticatedSubject();
         final String txId = KibanaLogFields.get(TX_ID);
         final String requestId = KibanaLogFields.get(REQUEST_ID);
@@ -140,21 +138,18 @@ public class TracingInterceptor {
         setAttributeIfPresent(span, HTTP_TRANSACTION_ID, txId);
         setAttributeIfPresent(span, HTTP_REQUEST_ID, requestId);
 
-        log.info(">> {}.{}", className, methodName);
-        log.info(
-            "   traceId={} spanId={} user={} txId={} requestId={}",
-            span.getSpanContext().getTraceId(),
-            span.getSpanContext().getSpanId(),
+        log.debug(
+            "[jframe-otlp] Entering {} | user={} traceId={} spanId={}",
+            spanName,
             user,
-            txId,
-            requestId
+            span.getSpanContext().getTraceId(),
+            span.getSpanContext().getSpanId()
         );
     }
 
     private void handleSpanError(
         final Span span,
-        final String className,
-        final String methodName,
+        final String spanName,
         final long startTime,
         final Exception exception) {
 
@@ -164,10 +159,9 @@ public class TracingInterceptor {
         span.setAttribute(ERROR_TYPE, exception.getClass().getSimpleName());
         span.setAttribute(ERROR_MESSAGE, errorMessage);
         span.setStatus(StatusCode.ERROR);
-        log.info(
-            "<< {}.{} ({}ms) ERROR: {} - {}",
-            className,
-            methodName,
+        log.error(
+            "[jframe-otlp] Failed {} in {}ms | error={} message={}",
+            spanName,
             durationMs,
             exception.getClass().getSimpleName(),
             errorMessage
@@ -175,33 +169,17 @@ public class TracingInterceptor {
     }
 
     private boolean isExcluded(final String methodName) {
-        if (EXCLUDED_NAMES.contains(methodName)) {
-            return true;
-        }
-        final boolean hasPrefixMatch = EXCLUDED_PREFIXES.stream().anyMatch(methodName::startsWith);
-        return hasPrefixMatch || config.excludedMethods().contains(methodName.toLowerCase());
+        return MethodExclusionRules.isExcluded(methodName, config.excludedMethods());
     }
 
     private String resolveClassName(final String simpleClassName) {
-        // Strip Quarkus CDI subclass proxy suffix (e.g. "ApiKeyService_Subclass")
-        String name = simpleClassName;
-        if (name.endsWith(SUBCLASS_SUFFIX)) {
-            name = name.substring(0, name.length() - SUBCLASS_SUFFIX.length());
-        }
-        // Strip CDI proxy suffixes like "$Proxy$..." or "$ClientProxy"
-        final int dollarIndex = name.indexOf('$');
-        if (dollarIndex > 0) {
-            name = name.substring(0, dollarIndex);
-        }
-        return name;
+        return SpanNamingUtil.resolveClassName(simpleClassName);
     }
 
     private String resolveSpanName(final InvocationContext context, final String className, final String methodName) {
         final Traced traced = context.getMethod().getAnnotation(Traced.class);
-        if (traced != null && !traced.value().isEmpty()) {
-            return traced.value();
-        }
-        return className + "." + methodName;
+        final String customName = traced != null ? traced.value() : null;
+        return SpanNamingUtil.resolveSpanName(className, methodName, customName);
     }
 
     private void setAttributeIfPresent(final Span span, final String key, final String value) {

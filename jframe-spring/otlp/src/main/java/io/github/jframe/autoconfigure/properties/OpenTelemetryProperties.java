@@ -1,5 +1,6 @@
 package io.github.jframe.autoconfigure.properties;
 
+import io.github.jframe.tracing.OtlpDefaults;
 import lombok.Data;
 
 import java.util.Set;
@@ -52,7 +53,7 @@ public class OpenTelemetryProperties {
      * OpenTelemetry OTLP endpoint URL. The URL where telemetry data will be sent (e.g., http://jaeger:4318).
      */
     @NotBlank(message = "OpenTelemetry OTLP URL must not be blank")
-    private String url = "http://localhost:4318";
+    private String url = OtlpDefaults.DEFAULT_URL;
 
     /**
      * OpenTelemetry OTLP export timeout. How long to wait for telemetry export before timing out (e.g., 10s, 30s).
@@ -62,7 +63,7 @@ public class OpenTelemetryProperties {
         regexp = "\\d+[smh]",
         message = "Timeout must be in format: number followed by s (seconds), m (minutes), or h (hours)"
     )
-    private String timeout = "10s";
+    private String timeout = OtlpDefaults.DEFAULT_TIMEOUT;
 
     /**
      * OpenTelemetry exporter type. Supported values: otlp, jaeger, zipkin
@@ -72,7 +73,7 @@ public class OpenTelemetryProperties {
         regexp = "otlp|jaeger|zipkin",
         message = "Exporter must be one of: otlp, jaeger, zipkin"
     )
-    private String exporter = "otlp";
+    private String exporter = OtlpDefaults.DEFAULT_EXPORTER;
 
     /**
      * OpenTelemetry sampling rate. Value between 0.0 (no traces) and 1.0 (all traces). Use lower values in production.
@@ -85,11 +86,16 @@ public class OpenTelemetryProperties {
         value = "1.0",
         message = "Sampling rate must be between 0.0 and 1.0"
     )
-    private double samplingRate = 1.0;
+    private double samplingRate = OtlpDefaults.DEFAULT_SAMPLING_RATE;
 
     /**
      * Method names to exclude from automatic tracing. These methods will not generate spans when called.
      */
-    private Set<String> excludedMethods = Set.of("health", "actuator", "ping", "status");
+    private Set<String> excludedMethods = OtlpDefaults.parseCommaSeparated(OtlpDefaults.DEFAULT_EXCLUDED_METHODS);
+
+    /**
+     * W3C trace context propagators. Comma-separated list of propagator names (e.g., tracecontext,baggage).
+     */
+    private String propagators = OtlpDefaults.DEFAULT_PROPAGATORS;
 
 }

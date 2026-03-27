@@ -112,15 +112,40 @@ class OpenTelemetryPropertiesTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should have default excludedMethods including health, actuator, ping, and status")
+    @DisplayName("Should have default excludedMethods including health, actuator, ping, status, info, and metrics")
     void getExcludedMethods_withDefaults_shouldIncludeCommonMethods() {
         // Given: OpenTelemetryProperties with default values
 
         // When: Getting excludedMethods value
         final Set<String> excludedMethods = properties.getExcludedMethods();
 
-        // Then: Default set includes common health check methods
-        assertThat(excludedMethods, hasItems("health", "actuator", "ping", "status"));
+        // Then: Default set includes common health check methods (aligned with Quarkus module)
+        assertThat(excludedMethods, hasItems("health", "actuator", "ping", "status", "info", "metrics"));
+    }
+
+    @Test
+    @DisplayName("Should have default propagators value of tracecontext,baggage")
+    void getPropagators_withDefaults_shouldReturnW3cPropagators() {
+        // Given: OpenTelemetryProperties with default values
+
+        // When: Getting propagators value
+        final String propagators = properties.getPropagators();
+
+        // Then: Default value is W3C trace context propagators
+        assertThat(propagators, is("tracecontext,baggage"));
+    }
+
+    @Test
+    @DisplayName("Should set and get propagators property")
+    void setPropagators_withValidValue_shouldSetAndGet() {
+        // Given: A custom propagators value
+        final String propagators = "b3,baggage";
+
+        // When: Setting the propagators property
+        properties.setPropagators(propagators);
+
+        // Then: Propagators property is set correctly
+        assertThat(properties.getPropagators(), is(propagators));
     }
 
     @Test

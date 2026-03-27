@@ -50,7 +50,7 @@ public class HttpFilter {
     public ClientHttpRequestInterceptor getRequestInterceptor(final String serviceName) {
         log.debug("Creating request interceptor for service: '{}'", serviceName);
         return (request, body, execution) -> {
-            log.debug("Processing Interceptor with MDC context: {}", MDC.getCopyOfContextMap());
+            log.trace("Processing Interceptor with MDC context: {}", MDC.getCopyOfContextMap());
             request.getHeaders().add(REQ_ID_HEADER, KibanaLogFields.get(REQUEST_ID));
             request.getHeaders().add(TX_ID_HEADER, KibanaLogFields.get(TX_ID));
             request.getHeaders().add(TRACE_ID_HEADER, KibanaLogFields.get(TRACE_ID));
@@ -96,7 +96,7 @@ public class HttpFilter {
     }
 
     private Mono<ClientRequest> processRequest(final ClientRequest request, final String serviceName) {
-        log.debug("Processing Exchange Filter with MDC context: {}", MDC.getCopyOfContextMap());
+        log.trace("Processing Exchange Filter with MDC context: {}", MDC.getCopyOfContextMap());
         final ClientRequest.Builder builder = ClientRequest.from(request)
             .header(REQ_ID_HEADER, KibanaLogFields.get(REQUEST_ID))
             .header(TX_ID_HEADER, KibanaLogFields.get(TX_ID))

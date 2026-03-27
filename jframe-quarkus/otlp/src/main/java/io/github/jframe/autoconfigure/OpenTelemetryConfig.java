@@ -1,11 +1,10 @@
 package io.github.jframe.autoconfigure;
 
+import io.github.jframe.tracing.OtlpDefaults;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -25,7 +24,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 @ApplicationScoped
 public class OpenTelemetryConfig {
 
-    private static final String PREFIX = "jframe.otlp.";
+    private static final String PREFIX = OtlpDefaults.PREFIX;
 
     private final ReentrantLock initLock = new ReentrantLock();
     private volatile boolean initialized;
@@ -50,21 +49,22 @@ public class OpenTelemetryConfig {
             try {
                 if (!initialized) {
                     final org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
-                    disabledValue = config.getOptionalValue(PREFIX + "disabled", Boolean.class).orElse(false);
+                    disabledValue = config.getOptionalValue(PREFIX + "disabled", Boolean.class)
+                        .orElse(OtlpDefaults.DEFAULT_DISABLED);
                     urlValue = config.getOptionalValue(PREFIX + "url", String.class)
-                        .orElse("http://localhost:4318");
-                    timeoutValue = config.getOptionalValue(PREFIX + "timeout", String.class).orElse("10s");
-                    exporterValue = config.getOptionalValue(PREFIX + "exporter", String.class).orElse("otlp");
-                    samplingRateValue = config.getOptionalValue(PREFIX + "sampling-rate", Double.class).orElse(1.0);
+                        .orElse(OtlpDefaults.DEFAULT_URL);
+                    timeoutValue = config.getOptionalValue(PREFIX + "timeout", String.class)
+                        .orElse(OtlpDefaults.DEFAULT_TIMEOUT);
+                    exporterValue = config.getOptionalValue(PREFIX + "exporter", String.class)
+                        .orElse(OtlpDefaults.DEFAULT_EXPORTER);
+                    samplingRateValue = config.getOptionalValue(PREFIX + "sampling-rate", Double.class)
+                        .orElse(OtlpDefaults.DEFAULT_SAMPLING_RATE);
                     propagatorsValue = config.getOptionalValue(PREFIX + "propagators", String.class)
-                        .orElse("tracecontext,baggage");
+                        .orElse(OtlpDefaults.DEFAULT_PROPAGATORS);
 
                     final String excludedStr = config.getOptionalValue(PREFIX + "excluded-methods", String.class)
-                        .orElse("health,actuator,ping,status,info,metrics");
-                    excludedMethodsValue = Arrays.stream(excludedStr.split(","))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .collect(Collectors.toUnmodifiableSet());
+                        .orElse(OtlpDefaults.DEFAULT_EXCLUDED_METHODS);
+                    excludedMethodsValue = OtlpDefaults.parseCommaSeparated(excludedStr);
                     initialized = true;
                 }
             } finally {
