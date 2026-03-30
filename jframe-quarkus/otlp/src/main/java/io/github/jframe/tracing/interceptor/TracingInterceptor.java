@@ -37,8 +37,8 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.*;
  * <li>Sets {@code service.name} and {@code service.method} span attributes</li>
  * <li>Enriches every span with {@code http.remote_user} (always), {@code http.transaction_id}
  * and {@code http.request_id} (only when non-blank in MDC)</li>
- * <li>On exception: sets {@code error=true}, {@code error.type}, {@code error.message},
- * {@code StatusCode.ERROR}, then re-throws</li>
+ * <li>On exception: records the exception via {@code span.recordException()},
+ * sets {@code StatusCode.ERROR}, then re-throws</li>
  * <li>Always ends the span and closes the scope in a {@code finally} block</li>
  * </ul>
  */
@@ -142,16 +142,14 @@ public class TracingInterceptor {
         final Exception exception) {
 
         final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-        final String errorMessage = exception.getMessage() != null ? exception.getMessage() : "";
-        span.setAttribute(SPAN_ERROR_TYPE.getKey(), exception.getClass().getSimpleName());
-        span.setAttribute(SPAN_ERROR_MESSAGE.getKey(), errorMessage);
+        span.recordException(exception);
         span.setStatus(StatusCode.ERROR);
         log.error(
             "[jframe-otlp] Failed {} in {}ms | error={} message={}",
             spanName,
             durationMs,
             exception.getClass().getSimpleName(),
-            errorMessage
+            exception.getMessage() != null ? exception.getMessage() : ""
         );
     }
 

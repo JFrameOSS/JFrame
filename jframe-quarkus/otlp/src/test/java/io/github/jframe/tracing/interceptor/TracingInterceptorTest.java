@@ -519,8 +519,8 @@ public class TracingInterceptorTest extends UnitTest {
     class ExceptionHandling {
 
         @Test
-        @DisplayName("Should set error=true on span when method throws RuntimeException")
-        public void shouldSetErrorTrueOnSpanWhenMethodThrowsRuntimeException() throws Exception {
+        @DisplayName("Should record exception and set error on span when method throws")
+        public void shouldRecordExceptionAndSetErrorOnSpanWhenMethodThrows() throws Exception {
             // Given: A method that throws a RuntimeException
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
@@ -534,12 +534,13 @@ public class TracingInterceptorTest extends UnitTest {
                 // expected — exception propagation is tested separately
             }
 
-            // Then: Span is marked with error=true
+            // Then: Span records the exception via OTEL API
+            verify(span).recordException(any(RuntimeException.class));
         }
 
         @Test
-        @DisplayName("Should set error.type to exception class name when method throws")
-        public void shouldSetErrorTypeToExceptionClassNameWhenMethodThrows() throws Exception {
+        @DisplayName("Should record exception on span when method throws IllegalStateException")
+        public void shouldRecordExceptionWhenMethodThrowsIllegalState() throws Exception {
             // Given: A method that throws an IllegalStateException
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
@@ -553,13 +554,13 @@ public class TracingInterceptorTest extends UnitTest {
                 // expected
             }
 
-            // Then: error.type is the exception's simple class name
-            verify(span).setAttribute(SPAN_ERROR_TYPE.getKey(), "IllegalStateException");
+            // Then: Span records the exception via OTEL API
+            verify(span).recordException(any(IllegalStateException.class));
         }
 
         @Test
-        @DisplayName("Should set error.message to exception message when method throws")
-        public void shouldSetErrorMessageToExceptionMessageWhenMethodThrows() throws Exception {
+        @DisplayName("Should record exception on span when method throws RuntimeException")
+        public void shouldRecordExceptionWhenMethodThrowsRuntimeException() throws Exception {
             // Given: A method that throws with a specific message
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
@@ -573,8 +574,8 @@ public class TracingInterceptorTest extends UnitTest {
                 // expected
             }
 
-            // Then: error.message captures the exception message
-            verify(span).setAttribute(SPAN_ERROR_MESSAGE.getKey(), "something broke");
+            // Then: Span records the exception via OTEL API
+            verify(span).recordException(any(RuntimeException.class));
         }
 
         @Test
@@ -642,8 +643,8 @@ public class TracingInterceptorTest extends UnitTest {
         }
 
         @Test
-        @DisplayName("Should handle exception with null message without NPE")
-        public void shouldHandleExceptionWithNullMessageWithoutNpe() throws Exception {
+        @DisplayName("Should record exception with null message without NPE")
+        public void shouldRecordExceptionWithNullMessageWithoutNpe() throws Exception {
             // Given: A method that throws a RuntimeException with no message (null)
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
@@ -657,7 +658,8 @@ public class TracingInterceptorTest extends UnitTest {
                 // expected
             }
 
-            // Then: Span error attributes are set (message may be null or empty, but no NPE)
+            // Then: Span records the exception and sets ERROR status even with null message
+            verify(span).recordException(any(RuntimeException.class));
             verify(span).setStatus(StatusCode.ERROR);
         }
     }

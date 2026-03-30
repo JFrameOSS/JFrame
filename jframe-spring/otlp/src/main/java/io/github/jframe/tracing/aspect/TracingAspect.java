@@ -94,8 +94,7 @@ public class TracingAspect {
             return result;
         } catch (final Throwable throwable) {
             final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            span.setAttribute(SPAN_ERROR_TYPE.getKey(), throwable.getClass().getSimpleName());
-            span.setAttribute(SPAN_ERROR_MESSAGE.getKey(), throwable.getMessage() != null ? throwable.getMessage() : "");
+            span.recordException(throwable);
             span.setStatus(StatusCode.ERROR);
             log.error(
                 "[jframe-otlp] Failed {} in {}ms | error={} message={}",

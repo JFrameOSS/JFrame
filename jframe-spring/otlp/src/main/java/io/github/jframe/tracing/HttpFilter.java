@@ -5,6 +5,7 @@ import io.github.jframe.logging.masker.type.PasswordMasker;
 import io.github.jframe.logging.util.HttpBodyUtil;
 import io.github.jframe.logging.wrapper.BufferedClientHttpResponse;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -73,6 +74,12 @@ public class HttpFilter {
                 }
 
                 return bufferedResponse;
+            } catch (final Exception e) {
+                if (nonNull(span)) {
+                    span.recordException(e);
+                    span.setStatus(StatusCode.ERROR);
+                }
+                throw e;
             } finally {
                 if (nonNull(span)) {
                     spanManager.get().finishSpan(span);

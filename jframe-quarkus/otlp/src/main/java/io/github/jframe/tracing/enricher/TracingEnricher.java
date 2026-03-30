@@ -20,8 +20,8 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.*;
  * <p>When the current span is recording, this enricher:
  * <ul>
  * <li>Sets the {@code traceId} and {@code spanId} fields on the error response resource</li>
- * <li>Marks the span status as {@link StatusCode#ERROR}</li>
- * <li>Attaches error attributes ({@code error}, {@code error.type}, {@code error.message})</li>
+ * <li>Marks the span status as {@link StatusCode#ERROR} and records the exception via
+ * {@code span.recordException()}</li>
  * <li>Attaches HTTP metadata attributes (URI, method, status code, content type, etc.)</li>
  * <li>Attaches correlation IDs from MDC (transaction ID, request ID)</li>
  * <li>Attaches the authenticated subject from the security context</li>
@@ -67,9 +67,8 @@ public class TracingEnricher implements ErrorResponseEnricher {
         resource.setTraceId(currentSpan.getSpanContext().getTraceId());
         resource.setSpanId(currentSpan.getSpanContext().getSpanId());
 
+        currentSpan.recordException(throwable);
         currentSpan.setStatus(StatusCode.ERROR);
-        currentSpan.setAttribute(SPAN_ERROR_TYPE.getKey(), throwable.getClass().getSimpleName());
-        currentSpan.setAttribute(SPAN_ERROR_MESSAGE.getKey(), throwable.getMessage());
         currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), authUtil.getAuthenticatedSubject());
         currentSpan.setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID));
         currentSpan.setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID));

@@ -4,6 +4,7 @@ import io.github.jframe.logging.masker.type.PasswordMasker;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.StatusCode;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -115,8 +116,8 @@ class HttpFilterTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should finish span even when exception occurs")
-    void shouldFinishSpanWhenExceptionOccurs() throws IOException {
+    @DisplayName("Should record exception and finish span when exception occurs")
+    void shouldRecordExceptionAndFinishSpanWhenExceptionOccurs() throws IOException {
         // Given: A mock HTTP request that throws exception during execution
         final ClientHttpRequest request = aMockedClientHttpRequest();
         final byte[] body = aRequestBody();
@@ -131,7 +132,11 @@ class HttpFilterTest extends UnitTest {
             // Expected exception
         }
 
-        // Then: Span is still finished despite exception
+        // Then: Exception is recorded on span via OTLP API
+        verify(span).recordException(any(IOException.class));
+        verify(span).setStatus(StatusCode.ERROR);
+
+        // And: Span is still finished despite exception
         verify(spanManager).finishSpan(span);
 
         // And: Span enrichment was never called

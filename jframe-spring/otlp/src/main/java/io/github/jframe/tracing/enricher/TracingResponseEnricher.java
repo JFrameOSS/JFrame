@@ -49,9 +49,8 @@ public class TracingResponseEnricher implements ErrorResponseEnricher {
             errorResponseResource.setSpanId(currentSpan.getSpanContext().getSpanId());
 
             // Enrich the span with error information
+            currentSpan.recordException(throwable);
             currentSpan.setStatus(StatusCode.ERROR);
-            currentSpan.setAttribute(SPAN_ERROR_TYPE.getKey(), throwable.getClass().getSimpleName());
-            currentSpan.setAttribute(SPAN_ERROR_MESSAGE.getKey(), throwable.getMessage());
             currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), getAuthenticatedSubject());
             currentSpan.setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID));
             currentSpan.setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID));

@@ -173,8 +173,8 @@ public class TracingEnricherTest extends UnitTest {
     // ======================== TEST 2: SPAN ENRICHED WITH ERROR DETAILS ========================
 
     @Test
-    @DisplayName("Should enrich span with error details when span is recording")
-    public void shouldEnrichSpanWithErrorDetailsWhenSpanIsRecording() throws Exception {
+    @DisplayName("Should record exception and set error status when span is recording")
+    public void shouldRecordExceptionAndSetErrorStatusWhenSpanIsRecording() throws Exception {
         // Given: A recording span and a RuntimeException
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("test error");
@@ -189,10 +189,9 @@ public class TracingEnricherTest extends UnitTest {
             enricher.doEnrich(resource, throwable, requestContext, STATUS_CODE_VALUE);
         }
 
-        // Then: Span is marked with ERROR status and error attributes
+        // Then: Span records the exception via OTEL API and sets ERROR status
         verify(span).setStatus(StatusCode.ERROR);
-        verify(span).setAttribute(SPAN_ERROR_TYPE.getKey(), "RuntimeException");
-        verify(span).setAttribute(SPAN_ERROR_MESSAGE.getKey(), "test error");
+        verify(span).recordException(throwable);
         verify(span).setAttribute(SPAN_HTTP_URI.getKey(), REQUEST_URI_PATH);
         verify(span).setAttribute(SPAN_HTTP_METHOD.getKey(), HTTP_METHOD_VALUE);
         verify(span).setAttribute(SPAN_HTTP_STATUS_CODE.getKey(), STATUS_CODE_VALUE);
@@ -284,8 +283,8 @@ public class TracingEnricherTest extends UnitTest {
     // ======================== EDGE CASES ========================
 
     @Test
-    @DisplayName("Should handle throwable with null message without NPE when span is recording")
-    public void shouldHandleThrowableWithNullMessageWithoutNpeWhenSpanIsRecording() throws Exception {
+    @DisplayName("Should record exception with null message without NPE")
+    public void shouldRecordExceptionWithNullMessageWithoutNpe() throws Exception {
         // Given: A throwable whose getMessage() returns null
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException((String) null);
@@ -300,8 +299,8 @@ public class TracingEnricherTest extends UnitTest {
             enricher.doEnrich(resource, throwable, requestContext, STATUS_CODE_VALUE);
         }
 
-        // Then: error.type is still set correctly, and span status is ERROR
-        verify(span).setAttribute(SPAN_ERROR_TYPE.getKey(), "RuntimeException");
+        // Then: Span records the exception via OTEL API and sets ERROR status even with null message
+        verify(span).recordException(throwable);
         verify(span).setStatus(StatusCode.ERROR);
     }
 

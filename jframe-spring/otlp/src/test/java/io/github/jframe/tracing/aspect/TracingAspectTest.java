@@ -18,8 +18,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ERROR_MESSAGE;
-import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ERROR_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -123,8 +121,8 @@ class TracingAspectTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should set error attributes and rethrow when method throws")
-    void traceClass_whenMethodThrows_shouldSetErrorAttributesAndRethrow() throws Throwable {
+    @DisplayName("Should record exception and rethrow when method throws")
+    void traceClass_whenMethodThrows_shouldRecordExceptionAndRethrow() throws Throwable {
         // Given: A service method that throws a runtime exception
         when(joinPoint.getTarget()).thenReturn(new Object());
         when(signature.getName()).thenReturn("processPayment");
@@ -137,9 +135,8 @@ class TracingAspectTest extends UnitTest {
         // Then: Exception is rethrown
         assertThrows(RuntimeException.class, () -> tracingAspect.traceClass(joinPoint));
 
-        // And: Error attributes are set on span
-        verify(span).setAttribute(SPAN_ERROR_TYPE.getKey(), "RuntimeException");
-        verify(span).setAttribute(SPAN_ERROR_MESSAGE.getKey(), "Payment failed");
+        // And: Exception is recorded on span via OTLP API
+        verify(span).recordException(cause);
         verify(span).setStatus(StatusCode.ERROR);
 
         // And: Span is always ended
@@ -147,8 +144,8 @@ class TracingAspectTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should set empty error message when exception has null message")
-    void traceClass_whenMethodThrowsWithNullMessage_shouldSetEmptyErrorMessage() throws Throwable {
+    @DisplayName("Should record exception with null message without NPE")
+    void traceClass_whenMethodThrowsWithNullMessage_shouldRecordExceptionWithNullMessage() throws Throwable {
         // Given: A method that throws an exception with null message
         when(joinPoint.getTarget()).thenReturn(new Object());
         when(signature.getName()).thenReturn("validate");
@@ -160,8 +157,8 @@ class TracingAspectTest extends UnitTest {
         // When / Then: Exception rethrown
         assertThrows(NullPointerException.class, () -> tracingAspect.traceClass(joinPoint));
 
-        // And: Empty string is used for error message (not null)
-        verify(span).setAttribute(SPAN_ERROR_MESSAGE.getKey(), "");
+        // And: Exception is recorded on span (even with null message)
+        verify(span).recordException(npe);
     }
 
     @Test

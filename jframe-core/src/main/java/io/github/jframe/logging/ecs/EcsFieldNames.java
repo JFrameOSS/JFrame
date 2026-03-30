@@ -225,13 +225,7 @@ public enum EcsFieldNames implements EcsField {
     SPAN_EXT_RESPONSE_CONTENT_TYPE("http.response.mime_type"),
 
     /** External response L7 request ID span attribute. */
-    SPAN_EXT_RESPONSE_L7_REQUEST_ID("http.response.header.x_request_id"),
-
-    /** Error type span attribute. */
-    SPAN_ERROR_TYPE("error.type"),
-
-    /** Error/exception message span attribute. */
-    SPAN_ERROR_MESSAGE("exception.message");
+    SPAN_EXT_RESPONSE_L7_REQUEST_ID("http.response.header.x_request_id");
 
     /**
      * Tracing span key for {@code ClientRequest} attributes.

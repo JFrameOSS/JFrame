@@ -11,6 +11,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
@@ -31,8 +33,13 @@ import static org.mockito.Mockito.when;
  * <li><b>When:</b> Execute the action being tested</li>
  * <li><b>Then:</b> Verify the expected outcome</li>
  * </ul>
+ *
+ * <p>Strictness is set to {@link Strictness#LENIENT} to allow shared {@code @BeforeEach} stub
+ * definitions that are not necessarily consumed by every individual test (e.g. tracer chain stubs
+ * shared across exclusion, disabled, and normal execution tests).
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class UnitTest {
 
     protected static final int RESPONSE_LENGTH = 1000;
