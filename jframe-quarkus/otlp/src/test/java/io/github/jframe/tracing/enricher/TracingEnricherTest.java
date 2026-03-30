@@ -1,7 +1,7 @@
 package io.github.jframe.tracing.enricher;
 
 import io.github.jframe.exception.resource.ErrorResponseResource;
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.security.QuarkusAuthenticationUtil;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
@@ -22,20 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_CONTENT_LENGTH;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_CONTENT_TYPE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_METHOD;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_QUERY;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_STATUS_CODE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_URI;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -120,9 +107,9 @@ public class TracingEnricherTest extends UnitTest {
     }
 
     @AfterEach
-    public void clearKibanaLogFields() {
+    public void clearEcsFields() {
         // Clean up MDC ThreadLocal to prevent cross-test pollution
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     // ======================== FACTORY METHODS ========================
@@ -166,8 +153,8 @@ public class TracingEnricherTest extends UnitTest {
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("test error");
         final ContainerRequestContext requestContext = aRequestContext();
-        KibanaLogFields.tag(TX_ID, TRANSACTION_ID);
-        KibanaLogFields.tag(REQUEST_ID, REQUEST_ID_VALUE);
+        EcsFields.tag(TX_ID, TRANSACTION_ID);
+        EcsFields.tag(REQUEST_ID, REQUEST_ID_VALUE);
 
         // When: doEnrich is called with the recording span active
         try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
@@ -192,8 +179,8 @@ public class TracingEnricherTest extends UnitTest {
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("test error");
         final ContainerRequestContext requestContext = aRequestContext();
-        KibanaLogFields.tag(TX_ID, TRANSACTION_ID);
-        KibanaLogFields.tag(REQUEST_ID, REQUEST_ID_VALUE);
+        EcsFields.tag(TX_ID, TRANSACTION_ID);
+        EcsFields.tag(REQUEST_ID, REQUEST_ID_VALUE);
 
         // When: doEnrich is called
         try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
@@ -204,12 +191,11 @@ public class TracingEnricherTest extends UnitTest {
 
         // Then: Span is marked with ERROR status and error attributes
         verify(span).setStatus(StatusCode.ERROR);
-        verify(span).setAttribute(ERROR, true);
-        verify(span).setAttribute(ERROR_TYPE, "RuntimeException");
-        verify(span).setAttribute(ERROR_MESSAGE, "test error");
-        verify(span).setAttribute(HTTP_URI, REQUEST_URI_PATH);
-        verify(span).setAttribute(HTTP_METHOD, HTTP_METHOD_VALUE);
-        verify(span).setAttribute(HTTP_STATUS_CODE, STATUS_CODE_VALUE);
+        verify(span).setAttribute(SPAN_ERROR_TYPE.getKey(), "RuntimeException");
+        verify(span).setAttribute(SPAN_ERROR_MESSAGE.getKey(), "test error");
+        verify(span).setAttribute(SPAN_HTTP_URI.getKey(), REQUEST_URI_PATH);
+        verify(span).setAttribute(SPAN_HTTP_METHOD.getKey(), HTTP_METHOD_VALUE);
+        verify(span).setAttribute(SPAN_HTTP_STATUS_CODE.getKey(), STATUS_CODE_VALUE);
     }
 
     // ======================== TEST 3: SPAN ENRICHED WITH HTTP METADATA ========================
@@ -221,8 +207,8 @@ public class TracingEnricherTest extends UnitTest {
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("test error");
         final ContainerRequestContext requestContext = aRequestContext();
-        KibanaLogFields.tag(TX_ID, TRANSACTION_ID);
-        KibanaLogFields.tag(REQUEST_ID, REQUEST_ID_VALUE);
+        EcsFields.tag(TX_ID, TRANSACTION_ID);
+        EcsFields.tag(REQUEST_ID, REQUEST_ID_VALUE);
 
         // When: doEnrich is called
         try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
@@ -232,15 +218,15 @@ public class TracingEnricherTest extends UnitTest {
         }
 
         // Then: Span receives all HTTP metadata attributes
-        verify(span).setAttribute(HTTP_REMOTE_USER, REMOTE_USER);
-        verify(span).setAttribute(HTTP_TRANSACTION_ID, TRANSACTION_ID);
-        verify(span).setAttribute(HTTP_REQUEST_ID, REQUEST_ID_VALUE);
-        verify(span).setAttribute(HTTP_URI, REQUEST_URI_PATH);
-        verify(span).setAttribute(HTTP_QUERY, REQUEST_QUERY);
-        verify(span).setAttribute(HTTP_METHOD, HTTP_METHOD_VALUE);
-        verify(span).setAttribute(HTTP_STATUS_CODE, STATUS_CODE_VALUE);
-        verify(span).setAttribute(HTTP_CONTENT_TYPE, CONTENT_TYPE_VALUE);
-        verify(span).setAttribute(HTTP_CONTENT_LENGTH, CONTENT_LENGTH_VALUE);
+        verify(span).setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), REMOTE_USER);
+        verify(span).setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), TRANSACTION_ID);
+        verify(span).setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), REQUEST_ID_VALUE);
+        verify(span).setAttribute(SPAN_HTTP_URI.getKey(), REQUEST_URI_PATH);
+        verify(span).setAttribute(SPAN_HTTP_QUERY.getKey(), REQUEST_QUERY);
+        verify(span).setAttribute(SPAN_HTTP_METHOD.getKey(), HTTP_METHOD_VALUE);
+        verify(span).setAttribute(SPAN_HTTP_STATUS_CODE.getKey(), STATUS_CODE_VALUE);
+        verify(span).setAttribute(SPAN_HTTP_CONTENT_TYPE.getKey(), CONTENT_TYPE_VALUE);
+        verify(span).setAttribute(SPAN_HTTP_CONTENT_LENGTH.getKey(), CONTENT_LENGTH_VALUE);
     }
 
     // ======================== TEST 4: NON-RECORDING SPAN → NO ENRICHMENT ========================
@@ -304,8 +290,8 @@ public class TracingEnricherTest extends UnitTest {
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException((String) null);
         final ContainerRequestContext requestContext = aRequestContext();
-        KibanaLogFields.tag(TX_ID, TRANSACTION_ID);
-        KibanaLogFields.tag(REQUEST_ID, REQUEST_ID_VALUE);
+        EcsFields.tag(TX_ID, TRANSACTION_ID);
+        EcsFields.tag(REQUEST_ID, REQUEST_ID_VALUE);
 
         // When: doEnrich is called — should not throw NPE
         try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
@@ -315,9 +301,8 @@ public class TracingEnricherTest extends UnitTest {
         }
 
         // Then: error.type is still set correctly, and span status is ERROR
-        verify(span).setAttribute(ERROR_TYPE, "RuntimeException");
+        verify(span).setAttribute(SPAN_ERROR_TYPE.getKey(), "RuntimeException");
         verify(span).setStatus(StatusCode.ERROR);
-        verify(span).setAttribute(ERROR, true);
     }
 
     @Test
@@ -327,7 +312,7 @@ public class TracingEnricherTest extends UnitTest {
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("test error");
         final ContainerRequestContext requestContext = aRequestContext();
-        // KibanaLogFields MDC is clean — TX_ID and REQUEST_ID return null
+        // EcsFields MDC is clean — TX_ID and REQUEST_ID return null
 
         // When: doEnrich is called with a recording span
         try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
@@ -337,7 +322,7 @@ public class TracingEnricherTest extends UnitTest {
         }
 
         // Then: Span receives TX_ID and REQUEST_ID attributes (with null value per spec)
-        verify(span).setAttribute(HTTP_TRANSACTION_ID, KibanaLogFields.get(TX_ID));
-        verify(span).setAttribute(HTTP_REQUEST_ID, KibanaLogFields.get(REQUEST_ID));
+        verify(span).setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID));
+        verify(span).setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID));
     }
 }

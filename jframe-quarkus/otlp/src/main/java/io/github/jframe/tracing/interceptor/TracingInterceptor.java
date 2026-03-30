@@ -1,8 +1,8 @@
 package io.github.jframe.tracing.interceptor;
 
 import io.github.jframe.autoconfigure.OpenTelemetryConfig;
-import io.github.jframe.logging.kibana.KibanaLogField;
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsField;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.security.QuarkusAuthenticationUtil;
 import io.github.jframe.tracing.MethodExclusionRules;
 import io.github.jframe.tracing.SpanNamingUtil;
@@ -20,18 +20,7 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.SPAN_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_METHOD;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_NAME;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 
 /**
  * CDI interceptor that wraps intercepted method invocations in OpenTelemetry spans.
@@ -57,7 +46,6 @@ import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE
 @Interceptor
 @Priority(Interceptor.Priority.LIBRARY_BEFORE)
 @Traced
-@SuppressWarnings("PMD.ExcessiveImports")
 public class TracingInterceptor {
 
     /** Lazily initialised; Mockito {@code @InjectMocks} injects a test double via reflection. */
@@ -101,15 +89,15 @@ public class TracingInterceptor {
         final String spanName = resolveSpanName(context, className, methodName);
         final Span span = resolveTracer()
             .spanBuilder(spanName)
-            .setAttribute(SERVICE_NAME, className)
-            .setAttribute(SERVICE_METHOD, methodName)
+            .setAttribute(SPAN_SERVICE_NAME.getKey(), className)
+            .setAttribute(SPAN_SERVICE_METHOD.getKey(), methodName)
             .startSpan();
 
         // Ensure traceId/spanId are in MDC so log lines include them
-        final String previousTraceId = KibanaLogFields.get(TRACE_ID);
-        final String previousSpanId = KibanaLogFields.get(SPAN_ID);
-        KibanaLogFields.tag(TRACE_ID, span.getSpanContext().getTraceId());
-        KibanaLogFields.tag(SPAN_ID, span.getSpanContext().getSpanId());
+        final String previousTraceId = EcsFields.get(TRACE_ID);
+        final String previousSpanId = EcsFields.get(SPAN_ID);
+        EcsFields.tag(TRACE_ID, span.getSpanContext().getTraceId());
+        EcsFields.tag(SPAN_ID, span.getSpanContext().getSpanId());
 
         enrichSpanAndLog(span, spanName);
 
@@ -131,12 +119,12 @@ public class TracingInterceptor {
 
     private void enrichSpanAndLog(final Span span, final String spanName) {
         final String user = authenticationUtil.getAuthenticatedSubject();
-        final String txId = KibanaLogFields.get(TX_ID);
-        final String requestId = KibanaLogFields.get(REQUEST_ID);
+        final String txId = EcsFields.get(TX_ID);
+        final String requestId = EcsFields.get(REQUEST_ID);
 
-        span.setAttribute(HTTP_REMOTE_USER, user);
-        setAttributeIfPresent(span, HTTP_TRANSACTION_ID, txId);
-        setAttributeIfPresent(span, HTTP_REQUEST_ID, requestId);
+        span.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), user);
+        setAttributeIfPresent(span, SPAN_HTTP_TRANSACTION_ID.getKey(), txId);
+        setAttributeIfPresent(span, SPAN_HTTP_REQUEST_ID.getKey(), requestId);
 
         log.debug(
             "[jframe-otlp] Entering {} | user={} traceId={} spanId={}",
@@ -155,9 +143,8 @@ public class TracingInterceptor {
 
         final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
         final String errorMessage = exception.getMessage() != null ? exception.getMessage() : "";
-        span.setAttribute(ERROR, true);
-        span.setAttribute(ERROR_TYPE, exception.getClass().getSimpleName());
-        span.setAttribute(ERROR_MESSAGE, errorMessage);
+        span.setAttribute(SPAN_ERROR_TYPE.getKey(), exception.getClass().getSimpleName());
+        span.setAttribute(SPAN_ERROR_MESSAGE.getKey(), errorMessage);
         span.setStatus(StatusCode.ERROR);
         log.error(
             "[jframe-otlp] Failed {} in {}ms | error={} message={}",
@@ -188,11 +175,11 @@ public class TracingInterceptor {
         }
     }
 
-    private void restoreMdcField(final KibanaLogField field, final String previousValue) {
+    private void restoreMdcField(final EcsField field, final String previousValue) {
         if (previousValue != null) {
-            KibanaLogFields.tag(field, previousValue);
+            EcsFields.tag(field, previousValue);
         } else {
-            KibanaLogFields.clear(field);
+            EcsFields.clear(field);
         }
     }
 }

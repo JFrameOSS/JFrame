@@ -1,6 +1,6 @@
 package io.github.jframe.logging.scheduled;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.model.RequestId;
 import io.github.jframe.logging.model.TransactionId;
 import lombok.extern.slf4j.Slf4j;
@@ -12,12 +12,12 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static java.util.UUID.randomUUID;
 
 /**
- * Aspect around @{@link org.springframework.scheduling.annotation.Scheduled} annotation to allow participating in Kibana tx's.
+ * Aspect around @{@link org.springframework.scheduling.annotation.Scheduled} annotation to allow participating in ECS tx's.
  */
 @Slf4j
 @Aspect
@@ -36,10 +36,10 @@ public class ScheduledAspect {
         try {
             final UUID uuid = randomUUID();
             RequestId.set(uuid);
-            KibanaLogFields.tag(REQUEST_ID, RequestId.get());
+            EcsFields.tag(REQUEST_ID, RequestId.get());
 
             TransactionId.set(uuid);
-            KibanaLogFields.tag(TX_ID, TransactionId.get());
+            EcsFields.tag(TX_ID, TransactionId.get());
 
             log.trace("Started scheduled task with tx id '{}'.", TransactionId.get());
             return pjp.proceed();
@@ -49,7 +49,7 @@ public class ScheduledAspect {
         } finally {
             RequestId.remove();
             TransactionId.remove();
-            KibanaLogFields.clear();
+            EcsFields.clear();
         }
     }
 }

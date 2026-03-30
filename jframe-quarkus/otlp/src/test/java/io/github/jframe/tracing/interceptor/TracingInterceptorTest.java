@@ -1,7 +1,7 @@
 package io.github.jframe.tracing.interceptor;
 
 import io.github.jframe.autoconfigure.OpenTelemetryConfig;
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.security.QuarkusAuthenticationUtil;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
@@ -23,16 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_METHOD;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_NAME;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -249,7 +240,7 @@ public class TracingInterceptorTest extends UnitTest {
             interceptor.aroundInvoke(context);
 
             // Then: service.name attribute is set to the simple class name
-            verify(spanBuilder).setAttribute(SERVICE_NAME, "SampleService");
+            verify(spanBuilder).setAttribute(SPAN_SERVICE_NAME.getKey(), "SampleService");
         }
 
         @Test
@@ -264,7 +255,7 @@ public class TracingInterceptorTest extends UnitTest {
             interceptor.aroundInvoke(context);
 
             // Then: service.method attribute is set to the method name
-            verify(spanBuilder).setAttribute(SERVICE_METHOD, "doWork");
+            verify(spanBuilder).setAttribute(SPAN_SERVICE_METHOD.getKey(), "doWork");
         }
 
         @Test
@@ -544,7 +535,6 @@ public class TracingInterceptorTest extends UnitTest {
             }
 
             // Then: Span is marked with error=true
-            verify(span).setAttribute(ERROR, true);
         }
 
         @Test
@@ -564,7 +554,7 @@ public class TracingInterceptorTest extends UnitTest {
             }
 
             // Then: error.type is the exception's simple class name
-            verify(span).setAttribute(ERROR_TYPE, "IllegalStateException");
+            verify(span).setAttribute(SPAN_ERROR_TYPE.getKey(), "IllegalStateException");
         }
 
         @Test
@@ -584,7 +574,7 @@ public class TracingInterceptorTest extends UnitTest {
             }
 
             // Then: error.message captures the exception message
-            verify(span).setAttribute(ERROR_MESSAGE, "something broke");
+            verify(span).setAttribute(SPAN_ERROR_MESSAGE.getKey(), "something broke");
         }
 
         @Test
@@ -668,7 +658,6 @@ public class TracingInterceptorTest extends UnitTest {
             }
 
             // Then: Span error attributes are set (message may be null or empty, but no NPE)
-            verify(span).setAttribute(ERROR, true);
             verify(span).setStatus(StatusCode.ERROR);
         }
     }
@@ -825,7 +814,7 @@ public class TracingInterceptorTest extends UnitTest {
         @AfterEach
         public void clearMdc() {
             // Clean MDC entries written by the test to avoid cross-test pollution
-            KibanaLogFields.clear();
+            EcsFields.clear();
         }
 
         @Test
@@ -841,7 +830,7 @@ public class TracingInterceptorTest extends UnitTest {
             interceptor.aroundInvoke(context);
 
             // Then: The span receives the authenticated principal name as http.remote_user
-            verify(span).setAttribute(HTTP_REMOTE_USER, "john.doe");
+            verify(span).setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), "john.doe");
         }
 
         @Test
@@ -856,14 +845,14 @@ public class TracingInterceptorTest extends UnitTest {
             interceptor.aroundInvoke(context);
 
             // Then: The span receives the anonymous fallback message as http.remote_user
-            verify(span).setAttribute(HTTP_REMOTE_USER, "ANONYMOUS - NO AUTHENTICATION");
+            verify(span).setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), "ANONYMOUS - NO AUTHENTICATION");
         }
 
         @Test
         @DisplayName("Should set http.transaction_id attribute when transaction ID is present in MDC")
         public void shouldSetHttpTransactionIdAttributeWhenTransactionIdIsPresentInMdc() throws Exception {
             // Given: A transaction ID is stored in the MDC by a filter earlier in the call chain
-            KibanaLogFields.tag(TX_ID, "tx-123");
+            EcsFields.tag(TX_ID, "tx-123");
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
             final InvocationContext context = aContextFor(target, method, "result");
@@ -872,14 +861,14 @@ public class TracingInterceptorTest extends UnitTest {
             interceptor.aroundInvoke(context);
 
             // Then: The span receives the transaction ID as http.transaction_id
-            verify(span).setAttribute(HTTP_TRANSACTION_ID, "tx-123");
+            verify(span).setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), "tx-123");
         }
 
         @Test
         @DisplayName("Should set http.request_id attribute when request ID is present in MDC")
         public void shouldSetHttpRequestIdAttributeWhenRequestIdIsPresentInMdc() throws Exception {
             // Given: A request ID is stored in the MDC by a filter earlier in the call chain
-            KibanaLogFields.tag(REQUEST_ID, "req-456");
+            EcsFields.tag(REQUEST_ID, "req-456");
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
             final InvocationContext context = aContextFor(target, method, "result");
@@ -888,14 +877,14 @@ public class TracingInterceptorTest extends UnitTest {
             interceptor.aroundInvoke(context);
 
             // Then: The span receives the request ID as http.request_id
-            verify(span).setAttribute(HTTP_REQUEST_ID, "req-456");
+            verify(span).setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), "req-456");
         }
 
         @Test
         @DisplayName("Should not set http.transaction_id when MDC value is null (e.g. scheduled tasks)")
         public void shouldNotSetHttpTransactionIdWhenMdcValueIsNull() throws Exception {
             // Given: No transaction ID has been set in the MDC (e.g. a background scheduled task)
-            // (MDC is clean — no KibanaLogFields.tag call for TX_ID)
+            // (MDC is clean — no EcsFields.tag call for TX_ID)
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
             final InvocationContext context = aContextFor(target, method, "result");
@@ -904,14 +893,14 @@ public class TracingInterceptorTest extends UnitTest {
             interceptor.aroundInvoke(context);
 
             // Then: The span does not receive an http.transaction_id attribute
-            verify(span, never()).setAttribute(eq(HTTP_TRANSACTION_ID), anyString());
+            verify(span, never()).setAttribute(eq(SPAN_HTTP_TRANSACTION_ID.getKey()), anyString());
         }
 
         @Test
         @DisplayName("Should not set http.request_id when MDC value is null")
         public void shouldNotSetHttpRequestIdWhenMdcValueIsNull() throws Exception {
             // Given: No request ID has been set in the MDC
-            // (MDC is clean — no KibanaLogFields.tag call for REQUEST_ID)
+            // (MDC is clean — no EcsFields.tag call for REQUEST_ID)
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
             final InvocationContext context = aContextFor(target, method, "result");
@@ -920,7 +909,7 @@ public class TracingInterceptorTest extends UnitTest {
             interceptor.aroundInvoke(context);
 
             // Then: The span does not receive an http.request_id attribute
-            verify(span, never()).setAttribute(eq(HTTP_REQUEST_ID), anyString());
+            verify(span, never()).setAttribute(eq(SPAN_HTTP_REQUEST_ID.getKey()), anyString());
         }
 
         @Test
@@ -928,8 +917,8 @@ public class TracingInterceptorTest extends UnitTest {
         public void shouldSetAllEnrichmentAttributesWhenBothMdcValuesAndAuthArePresent() throws Exception {
             // Given: A fully identified request — authenticated user and both correlation IDs in MDC
             when(authenticationUtil.getAuthenticatedSubject()).thenReturn("jane.smith");
-            KibanaLogFields.tag(TX_ID, "tx-999");
-            KibanaLogFields.tag(REQUEST_ID, "req-888");
+            EcsFields.tag(TX_ID, "tx-999");
+            EcsFields.tag(REQUEST_ID, "req-888");
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
             final InvocationContext context = aContextFor(target, method, "result");
@@ -938,9 +927,9 @@ public class TracingInterceptorTest extends UnitTest {
             interceptor.aroundInvoke(context);
 
             // Then: All three enrichment attributes are set on the span
-            verify(span).setAttribute(HTTP_REMOTE_USER, "jane.smith");
-            verify(span).setAttribute(HTTP_TRANSACTION_ID, "tx-999");
-            verify(span).setAttribute(HTTP_REQUEST_ID, "req-888");
+            verify(span).setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), "jane.smith");
+            verify(span).setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), "tx-999");
+            verify(span).setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), "req-888");
         }
     }
 }

@@ -1,8 +1,8 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.AutoCloseableEcsField;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.AbstractGenericFilter;
-import io.github.jframe.logging.kibana.AutoCloseableKibanaLogField;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.voter.FilterVoter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +13,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.*;
-import static io.github.jframe.logging.kibana.KibanaLogFields.tagCloseable;
-import static io.github.jframe.logging.kibana.KibanaLogTypeNames.END;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
+import static io.github.jframe.logging.ecs.EcsFields.tagCloseable;
+import static io.github.jframe.logging.ecs.LogTypeNames.END;
 
 /**
  * A filter that logs the duration of the request.
@@ -56,11 +56,11 @@ public class RequestDurationFilter extends AbstractGenericFilter {
             return;
         }
 
-        try (AutoCloseableKibanaLogField closableTag = tagCloseable(LOG_TYPE, END)) {
+        try (AutoCloseableEcsField closableTag = tagCloseable(LOG_TYPE, END)) {
             log.debug("Found tag '{}':'{}' [{}].", LOG_TYPE, END, closableTag);
             final String duration = String.format("%.2f", (System.nanoTime() - start) / 1E6);
-            KibanaLogFields.tag(TX_DURATION, duration);
-            KibanaLogFields.tag(REQUEST_DURATION, duration);
+            EcsFields.tag(TX_DURATION, duration);
+            EcsFields.tag(REQUEST_DURATION, duration);
             log.info("Duration '{}' ms.", duration);
         }
     }

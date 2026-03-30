@@ -61,14 +61,14 @@ class HttpFilterTest extends UnitTest {
         httpFilter = new HttpFilter(Optional.of(spanManager), passwordMasker);
         setFieldValue(httpFilter, "responseLength", RESPONSE_LENGTH);
 
-        setupKibanaFields();
+        setupEcsFields();
         setupSpanMocks();
         setupPasswordMasker();
     }
 
     @Test
     @DisplayName("Should create request interceptor and inject headers")
-    void shouldInjectKibanaHeadersWhenInterceptingRequest() throws IOException {
+    void shouldInjectEcsHeadersWhenInterceptingRequest() throws IOException {
         // Given: A mock HTTP request with execution chain
         final ClientHttpRequest request = aMockedClientHttpRequest();
         final byte[] body = aRequestBody();
@@ -82,7 +82,7 @@ class HttpFilterTest extends UnitTest {
         final ClientHttpRequestInterceptor interceptor = httpFilter.getRequestInterceptor(SERVICE_NAME_VALUE);
         final ClientHttpResponse response = interceptor.intercept(request, body, execution);
 
-        // Then: Kibana headers are injected
+        // Then: ECS headers are injected
         verify(request.getHeaders()).add(REQ_ID_HEADER, TEST_REQUEST_ID);
         verify(request.getHeaders()).add(TX_ID_HEADER, TEST_TX_ID);
         verify(request.getHeaders()).add(TRACE_ID_HEADER, TEST_TRACE_ID);

@@ -1,7 +1,7 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.logger.RequestResponseLogger;
 import io.github.jframe.logging.model.RequestId;
 import io.github.jframe.logging.model.TransactionId;
@@ -23,7 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
  * <li>Delegation to RequestResponseLogger when FilterVoter is enabled</li>
  * <li>No delegation when FilterVoter is disabled</li>
  * <li>ThreadLocal cleanup (TransactionId, RequestId) in response phase</li>
- * <li>MDC cleanup (KibanaLogFields) in response phase</li>
+ * <li>MDC cleanup (EcsFields) in response phase</li>
  * <li>Graceful handling of null MediaType</li>
  * <li>Constructor smoke test</li>
  * </ul>
@@ -76,7 +76,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         // Clean up ThreadLocals and MDC to avoid test pollution
         TransactionId.remove();
         RequestId.remove();
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     @Test
@@ -213,7 +213,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         when(responseContext.getMediaType()).thenReturn(MediaType.APPLICATION_JSON_TYPE);
 
         // And: MDC field tx_id is pre-populated
-        KibanaLogFields.tag(TX_ID, "some-transaction-id");
+        EcsFields.tag(TX_ID, "some-transaction-id");
 
         filter.filter(requestContext);
 
@@ -221,7 +221,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         filter.filter(requestContext, responseContext);
 
         // Then: MDC field tx_id is cleared
-        assertThat(KibanaLogFields.get(TX_ID), is(nullValue()));
+        assertThat(EcsFields.get(TX_ID), is(nullValue()));
     }
 
     @Test

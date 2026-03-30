@@ -1,9 +1,9 @@
-package io.github.jframe.logging.kibana;
+package io.github.jframe.logging.ecs;
 
 /**
  * Enumeration of Call Results.
  */
-public enum KibanaLogCallResultTypes {
+public enum CallResultTypes {
     /** Success. */
     SUCCESS,
     /** Timeout. */

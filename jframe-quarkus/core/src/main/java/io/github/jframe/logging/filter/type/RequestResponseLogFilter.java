@@ -1,8 +1,8 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.filter.JFrameFilter;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.logger.RequestResponseLogger;
 import io.github.jframe.logging.model.RequestId;
 import io.github.jframe.logging.model.TransactionId;
@@ -66,7 +66,7 @@ public class RequestResponseLogFilter implements ContainerRequestFilter, Contain
         } finally {
             TransactionId.remove();
             RequestId.remove();
-            KibanaLogFields.clear();
+            EcsFields.clear();
         }
     }
 }

@@ -1,8 +1,8 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.filter.JFrameFilter;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +17,8 @@ import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.SPAN_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TRACE_ID;
 import static io.github.jframe.util.constants.Constants.Headers.SPAN_ID_HEADER;
 import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
 
@@ -26,7 +26,7 @@ import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
  * JAX-RS filter that propagates OpenTelemetry trace and span IDs to HTTP response headers.
  *
  * <p>On the inbound request: reads the current OpenTelemetry {@link Span} and, if its context is
- * valid, stores the trace ID and span ID in the Kibana MDC via {@link KibanaLogFields}.
+ * valid, stores the trace ID and span ID in the ECS MDC via {@link EcsFields}.
  *
  * <p>On the outbound response: adds {@code x-trace-id} and {@code x-span-id} headers from the MDC
  * values (if present and not already set). The MDC fields are always cleared in a {@code finally}
@@ -61,8 +61,8 @@ public class TracingResponseFilter implements ContainerRequestFilter, ContainerR
         }
         final SpanContext spanContext = Span.current().getSpanContext();
         if (spanContext.isValid()) {
-            KibanaLogFields.tag(TRACE_ID, spanContext.getTraceId());
-            KibanaLogFields.tag(SPAN_ID, spanContext.getSpanId());
+            EcsFields.tag(TRACE_ID, spanContext.getTraceId());
+            EcsFields.tag(SPAN_ID, spanContext.getSpanId());
         }
     }
 
@@ -74,16 +74,16 @@ public class TracingResponseFilter implements ContainerRequestFilter, ContainerR
         }
         try {
             final MultivaluedMap<String, Object> headers = responseContext.getHeaders();
-            final String traceId = KibanaLogFields.get(TRACE_ID);
+            final String traceId = EcsFields.get(TRACE_ID);
             if (traceId != null && !headers.containsKey(TRACE_ID_HEADER)) {
                 headers.putSingle(TRACE_ID_HEADER, traceId);
             }
-            final String spanId = KibanaLogFields.get(SPAN_ID);
+            final String spanId = EcsFields.get(SPAN_ID);
             if (spanId != null && !headers.containsKey(SPAN_ID_HEADER)) {
                 headers.putSingle(SPAN_ID_HEADER, spanId);
             }
         } finally {
-            KibanaLogFields.clear(TRACE_ID, SPAN_ID);
+            EcsFields.clear(TRACE_ID, SPAN_ID);
         }
     }
 }

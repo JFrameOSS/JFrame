@@ -1,7 +1,7 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.TransactionId;
 import io.github.support.UnitTest;
 
@@ -19,7 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
  * <li>Transaction ID addition to response header</li>
  * <li>Invalid UUID handling in request header</li>
  * <li>Null and blank header handling</li>
- * <li>MDC integration via KibanaLogFields</li>
+ * <li>MDC integration via EcsFields</li>
  * </ul>
  */
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -65,7 +65,7 @@ public class TransactionIdFilterTest extends UnitTest {
     public void tearDown() {
         // Clean up ThreadLocal and MDC to avoid test pollution
         TransactionId.remove();
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     @Test
@@ -255,7 +255,7 @@ public class TransactionIdFilterTest extends UnitTest {
 
         // Then: MDC field tx_id matches the transaction ID stored in ThreadLocal
         final String threadLocalTxId = TransactionId.get();
-        final String mdcTxId = KibanaLogFields.get(TX_ID);
+        final String mdcTxId = EcsFields.get(TX_ID);
         assertThat(mdcTxId, is(notNullValue()));
         assertThat(mdcTxId, is(equalTo(threadLocalTxId)));
     }
@@ -274,7 +274,7 @@ public class TransactionIdFilterTest extends UnitTest {
         filter.filter(requestContext);
 
         // Then: MDC field tx_id equals the UUID from the header
-        final String mdcTxId = KibanaLogFields.get(TX_ID);
+        final String mdcTxId = EcsFields.get(TX_ID);
         assertThat(mdcTxId, is(notNullValue()));
         assertThat(mdcTxId, is(equalTo(existingTxId.toString())));
     }

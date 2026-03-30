@@ -1,9 +1,9 @@
-package io.github.jframe.logging.kibana;
+package io.github.jframe.logging.ecs;
 
 /**
- * Enumeration for values of the Kibana Log Field LOG_TYPE.
+ * Enumeration for values of the ECS Log Field LOG_TYPE.
  */
-public enum KibanaLogTypeNames {
+public enum LogTypeNames {
     /** The start of a transaction. */
     START,
     /** The end of a transaction. */

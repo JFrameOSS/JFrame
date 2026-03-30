@@ -1,8 +1,8 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.filter.JFrameFilter;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.TransactionId;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,7 +19,7 @@ import jakarta.ws.rs.ext.Provider;
 
 import org.apache.commons.lang3.StringUtils;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 
 /**
@@ -79,7 +79,7 @@ public class TransactionIdFilter implements ContainerRequestFilter, ContainerRes
         final String headerValue = requestContext.getHeaderString(TX_ID_HEADER);
         final UUID transactionId = resolve(headerValue);
         TransactionId.set(transactionId);
-        KibanaLogFields.tag(TX_ID, TransactionId.get());
+        EcsFields.tag(TX_ID, TransactionId.get());
     }
 
     @Override

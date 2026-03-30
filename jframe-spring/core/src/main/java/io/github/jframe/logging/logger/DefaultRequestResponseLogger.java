@@ -1,8 +1,8 @@
 package io.github.jframe.logging.logger;
 
-import io.github.jframe.logging.kibana.KibanaLogFieldNames;
-import io.github.jframe.logging.kibana.KibanaLogFields;
-import io.github.jframe.logging.kibana.KibanaLogTypeNames;
+import io.github.jframe.logging.ecs.EcsFieldNames;
+import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.logging.ecs.LogTypeNames;
 import io.github.jframe.logging.voter.MediaTypeVoter;
 import io.github.jframe.logging.wrapper.BufferedClientHttpResponse;
 import io.github.jframe.logging.wrapper.ResettableHttpServletRequest;
@@ -18,9 +18,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 
-import static io.github.jframe.logging.kibana.KibanaLogCallResultTypes.FAILURE;
-import static io.github.jframe.logging.kibana.KibanaLogCallResultTypes.SUCCESS;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.*;
+import static io.github.jframe.logging.ecs.CallResultTypes.FAILURE;
+import static io.github.jframe.logging.ecs.CallResultTypes.SUCCESS;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 
 /** General logger. */
 @Slf4j
@@ -56,11 +56,11 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
             // This might force the request to be read, hence in the try, so the request can be reset.
             requestHeaders = headersLogUtil.getTxRequestHeaders(wrappedRequest);
 
-            KibanaLogFields.tag(LOG_TYPE, KibanaLogTypeNames.REQUEST_BODY);
-            KibanaLogFields.tag(TX_REQUEST_METHOD, method);
-            KibanaLogFields.tag(TX_REQUEST_URI, requestUri);
-            KibanaLogFields.tag(TX_REQUEST_SIZE, contentLength);
-            KibanaLogFields.tag(TX_REQUEST_HEADERS, requestHeaders);
+            EcsFields.tag(LOG_TYPE, LogTypeNames.REQUEST_BODY);
+            EcsFields.tag(TX_REQUEST_METHOD, method);
+            EcsFields.tag(TX_REQUEST_URI, requestUri);
+            EcsFields.tag(TX_REQUEST_SIZE, contentLength);
+            EcsFields.tag(TX_REQUEST_HEADERS, requestHeaders);
             if (contentTypeCanBeLogged) {
                 requestBody = bodyLogUtil.getTxRequestBody(wrappedRequest);
             }
@@ -81,7 +81,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
             }
 
             // Keep request uri in all other logging!
-            KibanaLogFields.clear(LOG_TYPE, TX_REQUEST_METHOD, TX_REQUEST_SIZE, TX_REQUEST_HEADERS, TX_REQUEST_BODY);
+            EcsFields.clear(LOG_TYPE, TX_REQUEST_METHOD, TX_REQUEST_SIZE, TX_REQUEST_HEADERS, TX_REQUEST_BODY);
             wrappedRequest.reset();
         }
     }
@@ -89,19 +89,19 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
     @Override
     public void logRequest(final HttpRequest request, final byte[] body) {
         try {
-            KibanaLogFields.tag(LOG_TYPE, KibanaLogTypeNames.CALL_REQUEST_BODY);
+            EcsFields.tag(LOG_TYPE, LogTypeNames.CALL_REQUEST_BODY);
 
             final HttpMethod method = request.getMethod();
-            KibanaLogFields.tag(CALL_REQUEST_METHOD, method.name());
+            EcsFields.tag(CALL_REQUEST_METHOD, method.name());
 
             final String requestUri = request.getURI().toString();
-            KibanaLogFields.tag(CALL_REQUEST_URI, requestUri);
+            EcsFields.tag(CALL_REQUEST_URI, requestUri);
 
             final int contentLength = body.length;
-            KibanaLogFields.tag(CALL_REQUEST_SIZE, contentLength);
+            EcsFields.tag(CALL_REQUEST_SIZE, contentLength);
 
             final String requestHeaders = headersLogUtil.getCallRequestHeaders(request);
-            KibanaLogFields.tag(CALL_REQUEST_HEADERS, requestHeaders);
+            EcsFields.tag(CALL_REQUEST_HEADERS, requestHeaders);
 
             // contentType can be null (a GET for example, doesn't have a Content-Type header usually)
             final MediaType contentType = getContentType(request);
@@ -128,7 +128,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
                 );
             }
         } finally {
-            KibanaLogFields.clear(
+            EcsFields.clear(
                 LOG_TYPE,
                 CALL_REQUEST_METHOD,
                 CALL_REQUEST_URI,
@@ -152,20 +152,20 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
     @Override
     public void logResponse(final HttpServletRequest servletRequest, final WrappedContentCachingResponse wrappedResponse) {
         try {
-            KibanaLogFields.tag(LOG_TYPE, KibanaLogTypeNames.RESPONSE_BODY);
+            EcsFields.tag(LOG_TYPE, LogTypeNames.RESPONSE_BODY);
 
             final HttpStatus httpStatus = HttpStatus.valueOf(wrappedResponse.getStatus());
-            KibanaLogFields.tag(HTTP_STATUS, httpStatus.value());
+            EcsFields.tag(HTTP_STATUS, httpStatus.value());
 
-            if (KibanaLogFields.get(TX_STATUS) == null) {
-                KibanaLogFields.tag(TX_STATUS, httpStatus);
+            if (EcsFields.get(TX_STATUS) == null) {
+                EcsFields.tag(TX_STATUS, httpStatus);
             }
 
             final int contentLength = wrappedResponse.getContentSize();
-            KibanaLogFields.tag(TX_RESPONSE_SIZE, contentLength);
+            EcsFields.tag(TX_RESPONSE_SIZE, contentLength);
 
             final String responseHeaders = headersLogUtil.getTxResponseHeaders(wrappedResponse);
-            KibanaLogFields.tag(TX_RESPONSE_HEADERS, responseHeaders);
+            EcsFields.tag(TX_RESPONSE_HEADERS, responseHeaders);
 
             final String contentType = getContentType(wrappedResponse);
             final boolean contentTypeCanBeLogged = contentTypeCanBeLogged(contentType);
@@ -193,14 +193,14 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
                 );
             }
         } finally {
-            KibanaLogFields.clear(LOG_TYPE, TX_RESPONSE_SIZE, TX_RESPONSE_HEADERS, CALL_RESPONSE_BODY);
+            EcsFields.clear(LOG_TYPE, TX_RESPONSE_SIZE, TX_RESPONSE_HEADERS, CALL_RESPONSE_BODY);
         }
     }
 
     @Override
     public void logResponse(final BufferedClientHttpResponse response) throws IOException {
         try {
-            KibanaLogFields.tag(LOG_TYPE, KibanaLogTypeNames.CALL_RESPONSE_BODY);
+            EcsFields.tag(LOG_TYPE, LogTypeNames.CALL_RESPONSE_BODY);
 
             final MediaType contentType = getContentType(response);
             final boolean contentTypeCanBeLogged = contentTypeCanBeLogged(contentType);
@@ -208,16 +208,16 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
             addBodyTag(contentTypeCanBeLogged, CALL_RESPONSE_BODY, responseBody);
 
             final int contentLength = responseBody.length();
-            KibanaLogFields.tag(CALL_RESPONSE_SIZE, contentLength);
+            EcsFields.tag(CALL_RESPONSE_SIZE, contentLength);
 
             final String responseHeaders = headersLogUtil.getCallResponseHeaders(response);
-            KibanaLogFields.tag(CALL_RESPONSE_HEADERS, responseHeaders);
+            EcsFields.tag(CALL_RESPONSE_HEADERS, responseHeaders);
 
             final HttpStatusCode httpStatus = response.getStatusCode();
             if (httpStatus.is2xxSuccessful() || httpStatus.is3xxRedirection()) {
-                KibanaLogFields.tag(CALL_STATUS, SUCCESS);
+                EcsFields.tag(CALL_STATUS, SUCCESS);
             } else {
-                KibanaLogFields.tag(CALL_STATUS, FAILURE);
+                EcsFields.tag(CALL_STATUS, FAILURE);
             }
 
             log.info(
@@ -234,7 +234,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
                 );
             }
         } finally {
-            KibanaLogFields.clear(
+            EcsFields.clear(
                 LOG_TYPE,
                 CALL_RESPONSE_SIZE,
                 CALL_RESPONSE_HEADERS,
@@ -243,11 +243,11 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
         }
     }
 
-    private static void addBodyTag(final boolean contentTypeCanBeLogged, final KibanaLogFieldNames tag, final String responseBody) {
+    private static void addBodyTag(final boolean contentTypeCanBeLogged, final EcsFieldNames tag, final String responseBody) {
         if (contentTypeCanBeLogged) {
-            KibanaLogFields.tag(tag, responseBody);
+            EcsFields.tag(tag, responseBody);
         } else {
-            KibanaLogFields.tag(tag, "invalid mime type for logging");
+            EcsFields.tag(tag, "invalid mime type for logging");
         }
     }
 

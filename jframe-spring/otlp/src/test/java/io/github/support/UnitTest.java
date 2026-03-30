@@ -1,6 +1,6 @@
 package io.github.support;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -15,7 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.*;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.when;
 
@@ -56,7 +56,7 @@ public class UnitTest {
 
     @AfterEach
     public void tearDown() {
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     protected ClientHttpRequest aMockedClientHttpRequest() {
@@ -74,10 +74,10 @@ public class UnitTest {
         return REQUEST_BODY_STRING.getBytes();
     }
 
-    protected void setupKibanaFields() {
-        KibanaLogFields.tag(TX_ID, TEST_TX_ID);
-        KibanaLogFields.tag(REQUEST_ID, TEST_REQUEST_ID);
-        KibanaLogFields.tag(TRACE_ID, TEST_TRACE_ID);
+    protected void setupEcsFields() {
+        EcsFields.tag(TX_ID, TEST_TX_ID);
+        EcsFields.tag(REQUEST_ID, TEST_REQUEST_ID);
+        EcsFields.tag(TRACE_ID, TEST_TRACE_ID);
     }
 
     protected void setFieldValue(final Object target, final String fieldName, final Object value) {

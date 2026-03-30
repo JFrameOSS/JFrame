@@ -1,7 +1,7 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.AbstractGenericFilter;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.RequestId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_ID;
 import static java.util.UUID.randomUUID;
 
 /**
@@ -32,9 +32,9 @@ public class RequestIdFilter extends AbstractGenericFilter {
         final UUID uuid = randomUUID();
 
         RequestId.set(uuid);
-        KibanaLogFields.tag(REQUEST_ID, RequestId.get());
+        EcsFields.tag(REQUEST_ID, RequestId.get());
 
-        log.debug("Set '{}' with value '{};.", REQUEST_ID.getLogName(), uuid);
+        log.debug("Set '{}' with value '{};.", REQUEST_ID.getKey(), uuid);
 
         if (!response.containsHeader(headerName)) {
             response.addHeader(headerName, RequestId.get());

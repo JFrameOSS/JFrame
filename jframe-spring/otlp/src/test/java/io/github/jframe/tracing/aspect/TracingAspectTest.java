@@ -18,15 +18,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ERROR_MESSAGE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ERROR_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -70,7 +68,7 @@ class TracingAspectTest extends UnitTest {
     public void setUp() {
         tracingAspect = new TracingAspect(tracer, openTelemetryProperties);
         setupSpanBuilderMocks();
-        setupKibanaFields();
+        setupEcsFields();
     }
 
     @Test
@@ -140,9 +138,8 @@ class TracingAspectTest extends UnitTest {
         assertThrows(RuntimeException.class, () -> tracingAspect.traceClass(joinPoint));
 
         // And: Error attributes are set on span
-        verify(span).setAttribute(ERROR, true);
-        verify(span).setAttribute(ERROR_TYPE, "RuntimeException");
-        verify(span).setAttribute(ERROR_MESSAGE, "Payment failed");
+        verify(span).setAttribute(SPAN_ERROR_TYPE.getKey(), "RuntimeException");
+        verify(span).setAttribute(SPAN_ERROR_MESSAGE.getKey(), "Payment failed");
         verify(span).setStatus(StatusCode.ERROR);
 
         // And: Span is always ended
@@ -164,7 +161,7 @@ class TracingAspectTest extends UnitTest {
         assertThrows(NullPointerException.class, () -> tracingAspect.traceClass(joinPoint));
 
         // And: Empty string is used for error message (not null)
-        verify(span).setAttribute(ERROR_MESSAGE, "");
+        verify(span).setAttribute(SPAN_ERROR_MESSAGE.getKey(), "");
     }
 
     @Test
@@ -224,7 +221,6 @@ class TracingAspectTest extends UnitTest {
     private void setupSpanBuilderMocks() {
         lenient().when(tracer.spanBuilder(anyString())).thenReturn(spanBuilder);
         lenient().when(spanBuilder.setAttribute(anyString(), anyString())).thenReturn(spanBuilder);
-        lenient().when(spanBuilder.setAttribute(eq(ERROR), eq(true))).thenReturn(spanBuilder);
         lenient().when(spanBuilder.startSpan()).thenReturn(span);
         lenient().when(span.makeCurrent()).thenReturn(scope);
         lenient().when(span.getSpanContext()).thenReturn(spanContext);

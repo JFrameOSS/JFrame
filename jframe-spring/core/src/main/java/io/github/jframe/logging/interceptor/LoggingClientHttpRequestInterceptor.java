@@ -1,6 +1,6 @@
 package io.github.jframe.logging.interceptor;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.logger.RequestResponseLogger;
 import io.github.jframe.logging.wrapper.BufferedClientHttpResponse;
 import io.github.jframe.util.HttpRequestLogging;
@@ -16,11 +16,11 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 
-import static io.github.jframe.logging.kibana.KibanaLogCallResultTypes.FAILURE;
-import static io.github.jframe.logging.kibana.KibanaLogCallResultTypes.TIMEOUT;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.CALL_STATUS;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.LOG_TYPE;
-import static io.github.jframe.logging.kibana.KibanaLogTypeNames.CALL_END;
+import static io.github.jframe.logging.ecs.CallResultTypes.FAILURE;
+import static io.github.jframe.logging.ecs.CallResultTypes.TIMEOUT;
+import static io.github.jframe.logging.ecs.EcsFieldNames.CALL_STATUS;
+import static io.github.jframe.logging.ecs.EcsFieldNames.LOG_TYPE;
+import static io.github.jframe.logging.ecs.LogTypeNames.CALL_END;
 
 /**
  * A logging client http request interceptor.
@@ -49,17 +49,17 @@ public class LoggingClientHttpRequestInterceptor implements ClientHttpRequestInt
             }
             return bufferedResponse;
         } catch (final IOException exception) {
-            KibanaLogFields.tag(CALL_STATUS, TIMEOUT);
-            KibanaLogFields.tag(LOG_TYPE, CALL_END);
+            EcsFields.tag(CALL_STATUS, TIMEOUT);
+            EcsFields.tag(LOG_TYPE, CALL_END);
             log.info("Got IO exception during call, most likely a timeout from backend.", exception);
             throw exception;
         } catch (final Exception exception) {
-            KibanaLogFields.tag(CALL_STATUS, FAILURE);
-            KibanaLogFields.tag(LOG_TYPE, CALL_END);
+            EcsFields.tag(CALL_STATUS, FAILURE);
+            EcsFields.tag(LOG_TYPE, CALL_END);
             log.info("Got exception during call, most likely a configuration issue.", exception);
             throw exception;
         } finally {
-            KibanaLogFields.clear(CALL_STATUS, LOG_TYPE);
+            EcsFields.clear(CALL_STATUS, LOG_TYPE);
         }
     }
 }

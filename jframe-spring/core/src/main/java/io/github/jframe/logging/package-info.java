@@ -10,7 +10,7 @@
  * <li><strong>Sensitive Data Masking</strong> - Automatic masking of passwords and secrets</li>
  * <li><strong>Conditional Logging</strong> - Content type and path-based filtering</li>
  * <li><strong>MDC Integration</strong> - SLF4J MDC population for structured logging</li>
- * <li><strong>Kibana/ELK Support</strong> - Pre-configured fields for log aggregation platforms</li>
+ * <li><strong>ECS/ELK Support</strong> - Pre-configured fields for log aggregation platforms</li>
  * </ul>
  *
  * <h2>Architecture Overview</h2>
@@ -41,7 +41,7 @@
  * <li><strong>Format Support</strong> - Extensible masker strategy for different data formats</li>
  * </ul>
  *
- * <h3>4. Structured Logging ({@link io.github.jframe.logging.kibana})</h3>
+ * <h3>4. Structured Logging ({@link io.github.jframe.logging.ecs})</h3>
  * MDC-based structured logging for log aggregation platforms:
  * <ul>
  * <li>Request ID, Transaction ID, User ID</li>
@@ -105,7 +105,7 @@
  * <h3>Accessing Correlation IDs in Application Code</h3>
  * <pre>
  * import org.slf4j.MDC;
- * import static io.github.jframe.logging.kibana.KibanaLogFields.*;
+ * import static io.github.jframe.logging.ecs.EcsFields.*;
  *
  * public class OrderService {
  * public void processOrder(Order order) {
@@ -221,7 +221,7 @@
  * <li><strong>{@link io.github.jframe.logging.filter.type}</strong> - Concrete filter implementations</li>
  * <li><strong>{@link io.github.jframe.logging.voter}</strong> - Conditional logging voters</li>
  * <li><strong>{@link io.github.jframe.logging.masker}</strong> - Sensitive data masking strategies</li>
- * <li><strong>{@link io.github.jframe.logging.kibana}</strong> - Structured logging field constants</li>
+ * <li><strong>{@link io.github.jframe.logging.ecs}</strong> - Structured logging field constants</li>
  * <li><strong>{@link io.github.jframe.logging.wrapper}</strong> - Request/response wrapper classes</li>
  * <li><strong>{@link io.github.jframe.logging.model}</strong> - Configuration models</li>
  * </ul>

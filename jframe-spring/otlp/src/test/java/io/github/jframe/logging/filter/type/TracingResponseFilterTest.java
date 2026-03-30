@@ -1,6 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
@@ -15,8 +15,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.SPAN_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TRACE_ID;
 import static io.github.jframe.util.constants.Constants.Headers.SPAN_ID_HEADER;
 import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
  * <p>Verifies the TracingResponseFilter functionality including:
  * <ul>
  * <li>Adding trace ID and span ID to response headers</li>
- * <li>Populating MDC (KibanaLogFields) with trace and span IDs</li>
+ * <li>Populating MDC (EcsFields) with trace and span IDs</li>
  * <li>Handling valid and invalid span contexts</li>
  * <li>Preventing duplicate headers</li>
  * <li>Filter chain execution</li>
@@ -83,8 +83,8 @@ class TracingResponseFilterTest extends UnitTest {
         final String[] capturedTraceId = new String[1];
         final String[] capturedSpanId = new String[1];
         doAnswer(invocation -> {
-            capturedTraceId[0] = KibanaLogFields.get(TRACE_ID);
-            capturedSpanId[0] = KibanaLogFields.get(SPAN_ID);
+            capturedTraceId[0] = EcsFields.get(TRACE_ID);
+            capturedSpanId[0] = EcsFields.get(SPAN_ID);
             return null;
         }).when(filterChain).doFilter(request, response);
 
@@ -223,8 +223,8 @@ class TracingResponseFilterTest extends UnitTest {
             filter.doFilterInternal(request, response, filterChain);
 
             // Then: MDC is cleaned up after execution
-            assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
-            assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
+            assertThat(EcsFields.get(TRACE_ID), is(nullValue()));
+            assertThat(EcsFields.get(SPAN_ID), is(nullValue()));
         }
     }
 
@@ -254,8 +254,8 @@ class TracingResponseFilterTest extends UnitTest {
             }
 
             // Then: MDC is still cleaned up after exception
-            assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
-            assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
+            assertThat(EcsFields.get(TRACE_ID), is(nullValue()));
+            assertThat(EcsFields.get(SPAN_ID), is(nullValue()));
         }
     }
 

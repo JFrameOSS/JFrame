@@ -2,7 +2,7 @@ package io.github.jframe.tracing.enricher;
 
 import io.github.jframe.exception.enricher.ErrorResponseEnricher;
 import io.github.jframe.exception.resource.ErrorResponseResource;
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.security.QuarkusAuthenticationUtil;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
@@ -11,20 +11,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_CONTENT_LENGTH;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_CONTENT_TYPE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_METHOD;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_QUERY;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_STATUS_CODE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_URI;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 
 /**
  * CDI enricher that augments error responses with OpenTelemetry trace and span IDs,
@@ -81,18 +68,17 @@ public class TracingEnricher implements ErrorResponseEnricher {
         resource.setSpanId(currentSpan.getSpanContext().getSpanId());
 
         currentSpan.setStatus(StatusCode.ERROR);
-        currentSpan.setAttribute(ERROR, true);
-        currentSpan.setAttribute(ERROR_TYPE, throwable.getClass().getSimpleName());
-        currentSpan.setAttribute(ERROR_MESSAGE, throwable.getMessage());
-        currentSpan.setAttribute(HTTP_REMOTE_USER, authUtil.getAuthenticatedSubject());
-        currentSpan.setAttribute(HTTP_TRANSACTION_ID, KibanaLogFields.get(TX_ID));
-        currentSpan.setAttribute(HTTP_REQUEST_ID, KibanaLogFields.get(REQUEST_ID));
-        currentSpan.setAttribute(HTTP_URI, requestContext.getUriInfo().getRequestUri().getPath());
-        currentSpan.setAttribute(HTTP_QUERY, requestContext.getUriInfo().getRequestUri().getQuery());
-        currentSpan.setAttribute(HTTP_METHOD, requestContext.getMethod());
-        currentSpan.setAttribute(HTTP_STATUS_CODE, statusCode);
+        currentSpan.setAttribute(SPAN_ERROR_TYPE.getKey(), throwable.getClass().getSimpleName());
+        currentSpan.setAttribute(SPAN_ERROR_MESSAGE.getKey(), throwable.getMessage());
+        currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), authUtil.getAuthenticatedSubject());
+        currentSpan.setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID));
+        currentSpan.setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID));
+        currentSpan.setAttribute(SPAN_HTTP_URI.getKey(), requestContext.getUriInfo().getRequestUri().getPath());
+        currentSpan.setAttribute(SPAN_HTTP_QUERY.getKey(), requestContext.getUriInfo().getRequestUri().getQuery());
+        currentSpan.setAttribute(SPAN_HTTP_METHOD.getKey(), requestContext.getMethod());
+        currentSpan.setAttribute(SPAN_HTTP_STATUS_CODE.getKey(), statusCode);
         final jakarta.ws.rs.core.MediaType mediaType = requestContext.getMediaType();
-        currentSpan.setAttribute(HTTP_CONTENT_TYPE, mediaType.getType() + "/" + mediaType.getSubtype());
-        currentSpan.setAttribute(HTTP_CONTENT_LENGTH, requestContext.getLength());
+        currentSpan.setAttribute(SPAN_HTTP_CONTENT_TYPE.getKey(), mediaType.getType() + "/" + mediaType.getSubtype());
+        currentSpan.setAttribute(SPAN_HTTP_CONTENT_LENGTH.getKey(), requestContext.getLength());
     }
 }

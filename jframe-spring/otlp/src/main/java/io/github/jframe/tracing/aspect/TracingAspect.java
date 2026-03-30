@@ -1,7 +1,7 @@
 package io.github.jframe.tracing.aspect;
 
 import io.github.jframe.autoconfigure.properties.OpenTelemetryProperties;
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.tracing.MethodExclusionRules;
 import io.github.jframe.tracing.SpanNamingUtil;
 import io.opentelemetry.api.trace.Span;
@@ -17,17 +17,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_MESSAGE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.ERROR_TYPE;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REMOTE_USER;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_REQUEST_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.HTTP_TRANSACTION_ID;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_METHOD;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.SERVICE_NAME;
 
 /**
  * Aspect for tracing method execution using Micrometer Tracing. This aspect will create a span for each method annotated with @Traced.
@@ -81,11 +72,11 @@ public class TracingAspect {
 
         final String spanName = SpanNamingUtil.resolveSpanName(className, methodName, null);
         final Span span = tracer.spanBuilder(spanName)
-            .setAttribute(SERVICE_NAME, className)
-            .setAttribute(SERVICE_METHOD, methodName)
-            .setAttribute(HTTP_REMOTE_USER, getAuthenticatedSubject())
-            .setAttribute(HTTP_TRANSACTION_ID, KibanaLogFields.get(TX_ID))
-            .setAttribute(HTTP_REQUEST_ID, KibanaLogFields.get(REQUEST_ID))
+            .setAttribute(SPAN_SERVICE_NAME.getKey(), className)
+            .setAttribute(SPAN_SERVICE_METHOD.getKey(), methodName)
+            .setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), getAuthenticatedSubject())
+            .setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID))
+            .setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID))
             .startSpan();
 
         final long startTime = System.nanoTime();
@@ -103,9 +94,8 @@ public class TracingAspect {
             return result;
         } catch (final Throwable throwable) {
             final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            span.setAttribute(ERROR, true);
-            span.setAttribute(ERROR_TYPE, throwable.getClass().getSimpleName());
-            span.setAttribute(ERROR_MESSAGE, throwable.getMessage() != null ? throwable.getMessage() : "");
+            span.setAttribute(SPAN_ERROR_TYPE.getKey(), throwable.getClass().getSimpleName());
+            span.setAttribute(SPAN_ERROR_MESSAGE.getKey(), throwable.getMessage() != null ? throwable.getMessage() : "");
             span.setStatus(StatusCode.ERROR);
             log.error(
                 "[jframe-otlp] Failed {} in {}ms | error={} message={}",

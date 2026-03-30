@@ -1,6 +1,6 @@
 package io.github.jframe.logging.logger;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.voter.MediaTypeVoter;
 import io.github.jframe.logging.wrapper.CachingRequestContext;
 import io.github.jframe.logging.wrapper.CachingResponseContext;
@@ -16,15 +16,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.LOG_TYPE;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_BODY;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_HEADERS;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_METHOD;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_SIZE;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_URI;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_RESPONSE_BODY;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_RESPONSE_HEADERS;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_RESPONSE_SIZE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.LOG_TYPE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_BODY;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_HEADERS;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_METHOD;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_SIZE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_URI;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_RESPONSE_BODY;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_RESPONSE_HEADERS;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_RESPONSE_SIZE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link DefaultRequestResponseLogger}.
  *
- * <p>Verifies MDC/KibanaLogFields population during request and response logging, correct
+ * <p>Verifies MDC/EcsFields population during request and response logging, correct
  * cleanup of MDC fields in the {@code finally} block, content-type filtering decisions,
  * and correct delegation to the headers/body/debug logger collaborators.
  *
@@ -101,7 +101,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
     @AfterEach
     public void tearDown() {
         // Always clean MDC between tests to prevent field bleed
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     // ---------------------------------------------------------------------------
@@ -216,7 +216,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logRequest(cachingRequest);
 
         // Then: LOG_TYPE is cleared (finally block ran)
-        assertThat(KibanaLogFields.get(LOG_TYPE), is(nullValue()));
+        assertThat(EcsFields.get(LOG_TYPE), is(nullValue()));
     }
 
     @Test
@@ -234,7 +234,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logRequest(cachingRequest);
 
         // Then: TX_REQUEST_METHOD is cleared in the finally block
-        assertThat(KibanaLogFields.get(TX_REQUEST_METHOD), is(nullValue()));
+        assertThat(EcsFields.get(TX_REQUEST_METHOD), is(nullValue()));
     }
 
     @Test
@@ -252,7 +252,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logRequest(cachingRequest);
 
         // Then: TX_REQUEST_SIZE is cleared after logging
-        assertThat(KibanaLogFields.get(TX_REQUEST_SIZE), is(nullValue()));
+        assertThat(EcsFields.get(TX_REQUEST_SIZE), is(nullValue()));
     }
 
     @Test
@@ -270,7 +270,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logRequest(cachingRequest);
 
         // Then: TX_REQUEST_HEADERS is cleared after logging
-        assertThat(KibanaLogFields.get(TX_REQUEST_HEADERS), is(nullValue()));
+        assertThat(EcsFields.get(TX_REQUEST_HEADERS), is(nullValue()));
     }
 
     @Test
@@ -288,7 +288,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logRequest(cachingRequest);
 
         // Then: TX_REQUEST_BODY is cleared after logging
-        assertThat(KibanaLogFields.get(TX_REQUEST_BODY), is(nullValue()));
+        assertThat(EcsFields.get(TX_REQUEST_BODY), is(nullValue()));
     }
 
     @Test
@@ -306,7 +306,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logRequest(cachingRequest);
 
         // Then: TX_REQUEST_URI is still set (NOT cleared) so it is available for response logging
-        assertThat(KibanaLogFields.get(TX_REQUEST_URI), is(notNullValue()));
+        assertThat(EcsFields.get(TX_REQUEST_URI), is(notNullValue()));
     }
 
     // ---------------------------------------------------------------------------
@@ -394,7 +394,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logResponse(requestContext, cachingResponse);
 
         // Then: LOG_TYPE is cleared in the finally block
-        assertThat(KibanaLogFields.get(LOG_TYPE), is(nullValue()));
+        assertThat(EcsFields.get(LOG_TYPE), is(nullValue()));
     }
 
     @Test
@@ -414,7 +414,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logResponse(requestContext, cachingResponse);
 
         // Then: TX_RESPONSE_SIZE is cleared in the finally block
-        assertThat(KibanaLogFields.get(TX_RESPONSE_SIZE), is(nullValue()));
+        assertThat(EcsFields.get(TX_RESPONSE_SIZE), is(nullValue()));
     }
 
     @Test
@@ -434,7 +434,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logResponse(requestContext, cachingResponse);
 
         // Then: TX_RESPONSE_HEADERS is cleared in the finally block
-        assertThat(KibanaLogFields.get(TX_RESPONSE_HEADERS), is(nullValue()));
+        assertThat(EcsFields.get(TX_RESPONSE_HEADERS), is(nullValue()));
     }
 
     @Test
@@ -454,7 +454,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logResponse(requestContext, cachingResponse);
 
         // Then: TX_RESPONSE_BODY is cleared in the finally block
-        assertThat(KibanaLogFields.get(TX_RESPONSE_BODY), is(nullValue()));
+        assertThat(EcsFields.get(TX_RESPONSE_BODY), is(nullValue()));
     }
 
     // ---------------------------------------------------------------------------
@@ -539,7 +539,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logResponse(requestContext, cachingResponse);
 
         // Then: Logging completed and MDC was cleaned up
-        assertThat(KibanaLogFields.get(LOG_TYPE), is(nullValue()));
+        assertThat(EcsFields.get(LOG_TYPE), is(nullValue()));
     }
 
     @Test
@@ -559,7 +559,7 @@ public class DefaultRequestResponseLoggerTest extends UnitTest {
         logger.logResponse(requestContext, cachingResponse);
 
         // Then: Logging completed and MDC was cleaned up
-        assertThat(KibanaLogFields.get(LOG_TYPE), is(nullValue()));
+        assertThat(EcsFields.get(LOG_TYPE), is(nullValue()));
     }
 
     // ---------------------------------------------------------------------------

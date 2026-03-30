@@ -1,8 +1,8 @@
 package io.github.jframe.logging.logger;
 
-import io.github.jframe.logging.kibana.KibanaLogFieldNames;
-import io.github.jframe.logging.kibana.KibanaLogFields;
-import io.github.jframe.logging.kibana.KibanaLogTypeNames;
+import io.github.jframe.logging.ecs.EcsFieldNames;
+import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.logging.ecs.LogTypeNames;
 import io.github.jframe.logging.voter.MediaTypeVoter;
 import io.github.jframe.logging.wrapper.CachingRequestContext;
 import io.github.jframe.logging.wrapper.CachingResponseContext;
@@ -14,22 +14,22 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.HTTP_STATUS;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.LOG_TYPE;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_BODY;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_HEADERS;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_METHOD;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_SIZE;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_REQUEST_URI;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_RESPONSE_BODY;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_RESPONSE_HEADERS;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_RESPONSE_SIZE;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_STATUS;
+import static io.github.jframe.logging.ecs.EcsFieldNames.HTTP_STATUS;
+import static io.github.jframe.logging.ecs.EcsFieldNames.LOG_TYPE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_BODY;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_HEADERS;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_METHOD;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_SIZE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_REQUEST_URI;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_RESPONSE_BODY;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_RESPONSE_HEADERS;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_RESPONSE_SIZE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_STATUS;
 
 /**
  * Default JAX-RS implementation of {@link RequestResponseLogger}.
  *
- * <p>Logs incoming requests and outgoing responses with MDC/Kibana field population,
+ * <p>Logs incoming requests and outgoing responses with MDC/ECS field population,
  * content-type filtering, password masking, and structured debug output.
  */
 @RequiredArgsConstructor
@@ -64,11 +64,11 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
         try {
             final String requestHeaders = headersLogger.getRequestHeaders(request);
 
-            KibanaLogFields.tag(LOG_TYPE, KibanaLogTypeNames.REQUEST_BODY);
-            KibanaLogFields.tag(TX_REQUEST_METHOD, method);
-            KibanaLogFields.tag(TX_REQUEST_URI, requestUri);
-            KibanaLogFields.tag(TX_REQUEST_SIZE, contentLength);
-            KibanaLogFields.tag(TX_REQUEST_HEADERS, requestHeaders);
+            EcsFields.tag(LOG_TYPE, LogTypeNames.REQUEST_BODY);
+            EcsFields.tag(TX_REQUEST_METHOD, method);
+            EcsFields.tag(TX_REQUEST_URI, requestUri);
+            EcsFields.tag(TX_REQUEST_SIZE, contentLength);
+            EcsFields.tag(TX_REQUEST_HEADERS, requestHeaders);
 
             final boolean contentTypeCanBeLogged = contentTypeCanBeLogged(contentType);
 
@@ -93,30 +93,30 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
                 );
             }
         } finally {
-            KibanaLogFields.clear(LOG_TYPE, TX_REQUEST_METHOD, TX_REQUEST_SIZE, TX_REQUEST_HEADERS, TX_REQUEST_BODY);
+            EcsFields.clear(LOG_TYPE, TX_REQUEST_METHOD, TX_REQUEST_SIZE, TX_REQUEST_HEADERS, TX_REQUEST_BODY);
         }
     }
 
     @Override
     public void logResponse(final ContainerRequestContext request, final CachingResponseContext response) {
         try {
-            KibanaLogFields.tag(LOG_TYPE, KibanaLogTypeNames.RESPONSE_BODY);
+            EcsFields.tag(LOG_TYPE, LogTypeNames.RESPONSE_BODY);
 
             final int status = response.getStatus();
             final Response.Status statusEnum = Response.Status.fromStatusCode(status);
             final String reasonPhrase = statusEnum != null ? statusEnum.getReasonPhrase() : "Unknown";
 
-            KibanaLogFields.tag(HTTP_STATUS, status);
+            EcsFields.tag(HTTP_STATUS, status);
 
-            if (KibanaLogFields.get(TX_STATUS) == null) {
-                KibanaLogFields.tag(TX_STATUS, String.valueOf(status));
+            if (EcsFields.get(TX_STATUS) == null) {
+                EcsFields.tag(TX_STATUS, String.valueOf(status));
             }
 
             final int contentLength = response.getContentLength();
-            KibanaLogFields.tag(TX_RESPONSE_SIZE, contentLength);
+            EcsFields.tag(TX_RESPONSE_SIZE, contentLength);
 
             final String responseHeaders = headersLogger.getResponseHeaders(response);
-            KibanaLogFields.tag(TX_RESPONSE_HEADERS, responseHeaders);
+            EcsFields.tag(TX_RESPONSE_HEADERS, responseHeaders);
 
             final MediaType mediaType = response.getMediaType();
             final String contentType = mediaTypeToString(mediaType);
@@ -144,7 +144,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
                 );
             }
         } finally {
-            KibanaLogFields.clear(LOG_TYPE, TX_RESPONSE_SIZE, TX_RESPONSE_HEADERS, TX_RESPONSE_BODY);
+            EcsFields.clear(LOG_TYPE, TX_RESPONSE_SIZE, TX_RESPONSE_HEADERS, TX_RESPONSE_BODY);
         }
     }
 
@@ -164,12 +164,12 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
 
     private static void addBodyTag(
         final boolean contentTypeCanBeLogged,
-        final KibanaLogFieldNames tag,
+        final EcsFieldNames tag,
         final String body) {
         if (contentTypeCanBeLogged) {
-            KibanaLogFields.tag(tag, body);
+            EcsFields.tag(tag, body);
         } else {
-            KibanaLogFields.tag(tag, "invalid mime type for logging");
+            EcsFields.tag(tag, "invalid mime type for logging");
         }
     }
 }

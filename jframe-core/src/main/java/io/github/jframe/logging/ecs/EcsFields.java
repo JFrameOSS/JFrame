@@ -1,4 +1,4 @@
-package io.github.jframe.logging.kibana;
+package io.github.jframe.logging.ecs;
 
 import lombok.experimental.UtilityClass;
 
@@ -12,71 +12,71 @@ import static java.util.stream.Collectors.joining;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
- * Class that holds the extra fields used for Kibana logging.
+ * Class that holds the extra fields used for ECS logging.
  *
- * <p>Log lines for Kibana will contain all fields set, until the log fields are cleared by invoking
- * {@link KibanaLogFields#clear()}.
+ * <p>Log lines for structured will contain all fields set, until the log fields are cleared by invoking
+ * {@link EcsFields#clear()}.
  */
 @UtilityClass
-public class KibanaLogFields {
+public class EcsFields {
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}.
+     * Sets the ECS log field {@code field} to the {@code value}.
      *
      * @param field The field to set.
      * @param value The value to set.
      * @return The field, set.
      */
-    public static KibanaLogField tag(final KibanaLogField field, final Enum<?> value) {
+    public static EcsField tag(final EcsField field, final Enum<?> value) {
         return tag(field, value.toString());
     }
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}.
+     * Sets the ECS log field {@code field} to the {@code value}.
      *
      * @param field The field to set.
      * @param value The value to set.
      * @return The field, set.
      */
-    public static KibanaLogField tag(final KibanaLogField field, final int value) {
+    public static EcsField tag(final EcsField field, final int value) {
         return tag(field, Integer.toString(value));
     }
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}.
+     * Sets the ECS log field {@code field} to the {@code value}.
      *
-     * @param field the Kibana log field
+     * @param field the ECS log field
      * @param value the long value
      * @return the tagged field
      */
-    public static KibanaLogField tag(final KibanaLogField field, final long value) {
+    public static EcsField tag(final EcsField field, final long value) {
         return tag(field, String.valueOf(value));
     }
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}.
+     * Sets the ECS log field {@code field} to the {@code value}.
      *
      * @param field The field to set.
      * @param value The value to set.
      * @return The field, set.
      */
-    public static KibanaLogField tag(final KibanaLogField field, final String value) {
+    public static EcsField tag(final EcsField field, final String value) {
         if (isBlank(value)) {
             clear(field);
             return field;
         }
-        MDC.put(field.getLogName(), value);
+        MDC.put(field.getKey(), value);
         return field;
     }
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}.
+     * Sets the ECS log field {@code field} to the {@code value}.
      *
      * @param field  The field to set.
      * @param values The values to set.
      * @return The field, set.
      */
-    public static KibanaLogField tag(final KibanaLogField field, final Collection<String> values) {
+    public static EcsField tag(final EcsField field, final Collection<String> values) {
         if (values == null || values.isEmpty()) {
             return tag(field, (String) null);
         }
@@ -88,59 +88,59 @@ public class KibanaLogFields {
     }
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}, returns an auto closeable.
+     * Sets the ECS log field {@code field} to the {@code value}, returns an auto closeable.
      *
      * @param field The field to set.
      * @param value The value to set.
      * @return a closable field.
      */
-    public static AutoCloseableKibanaLogField tagCloseable(final KibanaLogField field, final Enum<?> value) {
+    public static AutoCloseableEcsField tagCloseable(final EcsField field, final Enum<?> value) {
         return tagCloseable(field, value.toString());
     }
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}, returns an auto closeable.
+     * Sets the ECS log field {@code field} to the {@code value}, returns an auto closeable.
      *
      * @param field The field to set.
      * @param value The value to set.
      * @return a closable field.
      */
-    public static AutoCloseableKibanaLogField tagCloseable(final KibanaLogField field, final int value) {
+    public static AutoCloseableEcsField tagCloseable(final EcsField field, final int value) {
         return tagCloseable(field, Integer.toString(value));
     }
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}, returns an auto closeable.
+     * Sets the ECS log field {@code field} to the {@code value}, returns an auto closeable.
      *
-     * @param field the Kibana log field
+     * @param field the ECS log field
      * @param value the long value
      * @return the auto-closeable tagged field
      */
-    public static AutoCloseableKibanaLogField tagCloseable(final KibanaLogField field, final long value) {
+    public static AutoCloseableEcsField tagCloseable(final EcsField field, final long value) {
         return tagCloseable(field, String.valueOf(value));
     }
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}, returns an auto closeable.
+     * Sets the ECS log field {@code field} to the {@code value}, returns an auto closeable.
      *
      * @param field The field to set.
      * @param value The value to set.
      * @return a closable field.
      */
-    public static AutoCloseableKibanaLogField tagCloseable(final KibanaLogField field, final String value) {
-        return new AutoCloseableKibanaLogFieldImpl(tag(field, value));
+    public static AutoCloseableEcsField tagCloseable(final EcsField field, final String value) {
+        return new AutoCloseableEcsFieldImpl(tag(field, value));
     }
 
     /**
-     * Sets the Kibana log field {@code field} to the {@code value}, returns an auto closeable.
+     * Sets the ECS log field {@code field} to the {@code value}, returns an auto closeable.
      *
      * @param field  The field to set.
      * @param values The value to set.
      * @return a closable field.
      */
-    public static AutoCloseableKibanaLogField tagCloseable(
-        final KibanaLogField field, final Collection<String> values) {
-        return new AutoCloseableKibanaLogFieldImpl(tag(field, values));
+    public static AutoCloseableEcsField tagCloseable(
+        final EcsField field, final Collection<String> values) {
+        return new AutoCloseableEcsFieldImpl(tag(field, values));
     }
 
     /**
@@ -149,7 +149,7 @@ public class KibanaLogFields {
      * @param field The field to retrieve the value for.
      * @return The fields value, possibly {@code null}.
      */
-    public static String get(final KibanaLogField field) {
+    public static String get(final EcsField field) {
         return getOrDefault(field, null);
     }
 
@@ -160,8 +160,8 @@ public class KibanaLogFields {
      * @param defaultValue The value if there is no value set.
      * @return The field's value or the default.
      */
-    public static String getOrDefault(final KibanaLogField field, final String defaultValue) {
-        return StringUtils.defaultIfEmpty(MDC.get(field.getLogName()), defaultValue);
+    public static String getOrDefault(final EcsField field, final String defaultValue) {
+        return StringUtils.defaultIfEmpty(MDC.get(field.getKey()), defaultValue);
     }
 
     /**
@@ -169,8 +169,8 @@ public class KibanaLogFields {
      *
      * @param field The field to remove.
      */
-    public static void clear(final KibanaLogField field) {
-        MDC.remove(field.getLogName());
+    public static void clear(final EcsField field) {
+        MDC.remove(field.getKey());
     }
 
     /**
@@ -178,9 +178,9 @@ public class KibanaLogFields {
      *
      * @param fields The fields to remove the values for.
      */
-    public static void clear(final KibanaLogField... fields) {
-        for (final KibanaLogField field : fields) {
-            MDC.remove(field.getLogName());
+    public static void clear(final EcsField... fields) {
+        for (final EcsField field : fields) {
+            MDC.remove(field.getKey());
         }
     }
 
@@ -200,7 +200,7 @@ public class KibanaLogFields {
         if (contextMap != null) {
             contextMap.forEach(
                 (key, value) -> {
-                    if (!key.equals(KibanaLogFieldNames.LOG_TYPE.getLogName())) {
+                    if (!key.equals(EcsFieldNames.LOG_TYPE.getKey())) {
                         result.append(' ').append(key).append("=\"").append(value).append('"');
                     }
                 }
@@ -211,26 +211,26 @@ public class KibanaLogFields {
     }
 
     /**
-     * Update log fields based on the {@code KibanaLogContext}.
+     * Update log fields based on the {@code EcsLogContext}.
      *
-     * <p>See {@link KibanaLogFields#getContext()}.
+     * <p>See {@link EcsFields#getMdcContext()}.
      *
      * @param logContext The context to copy.
      */
-    public static void populateFromContext(final KibanaLogContext logContext) {
+    public static void populateFromContext(final MdcLogContext logContext) {
         if (nonNull(logContext)) {
             MDC.setContextMap(logContext.getContextMap());
         }
     }
 
     /**
-     * Create a new log context for the current thread's kibana log fields.
+     * Create a new log context for the current thread's ECS log fields.
      *
-     * <p>See {@link KibanaLogContext#registerKibanaLogFieldsInThisThread()}.
+     * <p>See {@link MdcLogContext#registerEcsFieldsInThisThread()}.
      *
      * @return a log context to use in another thread.
      */
-    public static KibanaLogContext getContext() {
-        return new KibanaLogContext();
+    public static MdcLogContext getMdcContext() {
+        return new MdcLogContext();
     }
 }

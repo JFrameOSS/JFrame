@@ -1,7 +1,7 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.AbstractGenericFilter;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +13,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.SPAN_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TRACE_ID;
 
 /**
  * A filter that adds OpenTelemetry trace and span IDs to the response headers and populates
@@ -27,7 +27,7 @@ import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
  * </ul>
  *
  * <p>This enables seamless correlation between logs and distributed traces in observability platforms
- * like Kibana, Jaeger, and Zipkin.
+ * like Jaeger, and Zipkin.
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -48,11 +48,11 @@ public class TracingResponseFilter extends AbstractGenericFilter {
             if (spanContext.isValid()) {
                 final String traceId = spanContext.getTraceId();
                 addHeader(response, tracingHeaderName, traceId);
-                KibanaLogFields.tag(TRACE_ID, traceId);
+                EcsFields.tag(TRACE_ID, traceId);
 
                 final String spanId = spanContext.getSpanId();
                 addHeader(response, spanHeaderName, spanId);
-                KibanaLogFields.tag(SPAN_ID, spanId);
+                EcsFields.tag(SPAN_ID, spanId);
                 log.trace("Populated trace context: traceId='{}', spanId='{}'", traceId, spanId);
             }
         }
@@ -60,7 +60,7 @@ public class TracingResponseFilter extends AbstractGenericFilter {
         try {
             filterChain.doFilter(request, response);
         } finally {
-            KibanaLogFields.clear(TRACE_ID, SPAN_ID);
+            EcsFields.clear(TRACE_ID, SPAN_ID);
         }
     }
 

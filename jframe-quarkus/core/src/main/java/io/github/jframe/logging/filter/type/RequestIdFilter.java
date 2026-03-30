@@ -1,8 +1,8 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.filter.JFrameFilter;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.RequestId;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +17,7 @@ import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_ID;
 import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
 
 /**
@@ -50,7 +50,7 @@ public class RequestIdFilter implements ContainerRequestFilter, ContainerRespons
         }
         final UUID requestId = UUID.randomUUID();
         RequestId.set(requestId);
-        KibanaLogFields.tag(REQUEST_ID, RequestId.get());
+        EcsFields.tag(REQUEST_ID, RequestId.get());
     }
 
     @Override

@@ -1,7 +1,7 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
@@ -23,8 +23,8 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.SPAN_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TRACE_ID;
 import static io.github.jframe.util.constants.Constants.Headers.SPAN_ID_HEADER;
 import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
  * <ul>
  * <li>Trace/span ID extraction from OpenTelemetry {@link Span#current()} and population into MDC</li>
  * <li>Propagation of trace and span IDs as HTTP response headers (x-trace-id, x-span-id)</li>
- * <li>MDC cleanup via KibanaLogFields after the response phase (finally block)</li>
+ * <li>MDC cleanup via EcsFields after the response phase (finally block)</li>
  * <li>Graceful handling of invalid / noop span contexts (no headers, no exception)</li>
  * <li>Early-exit when the filter is disabled via {@link FilterConfig}</li>
  * <li>No duplication of headers already present on the response</li>
@@ -78,7 +78,7 @@ public class TracingResponseFilterTest extends UnitTest {
     @AfterEach
     public void tearDown() {
         // Prevent MDC pollution across tests
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     // ======================== FACTORY METHODS ========================
@@ -125,7 +125,7 @@ public class TracingResponseFilterTest extends UnitTest {
                 filter.filter(requestContext);
 
                 // Then: TRACE_ID is stored in MDC
-                final String traceId = KibanaLogFields.get(TRACE_ID);
+                final String traceId = EcsFields.get(TRACE_ID);
                 assertThat(traceId, is(TEST_TRACE_ID));
             }
         }
@@ -144,7 +144,7 @@ public class TracingResponseFilterTest extends UnitTest {
                 filter.filter(requestContext);
 
                 // Then: SPAN_ID is stored in MDC
-                final String spanId = KibanaLogFields.get(SPAN_ID);
+                final String spanId = EcsFields.get(SPAN_ID);
                 assertThat(spanId, is(TEST_SPAN_ID));
             }
         }
@@ -163,8 +163,8 @@ public class TracingResponseFilterTest extends UnitTest {
                 filter.filter(requestContext);
 
                 // Then: Both MDC fields are populated
-                assertThat(KibanaLogFields.get(TRACE_ID), is(TEST_TRACE_ID));
-                assertThat(KibanaLogFields.get(SPAN_ID), is(TEST_SPAN_ID));
+                assertThat(EcsFields.get(TRACE_ID), is(TEST_TRACE_ID));
+                assertThat(EcsFields.get(SPAN_ID), is(TEST_SPAN_ID));
             }
         }
     }
@@ -180,8 +180,8 @@ public class TracingResponseFilterTest extends UnitTest {
         @DisplayName("Should add x-trace-id header to response when MDC has TRACE_ID")
         public void shouldAddTraceIdHeaderToResponseWhenMdcHasTraceId() throws Exception {
             // Given: TRACE_ID and SPAN_ID are already populated in MDC (simulating request phase)
-            KibanaLogFields.tag(TRACE_ID, TEST_TRACE_ID);
-            KibanaLogFields.tag(SPAN_ID, TEST_SPAN_ID);
+            EcsFields.tag(TRACE_ID, TEST_TRACE_ID);
+            EcsFields.tag(SPAN_ID, TEST_SPAN_ID);
 
             final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
             final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
@@ -200,8 +200,8 @@ public class TracingResponseFilterTest extends UnitTest {
         @DisplayName("Should add x-span-id header to response when MDC has SPAN_ID")
         public void shouldAddSpanIdHeaderToResponseWhenMdcHasSpanId() throws Exception {
             // Given: TRACE_ID and SPAN_ID are already populated in MDC (simulating request phase)
-            KibanaLogFields.tag(TRACE_ID, TEST_TRACE_ID);
-            KibanaLogFields.tag(SPAN_ID, TEST_SPAN_ID);
+            EcsFields.tag(TRACE_ID, TEST_TRACE_ID);
+            EcsFields.tag(SPAN_ID, TEST_SPAN_ID);
 
             final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
             final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
@@ -264,8 +264,8 @@ public class TracingResponseFilterTest extends UnitTest {
                 filter.filter(requestContext);
 
                 // Then: MDC fields remain empty — no trace/span IDs set
-                assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
-                assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
+                assertThat(EcsFields.get(TRACE_ID), is(nullValue()));
+                assertThat(EcsFields.get(SPAN_ID), is(nullValue()));
             }
         }
 
@@ -354,8 +354,8 @@ public class TracingResponseFilterTest extends UnitTest {
                 filter.filter(requestContext);
 
                 // Then: MDC is not populated — filter was skipped
-                assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
-                assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
+                assertThat(EcsFields.get(TRACE_ID), is(nullValue()));
+                assertThat(EcsFields.get(SPAN_ID), is(nullValue()));
             }
         }
 
@@ -364,8 +364,8 @@ public class TracingResponseFilterTest extends UnitTest {
         public void shouldNotAddResponseHeadersWhenFilterIsDisabled() throws Exception {
             // Given: Filter is disabled via config and MDC has some values pre-set
             tracingEnabled = false;
-            KibanaLogFields.tag(TRACE_ID, TEST_TRACE_ID);
-            KibanaLogFields.tag(SPAN_ID, TEST_SPAN_ID);
+            EcsFields.tag(TRACE_ID, TEST_TRACE_ID);
+            EcsFields.tag(SPAN_ID, TEST_SPAN_ID);
 
             final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
             final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
@@ -409,8 +409,8 @@ public class TracingResponseFilterTest extends UnitTest {
         @DisplayName("Should clear TRACE_ID from MDC after response filter completes")
         public void shouldClearTraceIdFromMdcAfterResponseFilterCompletes() throws Exception {
             // Given: TRACE_ID and SPAN_ID are in MDC (set by the request phase)
-            KibanaLogFields.tag(TRACE_ID, TEST_TRACE_ID);
-            KibanaLogFields.tag(SPAN_ID, TEST_SPAN_ID);
+            EcsFields.tag(TRACE_ID, TEST_TRACE_ID);
+            EcsFields.tag(SPAN_ID, TEST_SPAN_ID);
 
             final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
             final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
@@ -421,15 +421,15 @@ public class TracingResponseFilterTest extends UnitTest {
             filter.filter(requestContext, responseContext);
 
             // Then: TRACE_ID is cleared from MDC in the finally block
-            assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
+            assertThat(EcsFields.get(TRACE_ID), is(nullValue()));
         }
 
         @Test
         @DisplayName("Should clear SPAN_ID from MDC after response filter completes")
         public void shouldClearSpanIdFromMdcAfterResponseFilterCompletes() throws Exception {
             // Given: TRACE_ID and SPAN_ID are in MDC (set by the request phase)
-            KibanaLogFields.tag(TRACE_ID, TEST_TRACE_ID);
-            KibanaLogFields.tag(SPAN_ID, TEST_SPAN_ID);
+            EcsFields.tag(TRACE_ID, TEST_TRACE_ID);
+            EcsFields.tag(SPAN_ID, TEST_SPAN_ID);
 
             final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
             final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
@@ -440,7 +440,7 @@ public class TracingResponseFilterTest extends UnitTest {
             filter.filter(requestContext, responseContext);
 
             // Then: SPAN_ID is cleared from MDC in the finally block
-            assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
+            assertThat(EcsFields.get(SPAN_ID), is(nullValue()));
         }
 
         @Test
@@ -462,8 +462,8 @@ public class TracingResponseFilterTest extends UnitTest {
                 filter.filter(requestContext, responseContext);
 
                 // Then: Both MDC fields are cleared after the response phase
-                assertThat(KibanaLogFields.get(TRACE_ID), is(nullValue()));
-                assertThat(KibanaLogFields.get(SPAN_ID), is(nullValue()));
+                assertThat(EcsFields.get(TRACE_ID), is(nullValue()));
+                assertThat(EcsFields.get(SPAN_ID), is(nullValue()));
             }
         }
     }
@@ -480,8 +480,8 @@ public class TracingResponseFilterTest extends UnitTest {
         public void shouldNotOverwriteTraceIdHeaderIfAlreadyPresentInResponse() throws Exception {
             // Given: Response already has x-trace-id set (e.g. upstream proxy added it)
             final String existingTraceId = "existing-trace-id-value";
-            KibanaLogFields.tag(TRACE_ID, TEST_TRACE_ID);
-            KibanaLogFields.tag(SPAN_ID, TEST_SPAN_ID);
+            EcsFields.tag(TRACE_ID, TEST_TRACE_ID);
+            EcsFields.tag(SPAN_ID, TEST_SPAN_ID);
 
             final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
             final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);
@@ -501,8 +501,8 @@ public class TracingResponseFilterTest extends UnitTest {
         public void shouldNotOverwriteSpanIdHeaderIfAlreadyPresentInResponse() throws Exception {
             // Given: Response already has x-span-id set
             final String existingSpanId = "existing-span-id-value";
-            KibanaLogFields.tag(TRACE_ID, TEST_TRACE_ID);
-            KibanaLogFields.tag(SPAN_ID, TEST_SPAN_ID);
+            EcsFields.tag(TRACE_ID, TEST_TRACE_ID);
+            EcsFields.tag(SPAN_ID, TEST_SPAN_ID);
 
             final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
             final ContainerResponseContext responseContext = mock(ContainerResponseContext.class);

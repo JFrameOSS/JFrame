@@ -20,7 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.ClientRequest;
 
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.*;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static io.github.jframe.util.constants.Constants.Headers.L7_REQUEST_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -66,7 +66,7 @@ class SpanManagerTest extends UnitTest {
 
         setupSpanBuilderMocks();
         setupOpenTelemetryMocks();
-        setupKibanaFields();
+        setupEcsFields();
     }
 
     @Test
@@ -83,20 +83,20 @@ class SpanManagerTest extends UnitTest {
         verify(tracer).spanBuilder("GET example.com");
 
         // And: Service attributes are set correctly
-        verify(spanBuilder).setAttribute(PEER_SERVICE, SERVICE_NAME_VALUE);
-        verify(spanBuilder).setAttribute(SERVICE_NAME, "example.com");
+        verify(spanBuilder).setAttribute(SPAN_PEER_SERVICE.getKey(), SERVICE_NAME_VALUE);
+        verify(spanBuilder).setAttribute(SPAN_SERVICE_NAME.getKey(), "example.com");
 
         // And: Request attributes are set correctly
-        verify(spanBuilder).setAttribute(EXT_REQUEST_URI, "example.com/api/users");
-        verify(spanBuilder).setAttribute(EXT_REQUEST_QUERY, "page=1");
-        verify(spanBuilder).setAttribute(EXT_REQUEST_METHOD, "GET");
+        verify(spanBuilder).setAttribute(SPAN_EXT_REQUEST_URI.getKey(), "example.com/api/users");
+        verify(spanBuilder).setAttribute(SPAN_EXT_REQUEST_QUERY.getKey(), "page=1");
+        verify(spanBuilder).setAttribute(SPAN_EXT_REQUEST_METHOD.getKey(), "GET");
 
         // And: Transaction identifiers are included
-        verify(spanBuilder).setAttribute(HTTP_TRANSACTION_ID, TEST_TX_ID);
-        verify(spanBuilder).setAttribute(HTTP_REQUEST_ID, TEST_REQUEST_ID);
+        verify(spanBuilder).setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), TEST_TX_ID);
+        verify(spanBuilder).setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), TEST_REQUEST_ID);
 
         // And: HTTP remote user attribute is set
-        verify(spanBuilder).setAttribute(eq(HTTP_REMOTE_USER), anyString());
+        verify(spanBuilder).setAttribute(eq(SPAN_HTTP_REMOTE_USER.getKey()), anyString());
 
         // And: Span is started and returned
         verify(spanBuilder).startSpan();
@@ -117,7 +117,7 @@ class SpanManagerTest extends UnitTest {
         verify(tracer).spanBuilder("POST api.example.com");
 
         // And: Request method is set to POST
-        verify(spanBuilder).setAttribute(EXT_REQUEST_METHOD, "POST");
+        verify(spanBuilder).setAttribute(SPAN_EXT_REQUEST_METHOD.getKey(), "POST");
     }
 
     @Test
@@ -131,7 +131,7 @@ class SpanManagerTest extends UnitTest {
         spanManager.createOutboundSpan(method, uri, SERVICE_NAME_VALUE);
 
         // Then: Query attribute is set to null
-        verify(spanBuilder).setAttribute(EXT_REQUEST_QUERY, null);
+        verify(spanBuilder).setAttribute(SPAN_EXT_REQUEST_QUERY.getKey(), null);
     }
 
     @Test
@@ -147,13 +147,12 @@ class SpanManagerTest extends UnitTest {
         spanManager.enrichOutboundSpan(span, HttpStatus.OK, headers);
 
         // Then: Response status and content attributes are added
-        verify(span).setAttribute(EXT_RESPONSE_STATUS_CODE, 200);
-        verify(span).setAttribute(EXT_RESPONSE_CONTENT_TYPE, "application/json");
-        verify(span).setAttribute(EXT_RESPONSE_CONTENT_LENGTH, "1024");
-        verify(span).setAttribute(EXT_RESPONSE_L7_REQUEST_ID, L7_REQUEST_ID_VALUE);
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_STATUS_CODE.getKey(), 200);
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_CONTENT_TYPE.getKey(), "application/json");
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_CONTENT_LENGTH.getKey(), "1024");
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_L7_REQUEST_ID.getKey(), L7_REQUEST_ID_VALUE);
 
         // And: No error status is set
-        verify(span, never()).setAttribute(ERROR, true);
         verify(span, never()).setStatus(StatusCode.ERROR);
     }
 
@@ -168,10 +167,9 @@ class SpanManagerTest extends UnitTest {
         spanManager.enrichOutboundSpan(span, HttpStatus.NOT_FOUND, headers);
 
         // Then: Response status is recorded
-        verify(span).setAttribute(EXT_RESPONSE_STATUS_CODE, 404);
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_STATUS_CODE.getKey(), 404);
 
         // And: Span is marked as error
-        verify(span).setAttribute(ERROR, true);
         verify(span).setStatus(StatusCode.ERROR);
     }
 
@@ -186,10 +184,9 @@ class SpanManagerTest extends UnitTest {
         spanManager.enrichOutboundSpan(span, HttpStatus.INTERNAL_SERVER_ERROR, headers);
 
         // Then: Response status is recorded
-        verify(span).setAttribute(EXT_RESPONSE_STATUS_CODE, 500);
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_STATUS_CODE.getKey(), 500);
 
         // And: Span is marked as error
-        verify(span).setAttribute(ERROR, true);
         verify(span).setStatus(StatusCode.ERROR);
     }
 
@@ -203,7 +200,7 @@ class SpanManagerTest extends UnitTest {
         spanManager.enrichOutboundSpan(span, HttpStatus.OK, headers);
 
         // Then: Content type is set to unknown
-        verify(span).setAttribute(EXT_RESPONSE_CONTENT_TYPE, "unknown");
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_CONTENT_TYPE.getKey(), "unknown");
     }
 
     @Test
@@ -216,7 +213,7 @@ class SpanManagerTest extends UnitTest {
         spanManager.enrichOutboundSpan(span, HttpStatus.OK, headers);
 
         // Then: Content length is set to -1
-        verify(span).setAttribute(EXT_RESPONSE_CONTENT_LENGTH, "-1");
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_CONTENT_LENGTH.getKey(), "-1");
     }
 
     @Test
@@ -229,7 +226,7 @@ class SpanManagerTest extends UnitTest {
         spanManager.enrichOutboundSpan(span, HttpStatus.OK, headers);
 
         // Then: L7 request ID attribute is not set
-        verify(span, never()).setAttribute(eq(EXT_RESPONSE_L7_REQUEST_ID), anyString());
+        verify(span, never()).setAttribute(eq(SPAN_EXT_RESPONSE_L7_REQUEST_ID.getKey()), anyString());
     }
 
     @Test
@@ -285,7 +282,7 @@ class SpanManagerTest extends UnitTest {
         spanManager.enrichOutboundSpan(span, HttpStatus.OK, headers);
 
         // Then: Content type is set correctly
-        verify(span).setAttribute(EXT_RESPONSE_CONTENT_TYPE, "application/xml");
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_CONTENT_TYPE.getKey(), "application/xml");
     }
 
     @Test
@@ -298,7 +295,7 @@ class SpanManagerTest extends UnitTest {
         spanManager.enrichOutboundSpan(span, HttpStatus.OK, headers);
 
         // Then: Content length is -1 indicating not set
-        verify(span).setAttribute(EXT_RESPONSE_CONTENT_LENGTH, "-1");
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_CONTENT_LENGTH.getKey(), "-1");
     }
 
     @Test
@@ -312,7 +309,7 @@ class SpanManagerTest extends UnitTest {
         spanManager.enrichOutboundSpan(span, HttpStatus.OK, headers);
 
         // Then: Content length is set to the actual value
-        verify(span).setAttribute(EXT_RESPONSE_CONTENT_LENGTH, "2048");
+        verify(span).setAttribute(SPAN_EXT_RESPONSE_CONTENT_LENGTH.getKey(), "2048");
     }
 
     private void setupSpanBuilderMocks() {

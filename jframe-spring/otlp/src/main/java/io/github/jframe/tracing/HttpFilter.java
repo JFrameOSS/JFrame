@@ -1,6 +1,6 @@
 package io.github.jframe.tracing;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.masker.type.PasswordMasker;
 import io.github.jframe.logging.util.HttpBodyUtil;
 import io.github.jframe.logging.wrapper.BufferedClientHttpResponse;
@@ -22,8 +22,7 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 
 import static io.github.jframe.logging.HttpLogger.*;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.*;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.TRACING_SPAN;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static io.github.jframe.util.constants.Constants.Headers.*;
 import static java.util.Objects.nonNull;
 
@@ -51,9 +50,9 @@ public class HttpFilter {
         log.debug("Creating request interceptor for service: '{}'", serviceName);
         return (request, body, execution) -> {
             log.trace("Processing Interceptor with MDC context: {}", MDC.getCopyOfContextMap());
-            request.getHeaders().add(REQ_ID_HEADER, KibanaLogFields.get(REQUEST_ID));
-            request.getHeaders().add(TX_ID_HEADER, KibanaLogFields.get(TX_ID));
-            request.getHeaders().add(TRACE_ID_HEADER, KibanaLogFields.get(TRACE_ID));
+            request.getHeaders().add(REQ_ID_HEADER, EcsFields.get(REQUEST_ID));
+            request.getHeaders().add(TX_ID_HEADER, EcsFields.get(TX_ID));
+            request.getHeaders().add(TRACE_ID_HEADER, EcsFields.get(TRACE_ID));
             logRequest(request.getMethod(), request.getURI(), request.getHeaders());
 
             spanManager.ifPresent(sm -> sm.injectTraceContext(request.getHeaders()));
@@ -98,14 +97,14 @@ public class HttpFilter {
     private Mono<ClientRequest> processRequest(final ClientRequest request, final String serviceName) {
         log.trace("Processing Exchange Filter with MDC context: {}", MDC.getCopyOfContextMap());
         final ClientRequest.Builder builder = ClientRequest.from(request)
-            .header(REQ_ID_HEADER, KibanaLogFields.get(REQUEST_ID))
-            .header(TX_ID_HEADER, KibanaLogFields.get(TX_ID))
-            .header(TRACE_ID_HEADER, KibanaLogFields.get(TRACE_ID));
+            .header(REQ_ID_HEADER, EcsFields.get(REQUEST_ID))
+            .header(TX_ID_HEADER, EcsFields.get(TX_ID))
+            .header(TRACE_ID_HEADER, EcsFields.get(TRACE_ID));
 
         spanManager.ifPresent(sm -> sm.injectTraceContext(builder));
         spanManager.ifPresent(sm -> {
             final Span span = sm.createOutboundSpan(request.method(), request.url(), serviceName);
-            builder.attribute(TRACING_SPAN, span);
+            builder.attribute(SPAN_TRACING_SPAN, span);
         });
 
         final ClientRequest enrichedRequest = builder.build();
@@ -115,9 +114,9 @@ public class HttpFilter {
 
     private Mono<ClientResponse> processResponse(final ClientResponse response) {
         final HttpRequest request = response.request();
-        tagKibanaFields(request.getHeaders());
+        tagEcsFields(request.getHeaders());
         spanManager.ifPresent(sm -> {
-            final Span span = (Span) request.getAttributes().get(TRACING_SPAN);
+            final Span span = (Span) request.getAttributes().get(SPAN_TRACING_SPAN);
             if (nonNull(span)) {
                 try {
                     sm.enrichOutboundSpan(span, response.statusCode(), response.headers().asHttpHeaders());
@@ -130,9 +129,9 @@ public class HttpFilter {
         return logReactiveResponse(response, responseLength, passwordMasker);
     }
 
-    private void tagKibanaFields(final HttpHeaders headers) {
-        KibanaLogFields.tag(TX_ID, headers.getFirst(TX_ID_HEADER));
-        KibanaLogFields.tag(REQUEST_ID, headers.getFirst(REQ_ID_HEADER));
-        KibanaLogFields.tag(TRACE_ID, headers.getFirst(TRACE_ID_HEADER));
+    private void tagEcsFields(final HttpHeaders headers) {
+        EcsFields.tag(TX_ID, headers.getFirst(TX_ID_HEADER));
+        EcsFields.tag(REQUEST_ID, headers.getFirst(REQ_ID_HEADER));
+        EcsFields.tag(TRACE_ID, headers.getFirst(TRACE_ID_HEADER));
     }
 }

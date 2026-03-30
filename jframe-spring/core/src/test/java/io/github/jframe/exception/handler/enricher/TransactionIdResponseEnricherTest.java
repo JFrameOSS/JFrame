@@ -1,7 +1,7 @@
 package io.github.jframe.exception.handler.enricher;
 
 import io.github.jframe.exception.resource.ErrorResponseResource;
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.support.UnitTest;
 
 import org.junit.jupiter.api.AfterEach;
@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.context.request.WebRequest;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -35,7 +35,7 @@ public class TransactionIdResponseEnricherTest extends UnitTest {
 
     @AfterEach
     public void tearDown() {
-        KibanaLogFields.clear(TX_ID);
+        EcsFields.clear(TX_ID);
     }
 
     @Test
@@ -46,7 +46,7 @@ public class TransactionIdResponseEnricherTest extends UnitTest {
         final Throwable throwable = new RuntimeException();
         final WebRequest request = mock(WebRequest.class);
         final String transactionId = "tx-12345";
-        KibanaLogFields.tag(TX_ID, transactionId);
+        EcsFields.tag(TX_ID, transactionId);
 
         // When: Enriching the response
         enricher.doEnrich(resource, throwable, request, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -78,7 +78,7 @@ public class TransactionIdResponseEnricherTest extends UnitTest {
         final Throwable throwable = new RuntimeException();
         final WebRequest request = mock(WebRequest.class);
         final String uuidTransactionId = "550e8400-e29b-41d4-a716-446655440000";
-        KibanaLogFields.tag(TX_ID, uuidTransactionId);
+        EcsFields.tag(TX_ID, uuidTransactionId);
 
         // When: Enriching the response
         enricher.doEnrich(resource1, throwable, request, HttpStatus.NOT_FOUND);
@@ -89,7 +89,7 @@ public class TransactionIdResponseEnricherTest extends UnitTest {
         // Given: A different transaction ID format
         final ErrorResponseResource resource2 = new ErrorResponseResource();
         final String shortTransactionId = "abc-123";
-        KibanaLogFields.tag(TX_ID, shortTransactionId);
+        EcsFields.tag(TX_ID, shortTransactionId);
 
         // When: Enriching another response
         enricher.doEnrich(resource2, throwable, request, HttpStatus.UNAUTHORIZED);
@@ -103,7 +103,7 @@ public class TransactionIdResponseEnricherTest extends UnitTest {
     public void shouldEnrichTransactionIdRegardlessOfHttpStatus() {
         // Given: An error response resource with transaction ID in MDC
         final String transactionId = "tx-status-test";
-        KibanaLogFields.tag(TX_ID, transactionId);
+        EcsFields.tag(TX_ID, transactionId);
         final Throwable throwable = new RuntimeException();
         final WebRequest request = mock(WebRequest.class);
 

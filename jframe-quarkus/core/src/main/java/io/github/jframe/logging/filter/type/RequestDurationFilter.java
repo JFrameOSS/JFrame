@@ -1,10 +1,10 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.AutoCloseableEcsField;
+import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.logging.ecs.LogTypeNames;
 import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.logging.filter.JFrameFilter;
-import io.github.jframe.logging.kibana.AutoCloseableKibanaLogField;
-import io.github.jframe.logging.kibana.KibanaLogFields;
-import io.github.jframe.logging.kibana.KibanaLogTypeNames;
 import io.github.jframe.logging.voter.FilterVoter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +18,9 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.ext.Provider;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.LOG_TYPE;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_DURATION;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_DURATION;
+import static io.github.jframe.logging.ecs.EcsFieldNames.LOG_TYPE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_DURATION;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_DURATION;
 
 /**
  * JAX-RS filter that records and logs the duration of each HTTP request.
@@ -63,11 +63,11 @@ public class RequestDurationFilter implements ContainerRequestFilter, ContainerR
     private void logEnd(final ContainerRequestContext requestContext) {
         final Object startTimestamp = requestContext.getProperty(START_TIMESTAMP);
         if (startTimestamp instanceof Long start) {
-            try (AutoCloseableKibanaLogField closableTag = KibanaLogFields.tagCloseable(LOG_TYPE, KibanaLogTypeNames.END)) {
+            try (AutoCloseableEcsField closableTag = EcsFields.tagCloseable(LOG_TYPE, LogTypeNames.END)) {
                 final String duration = String.format("%.2f", (System.nanoTime() - start) / 1E6);
-                KibanaLogFields.tag(TX_DURATION, duration);
-                KibanaLogFields.tag(REQUEST_DURATION, duration);
-                log.debug("Found tag '{}':'{}' [{}].", LOG_TYPE, KibanaLogTypeNames.END, closableTag);
+                EcsFields.tag(TX_DURATION, duration);
+                EcsFields.tag(REQUEST_DURATION, duration);
+                log.debug("Found tag '{}':'{}' [{}].", LOG_TYPE, LogTypeNames.END, closableTag);
                 log.info("Duration '{}' ms.", duration);
             }
         }

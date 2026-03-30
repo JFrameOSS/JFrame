@@ -1,7 +1,7 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.RequestId;
 import io.github.support.UnitTest;
 
@@ -19,7 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_ID;
 import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
  * <li>Request ID addition to response header</li>
  * <li>Filter chain execution</li>
  * <li>ThreadLocal cleanup after test</li>
- * <li>MDC integration via KibanaLogFields</li>
+ * <li>MDC integration via EcsFields</li>
  * </ul>
  */
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -64,7 +64,7 @@ public class RequestIdFilterTest extends UnitTest {
     public void tearDown() {
         // Clean up ThreadLocal and MDC to avoid test pollution
         RequestId.remove();
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     @Test
@@ -172,7 +172,7 @@ public class RequestIdFilterTest extends UnitTest {
 
         // Then: MDC field req_id matches the request ID stored in ThreadLocal
         final String threadLocalRequestId = RequestId.get();
-        final String mdcRequestId = KibanaLogFields.get(REQUEST_ID);
+        final String mdcRequestId = EcsFields.get(REQUEST_ID);
         assertThat(mdcRequestId, is(notNullValue()));
         assertThat(mdcRequestId, is(equalTo(threadLocalRequestId)));
     }

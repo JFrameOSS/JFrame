@@ -1,6 +1,6 @@
 package io.github.jframe.scheduler.interceptor;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.model.RequestId;
 import io.github.jframe.logging.model.TransactionId;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +10,8 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static java.util.UUID.randomUUID;
 
 /**
@@ -38,10 +38,10 @@ public class ScheduledContextInterceptor {
         try {
             final UUID uuid = randomUUID();
             RequestId.set(uuid);
-            KibanaLogFields.tag(REQUEST_ID, RequestId.get());
+            EcsFields.tag(REQUEST_ID, RequestId.get());
 
             TransactionId.set(uuid);
-            KibanaLogFields.tag(TX_ID, TransactionId.get());
+            EcsFields.tag(TX_ID, TransactionId.get());
 
             log.trace("Started scheduled task with tx id '{}'.", TransactionId.get());
             return context.proceed();
@@ -51,7 +51,7 @@ public class ScheduledContextInterceptor {
         } finally {
             RequestId.remove();
             TransactionId.remove();
-            KibanaLogFields.clear();
+            EcsFields.clear();
         }
     }
 }

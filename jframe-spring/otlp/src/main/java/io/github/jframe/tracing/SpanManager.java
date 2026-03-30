@@ -1,6 +1,6 @@
 package io.github.jframe.tracing;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
@@ -21,10 +21,8 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientRequest;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
-import static io.github.jframe.tracing.OpenTelemetryConstants.Attributes.*;
 import static io.github.jframe.util.constants.Constants.Headers.L7_REQUEST_ID;
 
 /**
@@ -57,14 +55,14 @@ public class SpanManager {
 
         return tracer.spanBuilder(methodName + " " + host)
             .setSpanKind(SpanKind.CLIENT)
-            .setAttribute(PEER_SERVICE, serviceName)
-            .setAttribute(SERVICE_NAME, host)
-            .setAttribute(HTTP_REMOTE_USER, getAuthenticatedSubject())
-            .setAttribute(HTTP_TRANSACTION_ID, KibanaLogFields.get(TX_ID))
-            .setAttribute(HTTP_REQUEST_ID, KibanaLogFields.get(REQUEST_ID))
-            .setAttribute(EXT_REQUEST_URI, host + uri.getPath())
-            .setAttribute(EXT_REQUEST_QUERY, uri.getQuery())
-            .setAttribute(EXT_REQUEST_METHOD, methodName)
+            .setAttribute(SPAN_PEER_SERVICE.getKey(), serviceName)
+            .setAttribute(SPAN_SERVICE_NAME.getKey(), host)
+            .setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), getAuthenticatedSubject())
+            .setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID))
+            .setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID))
+            .setAttribute(SPAN_EXT_REQUEST_URI.getKey(), host + uri.getPath())
+            .setAttribute(SPAN_EXT_REQUEST_QUERY.getKey(), uri.getQuery())
+            .setAttribute(SPAN_EXT_REQUEST_METHOD.getKey(), methodName)
             .startSpan();
     }
 
@@ -82,13 +80,12 @@ public class SpanManager {
             span.getSpanContext().getSpanId(),
             statusCode.value()
         );
-        span.setAttribute(EXT_RESPONSE_STATUS_CODE, statusCode.value());
-        span.setAttribute(EXT_RESPONSE_CONTENT_TYPE, extractContentType(headers));
-        span.setAttribute(EXT_RESPONSE_CONTENT_LENGTH, extractContentLength(headers));
+        span.setAttribute(SPAN_EXT_RESPONSE_STATUS_CODE.getKey(), statusCode.value());
+        span.setAttribute(SPAN_EXT_RESPONSE_CONTENT_TYPE.getKey(), extractContentType(headers));
+        span.setAttribute(SPAN_EXT_RESPONSE_CONTENT_LENGTH.getKey(), extractContentLength(headers));
         setL7RequestId(span, headers);
 
         if (statusCode.isError()) {
-            span.setAttribute(ERROR, true);
             span.setStatus(StatusCode.ERROR);
         }
     }
@@ -137,6 +134,6 @@ public class SpanManager {
 
     private void setL7RequestId(final Span span, final HttpHeaders headers) {
         Optional.ofNullable(headers.getFirst(L7_REQUEST_ID))
-            .ifPresent(requestId -> span.setAttribute(EXT_RESPONSE_L7_REQUEST_ID, requestId));
+            .ifPresent(requestId -> span.setAttribute(SPAN_EXT_RESPONSE_L7_REQUEST_ID.getKey(), requestId));
     }
 }

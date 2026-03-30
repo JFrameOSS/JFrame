@@ -1,6 +1,6 @@
 package io.github.jframe.logging;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.masker.type.PasswordMasker;
 import io.github.jframe.logging.util.HttpBodyUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.reactive.function.client.ClientResponse;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.*;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Logging.REQUEST_PREFIX;
 import static io.github.jframe.tracing.OpenTelemetryConstants.Logging.RESPONSE_PREFIX;
 import static io.github.jframe.util.constants.Constants.Headers.*;
@@ -139,8 +139,8 @@ public final class HttpLogger {
     }
 
     private static void appendTraceHeaders(final StringBuilder builder) {
-        builder.append('\t').append(TX_ID_HEADER).append(": ").append(KibanaLogFields.get(TX_ID)).append('\n');
-        builder.append('\t').append(REQ_ID_HEADER).append(": ").append(KibanaLogFields.get(REQUEST_ID)).append('\n');
-        builder.append('\t').append(TRACE_ID_HEADER).append(": ").append(KibanaLogFields.get(TRACE_ID)).append('\n');
+        builder.append('\t').append(TX_ID_HEADER).append(": ").append(EcsFields.get(TX_ID)).append('\n');
+        builder.append('\t').append(REQ_ID_HEADER).append(": ").append(EcsFields.get(REQUEST_ID)).append('\n');
+        builder.append('\t').append(TRACE_ID_HEADER).append(": ").append(EcsFields.get(TRACE_ID)).append('\n');
     }
 }

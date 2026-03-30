@@ -1,4 +1,4 @@
-package io.github.jframe.logging.kibana;
+package io.github.jframe.logging.ecs;
 
 import static java.util.Objects.nonNull;
 
@@ -6,14 +6,17 @@ import static java.util.Objects.nonNull;
  * Interface that allows client projects to use their own log fields.
  */
 @FunctionalInterface
-public interface KibanaLogField {
+public interface EcsField {
 
     /**
-     * Get the name with which this field will appear in the log.
+     * Get the ECS field key for this log field.
      *
-     * @return the log name of the field
+     * <p>This key is used as the MDC key for structured logging and as the span attribute key
+     * for OpenTelemetry tracing.
+     *
+     * @return the ECS field key
      */
-    String getLogName();
+    String getKey();
 
     /**
      * Check if a key matches.
@@ -22,6 +25,6 @@ public interface KibanaLogField {
      * @return true if not null and if the supplied key equals this key.
      */
     default boolean matches(final String key) {
-        return nonNull(key) && key.equalsIgnoreCase(getLogName());
+        return nonNull(key) && key.equalsIgnoreCase(getKey());
     }
 }

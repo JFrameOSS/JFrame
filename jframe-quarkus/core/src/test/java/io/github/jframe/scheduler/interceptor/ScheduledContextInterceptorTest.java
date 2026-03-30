@@ -1,6 +1,6 @@
 package io.github.jframe.scheduler.interceptor;
 
-import io.github.jframe.logging.kibana.KibanaLogFields;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.model.RequestId;
 import io.github.jframe.logging.model.TransactionId;
 import io.github.support.UnitTest;
@@ -13,6 +13,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
+import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -28,7 +30,7 @@ import static org.mockito.Mockito.when;
  * <ul>
  * <li>Generating a single UUID for both RequestId and TransactionId</li>
  * <li>Setting ThreadLocal context via RequestId and TransactionId</li>
- * <li>Tagging MDC via KibanaLogFields with req_id and tx_id</li>
+ * <li>Tagging MDC via EcsFields with req_id and tx_id</li>
  * <li>Cleaning up ThreadLocal and MDC in a finally block</li>
  * <li>Propagating return values and exceptions from the intercepted method</li>
  * </ul>
@@ -49,7 +51,7 @@ public class ScheduledContextInterceptorTest extends UnitTest {
         // Clean up ThreadLocals and MDC to prevent test pollution if a test fails mid-execution
         RequestId.remove();
         TransactionId.remove();
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     @Test
@@ -84,8 +86,8 @@ public class ScheduledContextInterceptorTest extends UnitTest {
         final String[] capturedMdcTxId = new String[1];
 
         when(context.proceed()).thenAnswer(invocation -> {
-            capturedMdcReqId[0] = MDC.get("req_id");
-            capturedMdcTxId[0] = MDC.get("tx_id");
+            capturedMdcReqId[0] = MDC.get(REQUEST_ID.getKey());
+            capturedMdcTxId[0] = MDC.get(TX_ID.getKey());
             return null;
         });
 
@@ -111,8 +113,8 @@ public class ScheduledContextInterceptorTest extends UnitTest {
         // Then: ThreadLocals and MDC are cleaned up
         assertThat(RequestId.get(), is(nullValue()));
         assertThat(TransactionId.get(), is(nullValue()));
-        assertThat(MDC.get("req_id"), is(nullValue()));
-        assertThat(MDC.get("tx_id"), is(nullValue()));
+        assertThat(MDC.get(REQUEST_ID.getKey()), is(nullValue()));
+        assertThat(MDC.get(TX_ID.getKey()), is(nullValue()));
     }
 
     @Test
@@ -132,8 +134,8 @@ public class ScheduledContextInterceptorTest extends UnitTest {
         // Then: ThreadLocals and MDC are still cleaned up (finally block)
         assertThat(RequestId.get(), is(nullValue()));
         assertThat(TransactionId.get(), is(nullValue()));
-        assertThat(MDC.get("req_id"), is(nullValue()));
-        assertThat(MDC.get("tx_id"), is(nullValue()));
+        assertThat(MDC.get(REQUEST_ID.getKey()), is(nullValue()));
+        assertThat(MDC.get(TX_ID.getKey()), is(nullValue()));
     }
 
     @Test

@@ -1,7 +1,7 @@
 package io.github.jframe.logging.filter.client;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.support.UnitTest;
 
 import jakarta.ws.rs.client.ClientRequestContext;
@@ -17,9 +17,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TRACE_ID;
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TRACE_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
 import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
 import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
  * Tests for {@link OutboundCorrelationFilter}.
  *
  * <p>Verifies the {@code ClientRequestFilter} that propagates correlation headers
- * from MDC (via {@link KibanaLogFields}) to outbound HTTP calls, including:
+ * from MDC (via {@link EcsFields}) to outbound HTTP calls, including:
  * <ul>
  * <li>Adding x-transaction-id, x-request-id and x-trace-id headers when MDC values are present</li>
  * <li>Skipping headers when MDC values are null or empty</li>
@@ -62,7 +62,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
 
     @AfterEach
     public void tearDown() {
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     // ─── Header propagation: all MDC values present ──────────────────────────
@@ -75,7 +75,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         @DisplayName("Should add x-transaction-id header from MDC when present")
         public void shouldAddTransactionIdHeaderWhenMdcValueIsPresent() throws Exception {
             // Given: MDC contains a transaction ID and an empty outbound headers map
-            KibanaLogFields.tag(TX_ID, "test-tx-id");
+            EcsFields.tag(TX_ID, "test-tx-id");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
             final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
@@ -92,7 +92,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         @DisplayName("Should add x-request-id header from MDC when present")
         public void shouldAddRequestIdHeaderWhenMdcValueIsPresent() throws Exception {
             // Given: MDC contains a request ID and an empty outbound headers map
-            KibanaLogFields.tag(REQUEST_ID, "test-req-id");
+            EcsFields.tag(REQUEST_ID, "test-req-id");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
             final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
@@ -109,7 +109,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         @DisplayName("Should add x-trace-id header from MDC when present")
         public void shouldAddTraceIdHeaderWhenMdcValueIsPresent() throws Exception {
             // Given: MDC contains a trace ID and an empty outbound headers map
-            KibanaLogFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
+            EcsFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
             final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
@@ -126,9 +126,9 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         @DisplayName("Should add all three correlation headers when all MDC values are present")
         public void shouldAddAllThreeCorrelationHeadersWhenAllMdcValuesArePresent() throws Exception {
             // Given: MDC is fully populated with all three correlation IDs
-            KibanaLogFields.tag(TX_ID, "tx-111");
-            KibanaLogFields.tag(REQUEST_ID, "req-222");
-            KibanaLogFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
+            EcsFields.tag(TX_ID, "tx-111");
+            EcsFields.tag(REQUEST_ID, "req-222");
+            EcsFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
             final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
@@ -154,7 +154,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         @DisplayName("Should NOT add x-transaction-id header when MDC value is null")
         public void shouldNotAddTransactionIdHeaderWhenMdcValueIsNull() throws Exception {
             // Given: MDC does not contain a transaction ID (null)
-            // KibanaLogFields deliberately NOT populated for TX_ID
+            // EcsFields deliberately NOT populated for TX_ID
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
             final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
@@ -217,8 +217,8 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         @DisplayName("Should NOT add x-transaction-id header when MDC value is blank")
         public void shouldNotAddTransactionIdHeaderWhenMdcValueIsBlank() throws Exception {
             // Given: MDC contains a blank (whitespace-only) transaction ID
-            // KibanaLogFields.tag ignores blank values (does a clear instead)
-            KibanaLogFields.tag(TX_ID, "   ");
+            // EcsFields.tag ignores blank values (does a clear instead)
+            EcsFields.tag(TX_ID, "   ");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
             final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
@@ -242,7 +242,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         @DisplayName("Should NOT overwrite existing x-transaction-id header")
         public void shouldNotOverwriteExistingTransactionIdHeader() throws Exception {
             // Given: MDC has a transaction ID and outbound request already carries that header
-            KibanaLogFields.tag(TX_ID, "new-tx-id");
+            EcsFields.tag(TX_ID, "new-tx-id");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             headers.putSingle(TX_ID_HEADER, "existing-tx-id");
             when(clientRequestContext.getHeaders()).thenReturn(headers);
@@ -260,7 +260,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         @DisplayName("Should NOT overwrite existing x-request-id header")
         public void shouldNotOverwriteExistingRequestIdHeader() throws Exception {
             // Given: MDC has a request ID and outbound request already carries that header
-            KibanaLogFields.tag(REQUEST_ID, "new-req-id");
+            EcsFields.tag(REQUEST_ID, "new-req-id");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             headers.putSingle(REQ_ID_HEADER, "existing-req-id");
             when(clientRequestContext.getHeaders()).thenReturn(headers);
@@ -278,7 +278,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         @DisplayName("Should NOT overwrite existing x-trace-id header")
         public void shouldNotOverwriteExistingTraceIdHeader() throws Exception {
             // Given: MDC has a trace ID and outbound request already carries that header
-            KibanaLogFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
+            EcsFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             headers.putSingle(TRACE_ID_HEADER, "existing-trace-id");
             when(clientRequestContext.getHeaders()).thenReturn(headers);

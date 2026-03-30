@@ -1,7 +1,7 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.FilterConfig;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.voter.FilterVoter;
 import io.github.support.UnitTest;
 
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
  * <li>Duration logging format</li>
  * <li>Filter interaction with request context properties</li>
  * <li>FilterVoter integration — only logs when voter is enabled</li>
- * <li>MDC integration via KibanaLogFields</li>
+ * <li>MDC integration via EcsFields</li>
  * </ul>
  */
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -65,7 +65,7 @@ public class RequestDurationFilterTest extends UnitTest {
     @AfterEach
     public void tearDown() {
         // Clean up MDC to avoid test pollution
-        KibanaLogFields.clear();
+        EcsFields.clear();
     }
 
     @Test

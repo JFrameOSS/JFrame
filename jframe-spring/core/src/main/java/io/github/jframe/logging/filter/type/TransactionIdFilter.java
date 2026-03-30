@@ -1,7 +1,7 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.filter.AbstractGenericFilter;
-import io.github.jframe.logging.kibana.KibanaLogFields;
 import io.github.jframe.logging.model.TransactionId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.TX_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static java.util.UUID.randomUUID;
 
 /**
@@ -33,9 +33,9 @@ public class TransactionIdFilter extends AbstractGenericFilter {
         throws ServletException, IOException {
         final UUID uuid = resolve(request, headerName);
         TransactionId.set(uuid);
-        KibanaLogFields.tag(TX_ID, TransactionId.get());
+        EcsFields.tag(TX_ID, TransactionId.get());
 
-        log.debug("Set '{}' with value '{};.", TX_ID.getLogName(), uuid);
+        log.debug("Set '{}' with value '{};.", TX_ID.getKey(), uuid);
         if (!response.containsHeader(headerName)) {
             response.addHeader(headerName, TransactionId.get());
         }
