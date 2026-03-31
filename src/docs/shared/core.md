@@ -166,22 +166,22 @@ TransactionId.remove();
 
 Both use `InheritableThreadLocal` — child threads inherit the parent's values.
 
-## Kibana/MDC logging
+## ECS/MDC logging
 
 ### Tag MDC fields
 
 ```java
-import static io.github.jframe.logging.kibana.KibanaLogFieldNames.*;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 
-KibanaLogFields.tag(REQUEST_ID, requestId);
-KibanaLogFields.tag(TX_ID, transactionId);
-KibanaLogFields.clear();  // removes ALL MDC fields
+EcsFields.tag(REQUEST_ID, requestId);
+EcsFields.tag(TX_ID, transactionId);
+EcsFields.clear();  // removes ALL MDC fields
 ```
 
 ### Auto-closeable tagging
 
 ```java
-try (var fields = KibanaLogFields.tagCloseable(REQUEST_ID, reqId)
+try (var fields = EcsFields.tagCloseable(REQUEST_ID, reqId)
         .and(TX_ID, txId)) {
     // MDC populated within this scope
 }
@@ -190,7 +190,7 @@ try (var fields = KibanaLogFields.tagCloseable(REQUEST_ID, reqId)
 
 ### Available MDC fields
 
-`REQUEST_ID` (`req_id`), `TX_ID` (`tx_id`), `TX_TYPE`, `TX_REQUEST_METHOD`, `TX_RESPONSE_SIZE`, `CALL_ID`, `TRACE_ID`, `SPAN_ID`, `USER_NAME`, `HTTP_STATUS`, and 30+ more.
+`REQUEST_ID` (`request.id`), `TX_ID` (`transaction.id`), `TX_TYPE`, `TX_REQUEST_METHOD`, `TX_RESPONSE_SIZE`, `CALL_ID`, `TRACE_ID` (`trace.id`), `SPAN_ID` (`span.id`), `USER_NAME` (`user.name`), `HTTP_STATUS` (`http.response.status_code`), and 30+ more.
 
 ## Utilities
 

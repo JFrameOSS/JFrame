@@ -88,6 +88,6 @@ That's it. All HTTP filters, exception handlers, and logging are auto-configured
 ## Module documentation
 
 - **Spring:** [Core](spring/core.md) · [JPA](spring/jpa.md) · [OTLP](spring/otlp.md)
-- **Quarkus:** [Core](quarkus/core.md) · [JPA](quarkus/jpa.md) · [OTLP](quarkus/otlp.md)
+- **Quarkus:** [Core](quarkus/core.md) · [JPA](quarkus/jpa.md) · [OTLP](quarkus/otlp.md) · [Integration guide](quarkus/integration-guide.md)
 - **Shared:** [Core library](shared/core.md) · [Configuration reference](shared/configuration.md)
-- **Migration:** [Spring 0.9.x → 1.0.0](migration/spring-migration-1.0.0.md)
+- **Migration:** [Spring 0.9.x → 1.0.0](migration/spring-migration-1.0.0.md) · [ECS naming convention](migration/ecs-naming-convention-migration.md)

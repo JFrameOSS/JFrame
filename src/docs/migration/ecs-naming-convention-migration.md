@@ -12,7 +12,7 @@ enum class `EcsFieldNames` following
 
 ### 1. `KibanaLogFieldNames` renamed to `EcsFieldNames`
 
-The enum class has been renamed. The package remains the same (`io.github.jframe.logging.kibana`).
+The enum class has been renamed and the package moved from `io.github.jframe.logging.kibana` to `io.github.jframe.logging.ecs`.
 
 ```java
 // Before
@@ -20,7 +20,7 @@ import io.github.jframe.logging.kibana.KibanaLogFieldNames;
 KibanaLogFieldNames.TX_ID
 
 // After
-import io.github.jframe.logging.kibana.EcsFieldNames;
+import io.github.jframe.logging.ecs.EcsFieldNames;
 EcsFieldNames.TX_ID
 ```
 
@@ -40,8 +40,8 @@ span.setAttribute(SERVICE_NAME, className);
 span.setAttribute(ERROR_TYPE, exceptionName);
 
 // After
-import static io.github.jframe.logging.kibana.EcsFieldNames.SPAN_SERVICE_NAME;
-import static io.github.jframe.logging.kibana.EcsFieldNames.SPAN_ERROR_TYPE;
+import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_SERVICE_NAME;
+import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ERROR_TYPE;
 span.setAttribute(SPAN_SERVICE_NAME.getKey(), className);
 span.setAttribute(SPAN_ERROR_TYPE.getKey(), exceptionName);
 ```
@@ -49,7 +49,7 @@ span.setAttribute(SPAN_ERROR_TYPE.getKey(), exceptionName);
 Or with a wildcard import:
 
 ```java
-import static io.github.jframe.logging.kibana.EcsFieldNames.*;
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 span.setAttribute(SPAN_SERVICE_NAME.getKey(), className);
 ```
 
@@ -170,8 +170,7 @@ span.setStatus(StatusCode.ERROR);
 
 ## Class renames (Kibana → ECS/generic)
 
-The following classes in `io.github.jframe.logging.kibana` have been renamed. The package itself
-remains unchanged.
+The following classes have been renamed and moved from `io.github.jframe.logging.kibana` to `io.github.jframe.logging.ecs`.
 
 | Old class name | New class name |
 |---|---|

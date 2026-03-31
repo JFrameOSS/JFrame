@@ -78,15 +78,15 @@ Fields written to SLF4J MDC by JFrame filters and interceptors.
 
 | MDC Key | Written By | Description |
 |---------|-----------|-------------|
-| `req_id` | RequestIdFilter / ScheduledAspect | Unique request identifier (UUID) |
-| `tx_id` | TransactionIdFilter / ScheduledAspect | Transaction identifier (UUID) |
-| `TRACE_ID` | TracingResponseFilter | OpenTelemetry trace ID |
-| `SPAN_ID` | TracingResponseFilter | OpenTelemetry span ID |
+| `request.id` | RequestIdFilter / ScheduledAspect | Unique request identifier (UUID) |
+| `transaction.id` | TransactionIdFilter / ScheduledAspect | Transaction identifier (UUID) |
+| `trace.id` | TracingResponseFilter | OpenTelemetry trace ID |
+| `span.id` | TracingResponseFilter | OpenTelemetry span ID |
 
 ### Logback pattern example
 
 ```xml
-<pattern>%d{ISO8601} [%thread] %-5level %logger{36} [req=%X{req_id} tx=%X{tx_id} trace=%X{TRACE_ID}] - %msg%n</pattern>
+<pattern>%d{ISO8601} [%thread] %-5level %logger{36} [req=%X{request.id} tx=%X{transaction.id} trace=%X{trace.id}] - %msg%n</pattern>
 ```
 
 ## Spring Boot minimal example
