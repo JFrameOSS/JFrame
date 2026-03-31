@@ -82,7 +82,7 @@ public class TracingAspect {
         final long startTime = System.nanoTime();
         try (Scope scope = span.makeCurrent()) {
             log.debug(
-                "[jframe-otlp] Entering {} | user={} traceId={} spanId={}",
+                "[OPENTELEMETRY] Entering {} | user={} traceId={} spanId={}",
                 spanName,
                 getAuthenticatedSubject(),
                 span.getSpanContext().getTraceId(),
@@ -90,14 +90,14 @@ public class TracingAspect {
             );
             final Object result = joinPoint.proceed();
             final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            log.debug("[jframe-otlp] Completed {} in {}ms", spanName, durationMs);
+            log.debug("[OPENTELEMETRY] Completed {} in {}ms", spanName, durationMs);
             return result;
         } catch (final Throwable throwable) {
             final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
             span.recordException(throwable);
             span.setStatus(StatusCode.ERROR);
             log.error(
-                "[jframe-otlp] Failed {} in {}ms | error={} message={}",
+                "[OPENTELEMETRY] Failed {} in {}ms | error={} message={}",
                 spanName,
                 durationMs,
                 throwable.getClass().getSimpleName(),

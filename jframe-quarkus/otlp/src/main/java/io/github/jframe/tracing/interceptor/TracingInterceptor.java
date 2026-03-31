@@ -105,7 +105,7 @@ public class TracingInterceptor {
         try (Scope scope = span.makeCurrent()) {
             final Object result = context.proceed();
             final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            log.debug("[jframe-otlp] Completed {} in {}ms", spanName, durationMs);
+            log.debug("[OPENTELEMETRY] Completed {} in {}ms", spanName, durationMs);
             return result;
         } catch (final Exception exception) {
             handleSpanError(span, spanName, startTime, exception);
@@ -127,7 +127,7 @@ public class TracingInterceptor {
         setAttributeIfPresent(span, SPAN_HTTP_REQUEST_ID.getKey(), requestId);
 
         log.debug(
-            "[jframe-otlp] Entering {} | user={} traceId={} spanId={}",
+            "[OPENTELEMETRY] Entering {} | user={} traceId={} spanId={}",
             spanName,
             user,
             span.getSpanContext().getTraceId(),
@@ -145,7 +145,7 @@ public class TracingInterceptor {
         span.recordException(exception);
         span.setStatus(StatusCode.ERROR);
         log.error(
-            "[jframe-otlp] Failed {} in {}ms | error={} message={}",
+            "[OPENTELEMETRY] Failed {} in {}ms | error={} message={}",
             spanName,
             durationMs,
             exception.getClass().getSimpleName(),
