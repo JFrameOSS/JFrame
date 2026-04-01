@@ -21,6 +21,29 @@ jframe:
 
 JFrame maps `jframe.otlp.*` to OpenTelemetry SDK properties (`otel.*`) automatically. The bundled `jframe-properties.yml` configures propagators (B3, Jaeger, W3C TraceContext), exporter settings, and instrumentation flags.
 
+### Auto-instrumentation defaults
+
+JFrame enables these OpenTelemetry Java Starter instrumentations via `jframe-properties.yml`:
+
+| Instrumentation | Property | Default |
+|----------------|----------|---------|
+| JDBC | `otel.instrumentation.jdbc.enabled` | `true` |
+| Spring WebMVC | `otel.instrumentation.spring-webmvc.enabled` | `true` |
+| Spring Web (RestTemplate) | `otel.instrumentation.spring-web.enabled` | `true` |
+| Kafka | `otel.instrumentation.kafka.enabled` | `true` |
+| MongoDB | `otel.instrumentation.mongo.enabled` | `true` |
+| R2DBC | `otel.instrumentation.r2dbc.enabled` | `true` |
+| Logback MDC | `otel.instrumentation.logback-mdc.enabled` | `true` |
+
+Override any in `application.yml`:
+
+```yaml
+otel:
+  instrumentation:
+    kafka:
+      enabled: false
+```
+
 ## Automatic tracing
 
 `TracingAspect` automatically creates spans for public methods in `@Service`, `@Controller`, `@RestController`, and `@Traced` classes.
@@ -84,7 +107,7 @@ public RestTemplate restTemplate(HttpFilter httpFilter) {
 @Bean
 public WebClient webClient(HttpFilter httpFilter) {
     return WebClient.builder()
-        .filter(httpFilter.getExchangeFilterFunction("user-service"))
+        .filter(httpFilter.getExchangeFilter("user-service"))
         .build();
 }
 ```
@@ -117,7 +140,7 @@ X-Span-Id: def456...
 
 ## SSL/TLS client factory
 
-Create SSL-enabled HTTP clients:
+Create SSL-enabled RestTemplate request factories:
 
 ```java
 @Autowired
@@ -125,9 +148,11 @@ private HttpClientSSLFactory sslFactory;
 
 // Secure (with truststore)
 HttpComponentsClientHttpRequestFactory factory =
-    sslFactory.createSecure(truststorePath, password);
+    sslFactory.createRequestFactory(true, truststorePath, password, 10, 30);
 
-// Insecure (trust all — development only)
+// Trust-all (development only — NOT for production!)
 HttpComponentsClientHttpRequestFactory factory =
-    sslFactory.createInsecure();
+    sslFactory.createRequestFactory(false, null, null, 10, 30);
 ```
+
+Parameters: `useSecureConnection`, `trustStorePath`, `trustStorePassword`, `connectTimeoutSeconds`, `readTimeoutSeconds`.

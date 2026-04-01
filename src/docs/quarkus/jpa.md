@@ -1,10 +1,10 @@
 # jframe-quarkus-jpa
 
-Panache-based search repository, specification builder, page mapping, and SQL query logging for Quarkus applications with Hibernate ORM.
+Panache-based search repository, specification builder, page mapping, and SQL query logging for Quarkus with Hibernate ORM.
 
 ## SQL query logging
 
-`DatasourceProxyProducer` wraps your `DataSource` with a logging proxy that pretty-prints all SQL queries at `DEBUG` level. Activates automatically — no configuration needed.
+`DatasourceProxyProducer` wraps your Agroal `DataSource` with a logging proxy. All SQL appears at `DEBUG` level — no configuration needed.
 
 ```
 DEBUG [SLF4JQueryLoggingListener] —
@@ -13,92 +13,274 @@ DEBUG [SLF4JQueryLoggingListener] —
     where u.status = ?
 ```
 
-## Search specifications
+---
 
-Build type-safe JPA Criteria API queries from frontend search inputs using Panache.
+## Paginated search — end-to-end
 
-### Define search metadata
+The search framework converts a single JSON request into a type-safe JPA Criteria API query with sorting, pagination, and filtering. This section walks through every layer.
+
+### 1. Entity
+
+Implement the `PageableItem` marker interface:
+
+```java
+@Entity
+@Table(name = "\"user\"")
+public class User implements PageableItem {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String email;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    private boolean enabled;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @Column(name = "created_at", updatable = false)
+    private OffsetDateTime createdAt;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<OrganizationMembership> organizations = new ArrayList<>();
+}
+```
+
+### 2. Search metadata
+
+Extend `AbstractPanacheSearchMetaData` to map frontend field names to entity paths and search types:
 
 ```java
 @ApplicationScoped
 public class UserSearchMetaData extends AbstractPanacheSearchMetaData {
-    public UserSearchMetaData() {
-        addField("name", "name", SearchType.FUZZY_TEXT, true);
-        addField("email", "email", SearchType.TEXT, true);
-        addField("status", "status", SearchType.ENUM, UserStatus.class, true);
-        addField("createdAt", "createdAt", SearchType.DATE, true);
 
-        // Multi-column fuzzy search
-        addField("fullName",
-            List.of("firstName", "lastName"),
-            SearchType.MULTI_COLUMN_FUZZY, false);
+    public UserSearchMetaData() {
+        // addField(frontendName, entityPath, searchType, sortable)
+        addField("email",     "email",     SearchType.TEXT,       true);
+        addField("enabled",   "enabled",   SearchType.BOOLEAN,    true);
+        addField("role",      "role",      SearchType.MULTI_ENUM, Role.class, true);
+        addField("createdAt", "createdAt", SearchType.DATE,       true);
+
+        // Numeric field — supports JPA path traversal for joins
+        addField("organization", "organizations.organization.id",
+            SearchType.NUMERIC, true);
+
+        // Multi-column fuzzy — one search term across multiple columns
+        addField("search",
+            List.of("email", "firstName", "lastName"),
+            SearchType.MULTI_COLUMN_FUZZY, true);
     }
 }
 ```
 
-### Search types
+> **Entity paths** follow JPA Criteria API conventions. `organizations.organization.id` traverses `User.organizations → OrganizationMembership.organization → Organization.id`.
 
-Same types as Spring — see [Search types reference](../spring/jpa.md#search-types).
+### 3. Repository
 
-### Implement search repository
+Extend `PanacheSearchRepository<T>` and provide the entity class and `EntityManager`:
 
 ```java
 @ApplicationScoped
 public class UserRepository extends PanacheSearchRepository<User> {
-    @Inject EntityManager em;
+
+    @Inject
+    EntityManager em;
 
     @Override
-    protected Class<User> entityClass() { return User.class; }
+    protected Class<User> entityClass() {
+        return User.class;
+    }
 
     @Override
-    protected EntityManager entityManager() { return em; }
+    protected EntityManager entityManager() {
+        return em;
+    }
 }
 ```
 
-### Execute a search
+`PanacheSearchRepository` provides `searchPage(spec, pageNumber, pageSize, sort)` which builds JPA Criteria queries, executes a data query + count query, and returns `PageResource<T>`.
+
+### 4. Service
+
+The service converts frontend input into a paginated query:
 
 ```java
 @ApplicationScoped
-public class UserSearchService {
-    @Inject UserRepository repository;
-    @Inject UserSearchMetaData metaData;
+public class UserService {
 
-    public PageResource<UserDto> search(SortablePageInput input) {
-        PageResource<User> page = repository.search(input, metaData);
-        return new UserPageMapper().map(page);
+    @Inject
+    UserRepository userRepository;
+
+    @Inject
+    UserSearchMetaData userMetaData;
+
+    public PageResource<User> searchUsers(SortablePageInput input) {
+        // 1. Convert search inputs to JPA predicates
+        List<SearchCriterium> criteria =
+            userMetaData.toSearchCriteria(input.getSearchInputs());
+        PanacheSearchSpecification<User> spec =
+            new PanacheSearchSpecification<>(criteria);
+
+        // 2. Convert sort columns to Panache Sort
+        Sort sort = userMetaData.toSort(input.getSortOrder());
+
+        // 3. Execute paginated query
+        return userRepository.searchPage(
+            spec, input.getPageNumber(), input.getPageSize(), sort);
     }
 }
 ```
 
-### Page mapping
+### 5. Response DTO
+
+Implement `PageableItemResource`:
 
 ```java
-public class UserPageMapper extends QuarkusPageMapper<User, UserDto> {
+@Data
+@NoArgsConstructor
+public class UserDetailsResponse implements PageableItemResource {
+    private Long id;
+    private String email;
+    private String firstName;
+    private String lastName;
+    private boolean enabled;
+    private Role role;
+    private ZonedDateTime createdAt;
+}
+```
+
+### 6. Page mapper
+
+Extend `QuarkusPageMapper<Entity, DTO>` for entity→DTO page conversion:
+
+```java
+@ApplicationScoped
+public class UserDetailsMapper extends QuarkusPageMapper<User, UserDetailsResponse> {
+
     @Override
-    protected UserDto mapItem(User entity) {
-        return new UserDto(entity.getId(), entity.getName());
+    protected UserDetailsResponse mapItem(User user) {
+        UserDetailsResponse dto = new UserDetailsResponse();
+        dto.setId(user.getId());
+        dto.setEmail(user.getEmail());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setEnabled(user.isEnabled());
+        dto.setRole(user.getRole());
+        return dto;
     }
 }
 ```
 
-### Frontend request/response format
+Call `mapper.map(content, totalElements, totalPages, pageSize, pageNumber)` or build a helper that takes a `PageResource<Entity>` directly.
 
-Same as Spring — see [Request format](../spring/jpa.md#frontend-request-format) and [Response format](../spring/jpa.md#response-format).
+### 7. REST resource
+
+```java
+@Path("/api/admin/users")
+@ApplicationScoped
+public class AdminUserResource {
+
+    @Inject UserService userService;
+    @Inject UserDetailsMapper userDetailsMapper;
+
+    @POST
+    @Path("/search")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public PageResource<UserDetailsResponse> searchUsers(SortablePageInput input) {
+        PageResource<User> page = userService.searchUsers(input);
+        return userDetailsMapper.map(
+            page.getContent(),
+            page.getTotalElements(),
+            page.getTotalPages(),
+            page.getPageSize(),
+            page.getPageNumber()
+        );
+    }
+}
+```
+
+---
+
+## Frontend request format
+
+The client sends a `SortablePageInput` as JSON:
+
+```json
+{
+  "pageNumber": 0,
+  "pageSize": 20,
+  "sortOrder": [
+    { "name": "createdAt", "direction": "DESC" }
+  ],
+  "searchInputs": [
+    { "fieldName": "search", "textValue": "john" },
+    { "fieldName": "role", "textValueList": ["ADMIN", "MODERATOR"] },
+    { "fieldName": "enabled", "textValue": "true" },
+    { "fieldName": "createdAt", "fromDateValue": "2025-01-01T00:00:00Z", "toDateValue": "2025-12-31T23:59:59Z" }
+  ]
+}
+```
+
+### SearchInput fields per SearchType
+
+| SearchType | Use `textValue` | Use `textValueList` | Use `fromDateValue` + `toDateValue` | `operator` |
+|-----------|:-:|:-:|:-:|:-:|
+| `TEXT` | ✅ | — | — | — |
+| `FUZZY_TEXT` | ✅ | — | — | — |
+| `NUMERIC` | ✅ | — | — | — |
+| `BOOLEAN` | ✅ | — | — | — |
+| `ENUM` | ✅ | — | — | — |
+| `MULTI_TEXT` | — | ✅ | — | — |
+| `MULTI_ENUM` | — | ✅ | — | — |
+| `MULTI_FUZZY` | — | ✅ | — | `AND` / `OR` |
+| `MULTI_COLUMN_FUZZY` | ✅ | — | — | — |
+| `DATE` | — | — | ✅ | — |
 
 ### Inverse search
 
-Prefix search values with `!` to negate predicates:
+Prefix any `textValue` with `!` to negate the predicate:
 
 ```json
-{ "fieldName": "status", "textValue": "!DISABLED" }
+{ "fieldName": "role", "textValue": "!DISABLED" }
 ```
+
+Generates `role != 'DISABLED'` instead of `role = 'DISABLED'`.
+
+## Response format
+
+```json
+{
+  "totalElements": 142,
+  "totalPages": 8,
+  "pageSize": 20,
+  "pageNumber": 0,
+  "content": [
+    { "id": 1, "email": "john@example.com", "firstName": "John", ... },
+    ...
+  ]
+}
+```
+
+---
+
+## Search types reference
+
+Same types as Spring — see [Search types reference](../spring/jpa.md#search-types-reference).
 
 ## Sort adapter
 
 `PanacheSortAdapter` converts `List<SortableColumn>` to Panache `Sort`:
 
 ```java
-Sort sort = PanacheSortAdapter.toSort(input.getSortOrder(), metaData);
+Sort sort = PanacheSortAdapter.toSort(input.getSortOrder());
 ```
 
-This is handled automatically by `PanacheSearchRepository` — you only need it for custom queries.
+This is handled automatically by `AbstractPanacheSearchMetaData.toSort()` — you only need `PanacheSortAdapter` for custom queries outside the search framework.

@@ -32,10 +32,10 @@ JAX-RS container filters log every HTTP request and response with structured MDC
 
 | Priority | Filter | Purpose |
 |----------|--------|---------|
-| 50 | TracingResponseFilter | Trace/span ID propagation (requires `quarkus-otlp`) |
-| 100 | TransactionIdFilter | Reads/generates transaction ID from header, stores in MDC (`tx_id`) |
-| 200 | RequestIdFilter | Generates UUID per request, stores in MDC (`req_id`) |
+| 100 | TransactionIdFilter | Reads/generates transaction ID from header, stores in MDC (`transaction.id`) |
+| 200 | RequestIdFilter | Generates UUID per request, stores in MDC (`request.id`) |
 | 300 | RequestDurationFilter | Measures and logs request duration |
+| 350 | TracingResponseFilter | Trace/span ID propagation (requires `quarkus-otlp`) |
 | 400 | RequestResponseLogFilter | Logs full request/response with body masking |
 
 ### Accessing request context
@@ -154,11 +154,23 @@ The interceptor generates a single UUID used for both `RequestId` and `Transacti
 
 ## Jackson configuration
 
-`JFrameJacksonCustomizer` produces a configured `ObjectMapper`:
+`JFrameJacksonCustomizer` produces a configured `ObjectMapper` (Jackson 3.x):
 - Property naming: `lowerCamelCase`
 - No pretty-print
 - Always include values (no null exclusion)
 - Ignore unknown properties on deserialization
+
+## OpenAPI integration
+
+`JFrameErrorResponseFilter` (`OASFilter`) auto-adds standard error responses to all OpenAPI operations:
+
+| Status | Description | Schema |
+|--------|-------------|--------|
+| 400 | Bad Request | `ApiErrorResponseResource` |
+| 429 | Too Many Requests | `RateLimitErrorResponseResource` |
+| 500 | Internal Server Error | `ErrorResponseResource` |
+
+No configuration needed — activates automatically with `quarkus-smallrye-openapi`.
 
 ## Startup logging
 
