@@ -1,6 +1,7 @@
 package io.github.jframe.tracing.aspect;
 
 import io.github.jframe.autoconfigure.properties.OpenTelemetryProperties;
+import io.github.jframe.logging.ecs.EcsFields;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -18,8 +19,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
+import static io.github.jframe.logging.ecs.EcsFieldNames.SPAN_ID;
+import static io.github.jframe.logging.ecs.EcsFieldNames.TRACE_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -96,6 +100,59 @@ class TracingAspectTest extends UnitTest {
 
         // And: Result is returned
         assertThat(result, is("result"));
+    }
+
+    @Test
+    @DisplayName("Should populate MDC with trace and span IDs during execution and restore after")
+    void traceClass_shouldPopulateMdcWithTraceAndSpanIds() throws Throwable {
+        // Given: No prior trace context in MDC
+        EcsFields.clear(TRACE_ID, SPAN_ID);
+
+        when(joinPoint.getTarget()).thenReturn(new Object());
+        when(signature.getName()).thenReturn("processOrder");
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(openTelemetryProperties.getExcludedMethods()).thenReturn(Set.of());
+        when(joinPoint.proceed()).thenAnswer(invocation -> {
+            // Capture MDC values during method execution
+            assertThat(EcsFields.get(TRACE_ID), is("00000000000000000000000000000001"));
+            assertThat(EcsFields.get(SPAN_ID), is("0000000000000001"));
+            return "result";
+        });
+
+        // When: Aspect intercepts the method
+        tracingAspect.traceClass(joinPoint);
+
+        // Then: MDC is cleared after execution (no previous values to restore)
+        assertThat(EcsFields.get(TRACE_ID), is(nullValue()));
+        assertThat(EcsFields.get(SPAN_ID), is(nullValue()));
+    }
+
+    @Test
+    @DisplayName("Should restore previous MDC trace/span IDs after nested execution")
+    void traceClass_withExistingMdcValues_shouldRestorePreviousValues() throws Throwable {
+        // Given: An outer span already set trace/span IDs in MDC (simulates nested aspects)
+        final String outerTraceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1";
+        final String outerSpanId = "aaaaaaaaaaaaaaaa";
+        EcsFields.tag(TRACE_ID, outerTraceId);
+        EcsFields.tag(SPAN_ID, outerSpanId);
+
+        when(joinPoint.getTarget()).thenReturn(new Object());
+        when(signature.getName()).thenReturn("innerMethod");
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(openTelemetryProperties.getExcludedMethods()).thenReturn(Set.of());
+        when(joinPoint.proceed()).thenAnswer(invocation -> {
+            // During inner execution, MDC has the inner span's IDs
+            assertThat(EcsFields.get(TRACE_ID), is("00000000000000000000000000000001"));
+            assertThat(EcsFields.get(SPAN_ID), is("0000000000000001"));
+            return "result";
+        });
+
+        // When: Inner aspect intercepts
+        tracingAspect.traceClass(joinPoint);
+
+        // Then: MDC is restored to outer span's values
+        assertThat(EcsFields.get(TRACE_ID), is(outerTraceId));
+        assertThat(EcsFields.get(SPAN_ID), is(outerSpanId));
     }
 
     @Test

@@ -198,6 +198,30 @@ All MDC field keys changed to ECS-compliant names. Update any Elasticsearch inde
 
 See [ECS naming convention migration](ecs-naming-convention-migration.md) for the complete field mapping table.
 
+### Update logback-spring.xml
+
+If your `logback-spring.xml` pattern references MDC keys directly, update them to the new ECS names:
+
+```xml
+<!-- Before -->
+<pattern>%d{HH:mm:ss.SSS} %level [TX:%X{tx_id}/TRACE:%X{traceId}] [%thread] [%logger:%line]: %msg%n</pattern>
+
+<!-- After -->
+<pattern>%d{HH:mm:ss.SSS} %level [TX:%X{transaction.id}/TRACE:%X{trace.id}] [%thread] [%logger:%line]: %msg%n</pattern>
+```
+
+Common substitutions in log patterns:
+
+| Old MDC key | New MDC key |
+|---|---|
+| `%X{tx_id}` | `%X{transaction.id}` |
+| `%X{req_id}` | `%X{request.id}` |
+| `%X{traceId}` | `%X{trace.id}` |
+| `%X{spanId}` | `%X{span.id}` |
+| `%X{http_status}` | `%X{http.response.status_code}` |
+
+> **Note:** If you use a JSON encoder like `LogstashEncoder`, the field names are handled automatically by MDC — no pattern changes needed, but downstream log consumers (Elasticsearch, Kibana dashboards, alerts) must be updated to query the new field names.
+
 ---
 
 ## Step 3: Fix HttpStatus references
@@ -435,6 +459,7 @@ span.setStatus(StatusCode.ERROR);
 - [ ] Replaced `registerKibanaLogFieldsInThisThread()` → `registerEcsFieldsInThisThread()`
 - [ ] Updated Elasticsearch index patterns for ECS field names
 - [ ] Updated Kibana dashboards and saved searches
+- [ ] Updated `logback-spring.xml` MDC keys (`tx_id` → `transaction.id`, `traceId` → `trace.id`, etc.)
 
 ### HttpStatus migration
 - [ ] Replaced `org.springframework.http.HttpStatus` → `jakarta.ws.rs.core.Response.Status`

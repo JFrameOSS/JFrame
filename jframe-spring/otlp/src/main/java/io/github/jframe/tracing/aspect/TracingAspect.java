@@ -1,6 +1,7 @@
 package io.github.jframe.tracing.aspect;
 
 import io.github.jframe.autoconfigure.properties.OpenTelemetryProperties;
+import io.github.jframe.logging.ecs.EcsField;
 import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.tracing.MethodExclusionRules;
 import io.github.jframe.tracing.SpanNamingUtil;
@@ -21,7 +22,10 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
 
 /**
- * Aspect for tracing method execution using Micrometer Tracing. This aspect will create a span for each method annotated with @Traced.
+ * Aspect for tracing method execution using OpenTelemetry. Creates a span for each method in traced classes.
+ *
+ * <p>{@code @Scheduled} methods are traced by {@link io.github.jframe.tracing.scheduled.TracingScheduledTaskEnricher}
+ * via the {@link io.github.jframe.logging.scheduled.ScheduledAspect} enricher strategy pattern.
  */
 @Slf4j
 @Aspect
@@ -79,8 +83,13 @@ public class TracingAspect {
             .setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID))
             .startSpan();
 
+        final String previousTraceId = EcsFields.get(TRACE_ID);
+        final String previousSpanId = EcsFields.get(SPAN_ID);
+
         final long startTime = System.nanoTime();
         try (Scope scope = span.makeCurrent()) {
+            EcsFields.tag(TRACE_ID, span.getSpanContext().getTraceId());
+            EcsFields.tag(SPAN_ID, span.getSpanContext().getSpanId());
             log.debug(
                 "[OPENTELEMETRY] Entering {} | user={} traceId={} spanId={}",
                 spanName,
@@ -106,6 +115,16 @@ public class TracingAspect {
             throw throwable;
         } finally {
             span.end();
+            restoreMdcField(TRACE_ID, previousTraceId);
+            restoreMdcField(SPAN_ID, previousSpanId);
+        }
+    }
+
+    private void restoreMdcField(final EcsField field, final String previousValue) {
+        if (previousValue != null) {
+            EcsFields.tag(field, previousValue);
+        } else {
+            EcsFields.clear(field);
         }
     }
 }

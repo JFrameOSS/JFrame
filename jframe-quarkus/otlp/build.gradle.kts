@@ -23,7 +23,6 @@ dependencies {
     compileOnly("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-opentelemetry", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-security", retrieve("quarkusVersion"))
-    compileOnly("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
 
     // Test dependencies
     testImplementation("com.fasterxml.jackson.core", "jackson-annotations", retrieve("jacksonAnnotationsVersion"))
@@ -36,6 +35,5 @@ dependencies {
     testImplementation("io.quarkus", "quarkus-opentelemetry", retrieve("quarkusVersion"))
     testImplementation("io.quarkus", "quarkus-security", retrieve("quarkusVersion"))
     testImplementation("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
-    testImplementation("jakarta.ws.rs", "jakarta.ws.rs-api", retrieve("jakartaWsrsVersion"))
     testRuntimeOnly("org.junit.platform", "junit-platform-launcher", retrieve("junitVersion"))
 }
