@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
  * <li>Span creation with correct name (ClassName.methodName or custom from @Traced)</li>
  * <li>Span attributes: service.name, service.method</li>
  * <li>Return value pass-through</li>
- * <li>Exclusion of getter/setter/well-known methods (get*, set*, is*, toString, hashCode, equals, clone)</li>
+ * <li>Exclusion of getter/setter/well-known methods (toString, hashCode, equals, clone)</li>
  * <li>Exclusion of methods configured in {@link OpenTelemetryConfig#excludedMethods()}</li>
  * <li>Disabled-tracing pass-through</li>
  * <li>Exception enrichment (error=true, error.type, error.message, StatusCode.ERROR) and re-throw</li>
@@ -291,61 +291,12 @@ public class TracingInterceptorTest extends UnitTest {
         }
     }
 
-    // ======================== AC4: EXCLUDED PREFIXES / WELL-KNOWN METHODS ========================
+    // ======================== AC4: EXCLUDED WELL-KNOWN METHODS ========================
 
 
     @Nested
-    @DisplayName("AC4 - Excluded method prefixes and well-known method names")
-    class ExcludedPrefixMethods {
-
-        @Test
-        @DisplayName("Should skip span for method with 'get' prefix (getName)")
-        public void shouldSkipSpanForMethodWithGetPrefix() throws Exception {
-            // Given: A getter method on SampleService
-            final SampleService target = new SampleService();
-            final Method method = SampleService.class.getMethod("getName");
-            final InvocationContext context = aContextFor(target, method, "name");
-
-            // When: The interceptor processes the getter
-            interceptor.aroundInvoke(context);
-
-            // Then: No span is created — tracer is never consulted
-            verify(tracer, never()).spanBuilder(anyString());
-            verify(context).proceed();
-        }
-
-        @Test
-        @DisplayName("Should skip span for method with 'set' prefix (setName)")
-        public void shouldSkipSpanForMethodWithSetPrefix() throws Exception {
-            // Given: A setter method on SampleService
-            final SampleService target = new SampleService();
-            final Method method = SampleService.class.getMethod("setName", String.class);
-            final InvocationContext context = aContextFor(target, method);
-            when(context.proceed()).thenReturn(null);
-
-            // When: The interceptor processes the setter
-            interceptor.aroundInvoke(context);
-
-            // Then: No span is created
-            verify(tracer, never()).spanBuilder(anyString());
-            verify(context).proceed();
-        }
-
-        @Test
-        @DisplayName("Should skip span for method with 'is' prefix (isActive)")
-        public void shouldSkipSpanForMethodWithIsPrefix() throws Exception {
-            // Given: A boolean getter method on SampleService
-            final SampleService target = new SampleService();
-            final Method method = SampleService.class.getMethod("isActive");
-            final InvocationContext context = aContextFor(target, method, true);
-
-            // When: The interceptor processes the method
-            interceptor.aroundInvoke(context);
-
-            // Then: No span is created
-            verify(tracer, never()).spanBuilder(anyString());
-            verify(context).proceed();
-        }
+    @DisplayName("AC4 - Excluded well-known method names")
+    class ExcludedWellKnownMethods {
 
         @Test
         @DisplayName("Should skip span for toString method")
@@ -396,19 +347,19 @@ public class TracingInterceptorTest extends UnitTest {
         }
 
         @Test
-        @DisplayName("Should skip span for method with 'get' prefix even when not a simple getter (getData)")
-        public void shouldSkipSpanForGetDataMethodWithGetPrefix() throws Exception {
-            // Given: getData method which starts with 'get' but is not a simple accessor
+        @DisplayName("Should create span for method starting with get (prefix exclusion removed)")
+        public void shouldCreateSpanForMethodWithGetPrefix() throws Exception {
+            // Given: No excluded methods in config — getName starts with 'get' but prefix exclusion is gone
+            when(config.excludedMethods()).thenReturn(Set.of());
             final SampleService target = new SampleService();
-            final Method method = SampleService.class.getMethod("getData");
-            final InvocationContext context = aContextFor(target, method, "data");
+            final Method method = SampleService.class.getMethod("getName");
+            final InvocationContext context = aContextFor(target, method, "name");
 
             // When: The interceptor processes the method
             interceptor.aroundInvoke(context);
 
-            // Then: Still excluded because of the 'get' prefix rule
-            verify(tracer, never()).spanBuilder(anyString());
-            verify(context).proceed();
+            // Then: Span IS created — prefix-based exclusion no longer exists
+            verify(tracer).spanBuilder("SampleService.getName");
         }
     }
 
@@ -779,10 +730,10 @@ public class TracingInterceptorTest extends UnitTest {
         @Test
         @DisplayName("Should call context.proceed() exactly once for excluded methods")
         public void shouldCallContextProceedExactlyOnceForExcludedMethods() throws Exception {
-            // Given: A getter method on SampleService (excluded by prefix rule)
+            // Given: A well-known method on SampleService (excluded by EXCLUDED_NAMES)
             final SampleService target = new SampleService();
-            final Method method = SampleService.class.getMethod("getName");
-            final InvocationContext context = aContextFor(target, method, "name");
+            final Method method = SampleService.class.getMethod("toString");
+            final InvocationContext context = aContextFor(target, method, "SampleService");
 
             // When: The interceptor processes the excluded method
             interceptor.aroundInvoke(context);

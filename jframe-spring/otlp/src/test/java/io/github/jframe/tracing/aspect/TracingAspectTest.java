@@ -254,24 +254,6 @@ class TracingAspectTest extends UnitTest {
         verify(span).end();
     }
 
-    @Test
-    @DisplayName("Should not create span for get* prefixed method name")
-    void traceClass_withGetPrefixedMethod_shouldSkipSpanCreation() throws Throwable {
-        // Given: A getter-style method
-        when(joinPoint.getTarget()).thenReturn(new Object());
-        when(signature.getName()).thenReturn("getUserById");
-        when(joinPoint.getSignature()).thenReturn(signature);
-        when(openTelemetryProperties.getExcludedMethods()).thenReturn(Set.of());
-        when(joinPoint.proceed()).thenReturn("user");
-
-        // When: Aspect intercepts
-        final Object result = tracingAspect.traceClass(joinPoint);
-
-        // Then: No span is created (MethodExclusionRules matches get* prefix)
-        verify(tracer, never()).spanBuilder(anyString());
-        assertThat(result, is("user"));
-    }
-
     private void setupSpanBuilderMocks() {
         lenient().when(tracer.spanBuilder(anyString())).thenReturn(spanBuilder);
         lenient().when(spanBuilder.setAttribute(anyString(), anyString())).thenReturn(spanBuilder);

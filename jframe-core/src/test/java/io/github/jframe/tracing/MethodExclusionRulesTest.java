@@ -78,51 +78,6 @@ class MethodExclusionRulesTest extends UnitTest {
 
 
     @Nested
-    @DisplayName("isExcluded - excluded prefixes")
-    class ExcludedPrefixes {
-
-        @Test
-        @DisplayName("Should exclude method starting with get prefix")
-        void shouldExcludeWhenMethodStartsWithGet() {
-            // Given: method name starts with get
-            final Set<String> configExcluded = Set.of();
-
-            // When: checking exclusion
-            final boolean result = MethodExclusionRules.isExcluded("getName", configExcluded);
-
-            // Then: method is excluded
-            assertThat(result, is(true));
-        }
-
-        @Test
-        @DisplayName("Should exclude method starting with set prefix")
-        void shouldExcludeWhenMethodStartsWithSet() {
-            // Given: method name starts with set
-            final Set<String> configExcluded = Set.of();
-
-            // When: checking exclusion
-            final boolean result = MethodExclusionRules.isExcluded("setFoo", configExcluded);
-
-            // Then: method is excluded
-            assertThat(result, is(true));
-        }
-
-        @Test
-        @DisplayName("Should exclude method starting with is prefix")
-        void shouldExcludeWhenMethodStartsWithIs() {
-            // Given: method name starts with is
-            final Set<String> configExcluded = Set.of();
-
-            // When: checking exclusion
-            final boolean result = MethodExclusionRules.isExcluded("isActive", configExcluded);
-
-            // Then: method is excluded
-            assertThat(result, is(true));
-        }
-    }
-
-
-    @Nested
     @DisplayName("isExcluded - config excluded methods")
     class ConfigExcludedMethods {
 
@@ -172,15 +127,54 @@ class MethodExclusionRulesTest extends UnitTest {
         }
 
         @Test
-        @DisplayName("Should not exclude method with prefix-like name that is not a prefix match")
+        @DisplayName("Should not exclude a regular method that doesn't match any rule")
         void shouldNotExcludeWhenMethodDoesNotMatchAnyRule() {
-            // Given: a method that looks similar to prefix but does not match
+            // Given: a regular method not matching any exclusion rule
             final Set<String> configExcluded = Set.of();
 
-            // When: checking exclusion for a method without get/set/is prefix
+            // When: checking exclusion
             final boolean result = MethodExclusionRules.isExcluded("fetchData", configExcluded);
 
             // Then: method is not excluded
+            assertThat(result, is(false));
+        }
+
+        @Test
+        @DisplayName("Should not exclude method starting with get (prefix exclusion removed)")
+        void shouldNotExcludeMethodStartingWithGet() {
+            // Given: method name starts with get
+            final Set<String> configExcluded = Set.of();
+
+            // When: checking exclusion
+            final boolean result = MethodExclusionRules.isExcluded("getName", configExcluded);
+
+            // Then: method is NOT excluded — prefix-based exclusion no longer exists
+            assertThat(result, is(false));
+        }
+
+        @Test
+        @DisplayName("Should not exclude method starting with set (prefix exclusion removed)")
+        void shouldNotExcludeMethodStartingWithSet() {
+            // Given: method name starts with set
+            final Set<String> configExcluded = Set.of();
+
+            // When: checking exclusion
+            final boolean result = MethodExclusionRules.isExcluded("setFoo", configExcluded);
+
+            // Then: method is NOT excluded — prefix-based exclusion no longer exists
+            assertThat(result, is(false));
+        }
+
+        @Test
+        @DisplayName("Should not exclude method starting with is (prefix exclusion removed)")
+        void shouldNotExcludeMethodStartingWithIs() {
+            // Given: method name starts with is
+            final Set<String> configExcluded = Set.of();
+
+            // When: checking exclusion
+            final boolean result = MethodExclusionRules.isExcluded("isActive", configExcluded);
+
+            // Then: method is NOT excluded — prefix-based exclusion no longer exists
             assertThat(result, is(false));
         }
     }
