@@ -103,7 +103,7 @@ public class TracingEnricherTest extends UnitTest {
         when(span.setStatus(org.mockito.ArgumentMatchers.any(StatusCode.class))).thenReturn(span);
 
         // Default auth: known user
-        when(authUtil.getAuthenticatedSubject()).thenReturn(REMOTE_USER);
+        EcsFields.tag(USER_NAME, REMOTE_USER);
     }
 
     @AfterEach

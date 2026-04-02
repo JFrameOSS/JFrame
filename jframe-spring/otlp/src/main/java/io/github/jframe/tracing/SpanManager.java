@@ -1,6 +1,7 @@
 package io.github.jframe.tracing;
 
 import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.security.AuthenticationConstants;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientRequest;
 
 import static io.github.jframe.logging.ecs.EcsFieldNames.*;
-import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
+import static io.github.jframe.logging.ecs.EcsFieldNames.USER_NAME;
 import static io.github.jframe.util.constants.Constants.Headers.L7_REQUEST_ID;
 
 /**
@@ -57,7 +58,7 @@ public class SpanManager {
             .setSpanKind(SpanKind.CLIENT)
             .setAttribute(SPAN_PEER_SERVICE.getKey(), serviceName)
             .setAttribute(SPAN_SERVICE_NAME.getKey(), host)
-            .setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), getAuthenticatedSubject())
+            .setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS))
             .setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID))
             .setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID))
             .setAttribute(SPAN_EXT_REQUEST_URI.getKey(), host + uri.getPath())

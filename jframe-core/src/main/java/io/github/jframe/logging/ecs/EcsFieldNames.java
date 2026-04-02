@@ -148,6 +148,9 @@ public enum EcsFieldNames implements EcsField {
     /** The username. */
     USER_NAME("user.name"),
 
+    /** The user roles. */
+    USER_ROLES("user.roles"),
+
     // --- Log metadata ---
 
     /** The log type / event category. */

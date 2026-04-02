@@ -3,6 +3,7 @@ package io.github.jframe.tracing.enricher;
 import io.github.jframe.exception.handler.enricher.ErrorResponseEnricher;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.security.AuthenticationConstants;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 import static io.github.jframe.logging.ecs.EcsFieldNames.*;
-import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
+import static io.github.jframe.logging.ecs.EcsFieldNames.USER_NAME;
 
 /**
  * Enriches the error response with tracing information when an error occurs in a web request.
@@ -51,7 +52,7 @@ public class TracingResponseEnricher implements ErrorResponseEnricher {
             // Enrich the span with error information
             currentSpan.recordException(throwable);
             currentSpan.setStatus(StatusCode.ERROR);
-            currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), getAuthenticatedSubject());
+            currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS));
             currentSpan.setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID));
             currentSpan.setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID));
             currentSpan.setAttribute(SPAN_HTTP_URI.getKey(), httpServletRequest.getRequestURI());

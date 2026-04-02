@@ -2,6 +2,7 @@ package io.github.jframe.tracing.interceptor;
 
 import io.github.jframe.autoconfigure.OpenTelemetryConfig;
 import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.security.AuthenticationConstants;
 import io.github.jframe.security.QuarkusAuthenticationUtil;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
@@ -163,7 +164,7 @@ public class TracingInterceptorTest extends UnitTest {
         when(span.getSpanContext()).thenReturn(spanContext);
 
         // Default auth: anonymous (no user authenticated)
-        when(authenticationUtil.getAuthenticatedSubject()).thenReturn("ANONYMOUS - NO AUTHENTICATION");
+        EcsFields.tag(USER_NAME, AuthenticationConstants.ANONYMOUS);
     }
 
     // ======================== FACTORY METHODS ========================
@@ -823,7 +824,7 @@ public class TracingInterceptorTest extends UnitTest {
         @DisplayName("Should set http.remote_user attribute on span when authenticated user is present")
         public void shouldSetHttpRemoteUserAttributeOnSpanWhenAuthenticatedUserIsPresent() throws Exception {
             // Given: The authentication utility reports an authenticated user
-            when(authenticationUtil.getAuthenticatedSubject()).thenReturn("john.doe");
+            EcsFields.tag(USER_NAME, "john.doe");
             final SampleService target = new SampleService();
             final Method method = SampleService.class.getMethod("doWork");
             final InvocationContext context = aContextFor(target, method, "result");
@@ -918,7 +919,7 @@ public class TracingInterceptorTest extends UnitTest {
         @DisplayName("Should set all enrichment attributes when both MDC values and auth are present")
         public void shouldSetAllEnrichmentAttributesWhenBothMdcValuesAndAuthArePresent() throws Exception {
             // Given: A fully identified request — authenticated user and both correlation IDs in MDC
-            when(authenticationUtil.getAuthenticatedSubject()).thenReturn("jane.smith");
+            EcsFields.tag(USER_NAME, "jane.smith");
             EcsFields.tag(TX_ID, "tx-999");
             EcsFields.tag(REQUEST_ID, "req-888");
             final SampleService target = new SampleService();

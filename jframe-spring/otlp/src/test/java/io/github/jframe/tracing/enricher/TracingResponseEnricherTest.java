@@ -2,7 +2,6 @@ package io.github.jframe.tracing.enricher;
 
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.logging.ecs.EcsFields;
-import io.github.jframe.security.AuthenticationUtil;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
@@ -109,15 +108,14 @@ class TracingResponseEnricherTest extends UnitTest {
     @Test
     @DisplayName("Should record exception on span when enriching error response")
     void shouldRecordExceptionOnSpanWhenEnrichingErrorResponse() {
-        // Given: A recording span and a RuntimeException
+        // Given: A recording span, a RuntimeException, and user identity in MDC
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("Internal error");
+        EcsFields.tag(USER_NAME, REMOTE_USER);
 
         // When: doEnrich is called with the recording span active
-        try (MockedStatic<Span> spanStatic = mockStatic(Span.class);
-            MockedStatic<AuthenticationUtil> authStatic = mockStatic(AuthenticationUtil.class)) {
+        try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
             spanStatic.when(Span::current).thenReturn(span);
-            authStatic.when(AuthenticationUtil::getAuthenticatedSubject).thenReturn(REMOTE_USER);
 
             enricher.doEnrich(resource, throwable, servletWebRequest, HTTP_STATUS);
         }
@@ -130,15 +128,14 @@ class TracingResponseEnricherTest extends UnitTest {
     @Test
     @DisplayName("Should enrich span with HTTP metadata when enriching error response")
     void shouldEnrichSpanWithHttpMetadataWhenEnrichingErrorResponse() {
-        // Given: A recording span with full HTTP request context
+        // Given: A recording span with full HTTP request context and user identity in MDC
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("Internal error");
+        EcsFields.tag(USER_NAME, REMOTE_USER);
 
         // When: doEnrich is called
-        try (MockedStatic<Span> spanStatic = mockStatic(Span.class);
-            MockedStatic<AuthenticationUtil> authStatic = mockStatic(AuthenticationUtil.class)) {
+        try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
             spanStatic.when(Span::current).thenReturn(span);
-            authStatic.when(AuthenticationUtil::getAuthenticatedSubject).thenReturn(REMOTE_USER);
 
             enricher.doEnrich(resource, throwable, servletWebRequest, HTTP_STATUS);
         }
@@ -158,15 +155,14 @@ class TracingResponseEnricherTest extends UnitTest {
     @Test
     @DisplayName("Should record exception with null message without NPE")
     void shouldRecordExceptionWithNullMessageWithoutNpe() {
-        // Given: A throwable whose getMessage() returns null
+        // Given: A throwable whose getMessage() returns null and user identity in MDC
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException((String) null);
+        EcsFields.tag(USER_NAME, REMOTE_USER);
 
         // When: doEnrich is called — should not throw NPE
-        try (MockedStatic<Span> spanStatic = mockStatic(Span.class);
-            MockedStatic<AuthenticationUtil> authStatic = mockStatic(AuthenticationUtil.class)) {
+        try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
             spanStatic.when(Span::current).thenReturn(span);
-            authStatic.when(AuthenticationUtil::getAuthenticatedSubject).thenReturn(REMOTE_USER);
 
             enricher.doEnrich(resource, throwable, servletWebRequest, HTTP_STATUS);
         }
@@ -179,15 +175,14 @@ class TracingResponseEnricherTest extends UnitTest {
     @Test
     @DisplayName("Should set trace correlation IDs on span")
     void shouldSetTraceCorrelationIdsOnSpan() {
-        // Given: TX_ID and REQUEST_ID are set in ECS MDC
+        // Given: TX_ID and REQUEST_ID are set in ECS MDC, and user identity in MDC
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("test error");
+        EcsFields.tag(USER_NAME, REMOTE_USER);
 
         // When: doEnrich is called with a recording span
-        try (MockedStatic<Span> spanStatic = mockStatic(Span.class);
-            MockedStatic<AuthenticationUtil> authStatic = mockStatic(AuthenticationUtil.class)) {
+        try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
             spanStatic.when(Span::current).thenReturn(span);
-            authStatic.when(AuthenticationUtil::getAuthenticatedSubject).thenReturn(REMOTE_USER);
 
             enricher.doEnrich(resource, throwable, servletWebRequest, HTTP_STATUS);
         }
@@ -232,15 +227,14 @@ class TracingResponseEnricherTest extends UnitTest {
     @Test
     @DisplayName("Should set trace and span IDs on error response resource")
     void shouldSetTraceAndSpanIdsOnErrorResponseResource() {
-        // Given: A recording span with valid span context
+        // Given: A recording span with valid span context and user identity in MDC
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("test error");
+        EcsFields.tag(USER_NAME, REMOTE_USER);
 
         // When: doEnrich is called
-        try (MockedStatic<Span> spanStatic = mockStatic(Span.class);
-            MockedStatic<AuthenticationUtil> authStatic = mockStatic(AuthenticationUtil.class)) {
+        try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
             spanStatic.when(Span::current).thenReturn(span);
-            authStatic.when(AuthenticationUtil::getAuthenticatedSubject).thenReturn(REMOTE_USER);
 
             enricher.doEnrich(resource, throwable, servletWebRequest, HTTP_STATUS);
         }

@@ -3,7 +3,7 @@ package io.github.jframe.tracing.interceptor;
 import io.github.jframe.autoconfigure.OpenTelemetryConfig;
 import io.github.jframe.logging.ecs.EcsField;
 import io.github.jframe.logging.ecs.EcsFields;
-import io.github.jframe.security.QuarkusAuthenticationUtil;
+import io.github.jframe.security.AuthenticationConstants;
 import io.github.jframe.tracing.MethodExclusionRules;
 import io.github.jframe.tracing.SpanNamingUtil;
 import io.github.jframe.tracing.Traced;
@@ -53,9 +53,6 @@ public class TracingInterceptor {
 
     @Inject
     private OpenTelemetryConfig config;
-
-    @Inject
-    private QuarkusAuthenticationUtil authenticationUtil;
 
     private Tracer resolveTracer() {
         if (tracer == null) {
@@ -118,7 +115,7 @@ public class TracingInterceptor {
     }
 
     private void enrichSpanAndLog(final Span span, final String spanName) {
-        final String user = authenticationUtil.getAuthenticatedSubject();
+        final String user = EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS);
         final String txId = EcsFields.get(TX_ID);
         final String requestId = EcsFields.get(REQUEST_ID);
 

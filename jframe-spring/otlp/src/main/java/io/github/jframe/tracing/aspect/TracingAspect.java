@@ -3,6 +3,7 @@ package io.github.jframe.tracing.aspect;
 import io.github.jframe.autoconfigure.properties.OpenTelemetryProperties;
 import io.github.jframe.logging.ecs.EcsField;
 import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.security.AuthenticationConstants;
 import io.github.jframe.tracing.MethodExclusionRules;
 import io.github.jframe.tracing.SpanNamingUtil;
 import io.opentelemetry.api.trace.Span;
@@ -19,7 +20,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import static io.github.jframe.logging.ecs.EcsFieldNames.*;
-import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubject;
+import static io.github.jframe.logging.ecs.EcsFieldNames.USER_NAME;
 
 /**
  * Aspect for tracing method execution using OpenTelemetry. Creates a span for each method in traced classes.
@@ -78,7 +79,7 @@ public class TracingAspect {
         final Span span = tracer.spanBuilder(spanName)
             .setAttribute(SPAN_SERVICE_NAME.getKey(), className)
             .setAttribute(SPAN_SERVICE_METHOD.getKey(), methodName)
-            .setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), getAuthenticatedSubject())
+            .setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS))
             .setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID))
             .setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID))
             .startSpan();
@@ -93,7 +94,7 @@ public class TracingAspect {
             log.debug(
                 "[OPENTELEMETRY] Entering {} | user={} traceId={} spanId={}",
                 spanName,
-                getAuthenticatedSubject(),
+                EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS),
                 span.getSpanContext().getTraceId(),
                 span.getSpanContext().getSpanId()
             );

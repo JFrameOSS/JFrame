@@ -3,12 +3,11 @@ package io.github.jframe.tracing.enricher;
 import io.github.jframe.exception.enricher.ErrorResponseEnricher;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.logging.ecs.EcsFields;
-import io.github.jframe.security.QuarkusAuthenticationUtil;
+import io.github.jframe.security.AuthenticationConstants;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
 import static io.github.jframe.logging.ecs.EcsFieldNames.*;
@@ -33,23 +32,11 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 @ApplicationScoped
 public class TracingEnricher implements ErrorResponseEnricher {
 
-    @Inject
-    private QuarkusAuthenticationUtil authUtil;
-
     /**
      * No-arg constructor required by CDI.
      */
     public TracingEnricher() {
         // CDI proxy constructor
-    }
-
-    /**
-     * Constructor for injection and testing.
-     *
-     * @param authUtil the authentication utility
-     */
-    public TracingEnricher(final QuarkusAuthenticationUtil authUtil) {
-        this.authUtil = authUtil;
     }
 
     @Override
@@ -69,7 +56,7 @@ public class TracingEnricher implements ErrorResponseEnricher {
 
         currentSpan.recordException(throwable);
         currentSpan.setStatus(StatusCode.ERROR);
-        currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), authUtil.getAuthenticatedSubject());
+        currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS));
         currentSpan.setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID));
         currentSpan.setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID));
         currentSpan.setAttribute(SPAN_HTTP_URI.getKey(), requestContext.getUriInfo().getRequestUri().getPath());
