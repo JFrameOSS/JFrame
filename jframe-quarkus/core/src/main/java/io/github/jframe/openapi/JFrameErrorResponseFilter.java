@@ -20,16 +20,17 @@ import org.eclipse.microprofile.openapi.models.media.Schema;
 import org.eclipse.microprofile.openapi.models.responses.APIResponse;
 import org.eclipse.microprofile.openapi.models.responses.APIResponses;
 
+import static io.quarkus.smallrye.openapi.OpenApiFilter.RunStage.RUNTIME_PER_REQUEST;
+
 /**
  * OASFilter that automatically adds standard error response documentation to all operations.
  *
  * <p>Adds 400, 429, and 500 error responses to every operation that does not already define them,
- * ensuring consistent error documentation across all endpoints without requiring per-endpoint
- * {@code @APIResponse} annotations.
+ * ensuring consistent error documentation across all endpoints without requiring per-endpoint {@code @APIResponse} annotations.
  */
 @Slf4j
 @ApplicationScoped
-@OpenApiFilter(OpenApiFilter.RunStage.RUN)
+@OpenApiFilter(stages = RUNTIME_PER_REQUEST)
 public class JFrameErrorResponseFilter implements OASFilter {
 
     private static final String STATUS_400 = "400";

@@ -18,7 +18,6 @@ dependencies {
 
     // Quarkus APIs — compileOnly (provided by consumer's Quarkus runtime)
     compileOnly("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
-    compileOnly("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
     compileOnly("io.quarkus", "quarkus-arc", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-opentelemetry", retrieve("quarkusVersion"))
@@ -29,11 +28,8 @@ dependencies {
     testImplementation("org.junit.jupiter", "junit-jupiter", retrieve("junitVersion"))
     testImplementation("org.mockito", "mockito-core", retrieve("mockitoVersion"))
     testImplementation("org.mockito", "mockito-junit-jupiter", retrieve("mockitoVersion"))
-    testImplementation("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
-    testImplementation("io.smallrye.config", "smallrye-config-core", retrieve("smallryeConfigVersion"))
     testImplementation("io.smallrye.config", "smallrye-config", retrieve("smallryeConfigVersion"))
     testImplementation("io.quarkus", "quarkus-opentelemetry", retrieve("quarkusVersion"))
     testImplementation("io.quarkus", "quarkus-security", retrieve("quarkusVersion"))
-    testImplementation("jakarta.interceptor", "jakarta.interceptor-api", retrieve("jakartaInterceptorVersion"))
     testRuntimeOnly("org.junit.platform", "junit-platform-launcher", retrieve("junitVersion"))
 }
