@@ -273,6 +273,17 @@ allprojects {
     }
 }
 
+// Ensure SBOM tasks run after all project artifacts are built
+subprojects {
+    afterEvaluate {
+        tasks.named("cyclonedxDirectBom") {
+            rootProject.subprojects.forEach { dep ->
+                dependsOn("${dep.path}:jar")
+            }
+        }
+    }
+}
+
 // Configure aggregated SBOM (combines all subprojects into single SBOM)
 tasks.named<CyclonedxAggregateTask>("cyclonedxBom") {
     projectType = org.cyclonedx.model.Component.Type.LIBRARY
