@@ -1,7 +1,6 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import org.cyclonedx.Version
 import org.cyclonedx.gradle.CyclonedxAggregateTask
-import org.cyclonedx.gradle.CyclonedxDirectTask
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import ru.vyarus.gradle.plugin.quality.QualityExtension
@@ -256,41 +255,12 @@ subprojects {
 }
 
 // =============== CYCLONEDX SBOM CONFIGURATION =================
-// Configure per-project SBOM generation for all projects (root + subprojects)
-allprojects {
-    tasks.named<CyclonedxDirectTask>("cyclonedxDirectBom") {
-        projectType = org.cyclonedx.model.Component.Type.LIBRARY
-        schemaVersion = Version.VERSION_16
-        componentName = project.name
-        componentVersion = project.version.toString()
-        skipConfigs = listOf(".*test.*", ".*Test.*")
-        jsonOutput = project.file("build/reports/sbom/${project.name}-sbom.json")
-        xmlOutput = project.file("build/reports/sbom/${project.name}-sbom.xml")
-
-        includeBomSerialNumber = true
-        includeLicenseText = true
-        includeMetadataResolution = true
-    }
-}
-
-// Ensure SBOM tasks run after all project artifacts are built
-subprojects {
-    afterEvaluate {
-        tasks.named("cyclonedxDirectBom") {
-            rootProject.subprojects.forEach { dep ->
-                dependsOn("${dep.path}:jar")
-            }
-        }
-    }
-}
-
-// Configure aggregated SBOM (combines all subprojects into single SBOM)
+// Aggregated SBOM — single BOM for the entire project hierarchy
 tasks.named<CyclonedxAggregateTask>("cyclonedxBom") {
     projectType = org.cyclonedx.model.Component.Type.LIBRARY
     schemaVersion = Version.VERSION_16
     componentName = rootProject.name
     componentVersion = rootProject.version.toString()
-
     includeBomSerialNumber = true
     includeLicenseText = true
 }
