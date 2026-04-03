@@ -1,0 +1,24 @@
+[
+  {
+    "name": "empty_required_fields",
+    "input": {
+      "field1": null,
+      "field2": ""
+    },
+    "expectedErrors": [
+      {"field": "field1", "code": "REQUIRED"},
+      {"field": "field2", "code": "REQUIRED"}
+    ]
+  },
+  {
+    "name": "invalid_format",
+    "input": {
+      "email": "not-an-email",
+      "age": -5
+    },
+    "expectedErrors": [
+      {"field": "email", "code": "INVALID_FORMAT"},
+      {"field": "age", "code": "INVALID_VALUE"}
+    ]
+  }
+]

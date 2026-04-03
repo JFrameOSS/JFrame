@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: jframe-tests-spring
+  security:
+    user:
+      password: test
+
+jframe:
+  application:
+    name: jframe-tests-spring
+    group: io.github.jframeoss
+    version: test
+    environment: test
+  logging:
+    disabled: true

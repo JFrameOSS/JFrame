@@ -1,0 +1,70 @@
+package io.github.jframe.tracing.enricher;
+
+import io.github.jframe.exception.enricher.ErrorResponseEnricher;
+import io.github.jframe.exception.resource.ErrorResponseResource;
+import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.security.AuthenticationConstants;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.container.ContainerRequestContext;
+
+import static io.github.jframe.logging.ecs.EcsFieldNames.*;
+
+/**
+ * CDI enricher that augments error responses with OpenTelemetry trace and span IDs,
+ * and enriches the current span with error details and HTTP request metadata.
+ *
+ * <p>When the current span is recording, this enricher:
+ * <ul>
+ * <li>Sets the {@code traceId} and {@code spanId} fields on the error response resource</li>
+ * <li>Marks the span status as {@link StatusCode#ERROR} and records the exception via
+ * {@code span.recordException()}</li>
+ * <li>Attaches HTTP metadata attributes (URI, method, status code, content type, etc.)</li>
+ * <li>Attaches correlation IDs from MDC (transaction ID, request ID)</li>
+ * <li>Attaches the authenticated subject from the security context</li>
+ * </ul>
+ *
+ * <p>If the current span is not recording (e.g. no tracing backend configured), no enrichment
+ * is performed and the method returns immediately.
+ */
+@ApplicationScoped
+public class TracingEnricher implements ErrorResponseEnricher {
+
+    /**
+     * No-arg constructor required by CDI.
+     */
+    public TracingEnricher() {
+        // CDI proxy constructor
+    }
+
+    @Override
+    public void doEnrich(
+        final ErrorResponseResource resource,
+        final Throwable throwable,
+        final ContainerRequestContext requestContext,
+        final int statusCode) {
+
+        final Span currentSpan = Span.current();
+        if (!currentSpan.isRecording()) {
+            return;
+        }
+
+        resource.setTraceId(currentSpan.getSpanContext().getTraceId());
+        resource.setSpanId(currentSpan.getSpanContext().getSpanId());
+
+        currentSpan.recordException(throwable);
+        currentSpan.setStatus(StatusCode.ERROR);
+        currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS));
+        currentSpan.setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID));
+        currentSpan.setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID));
+        currentSpan.setAttribute(SPAN_HTTP_URI.getKey(), requestContext.getUriInfo().getRequestUri().getPath());
+        currentSpan.setAttribute(SPAN_HTTP_QUERY.getKey(), requestContext.getUriInfo().getRequestUri().getQuery());
+        currentSpan.setAttribute(SPAN_HTTP_METHOD.getKey(), requestContext.getMethod());
+        currentSpan.setAttribute(SPAN_HTTP_STATUS_CODE.getKey(), statusCode);
+        final jakarta.ws.rs.core.MediaType mediaType = requestContext.getMediaType();
+        currentSpan.setAttribute(SPAN_HTTP_CONTENT_TYPE.getKey(), mediaType.getType() + "/" + mediaType.getSubtype());
+        currentSpan.setAttribute(SPAN_HTTP_CONTENT_LENGTH.getKey(), requestContext.getLength());
+    }
+}
