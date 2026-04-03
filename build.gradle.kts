@@ -1,7 +1,6 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import org.cyclonedx.Version
 import org.cyclonedx.gradle.CyclonedxAggregateTask
-import org.cyclonedx.gradle.CyclonedxDirectTask
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import ru.vyarus.gradle.plugin.quality.QualityExtension
@@ -17,6 +16,8 @@ plugins {
 
     id("org.springframework.boot") apply false
     id("io.spring.dependency-management") apply false
+
+    id("com.github.vlsi.jandex") apply false
 
     id("com.diffplug.spotless") apply true
     id("project-report") apply true
@@ -49,16 +50,24 @@ subprojects {
     apply(plugin = "com.github.ben-manes.versions")
     apply(plugin = "project-report")
 
-    if (project.name.startsWith("starter-")) {
+    if (project.name.startsWith("jframe-spring-")) {
         apply(plugin = "org.springframework.boot")
         apply(plugin = "io.spring.dependency-management")
+    }
+
+    if (project.name.startsWith("jframe-quarkus-")) {
+        apply(plugin = "com.github.vlsi.jandex")
+        afterEvaluate {
+            tasks.matching { it.name == "checkstyleMain" || it.name == "pmdMain" || it.name == "spotbugsMain" }
+                .configureEach { mustRunAfter(tasks.named("processJandexIndex")) }
+        }
     }
 
     java {
         withJavadocJar()
         withSourcesJar()
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(25)
             implementation = JvmImplementation.VENDOR_SPECIFIC
             vendor = JvmVendorSpec.ADOPTIUM
         }
@@ -69,7 +78,7 @@ subprojects {
     }
 
     dependencies {
-        if (project.name.startsWith("starter-")) {
+        if (project.name.startsWith("jframe-spring-")) {
             annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
             compileOnly("org.springframework.boot:spring-boot-configuration-processor")
             compileOnly("org.springframework.boot:spring-boot-starter-web")
@@ -85,6 +94,7 @@ subprojects {
 
     tasks.withType<JavaCompile> {
         dependsOn("spotlessApply")
+        options.release = 21
         options.isDeprecation = true
         options.encoding = Charsets.UTF_8.name()
         options.compilerArgs.addAll(
@@ -112,9 +122,9 @@ subprojects {
         logging.captureStandardOutput(LogLevel.INFO)
     }
 
-    tasks.getByName<BootJar>("bootJar") {
+    tasks.findByName("bootJar")?.let {
         // Disable bootJar (they should be libraries, not applications)
-        enabled = false
+        (it as BootJar).enabled = false
     }
 
     tasks.getByName<Jar>("jar") {
@@ -245,30 +255,17 @@ subprojects {
 }
 
 // =============== CYCLONEDX SBOM CONFIGURATION =================
-// Configure per-project SBOM generation for all projects (root + subprojects)
+// Disable per-project SBOM tasks — we only need the aggregated one
 allprojects {
-    tasks.named<CyclonedxDirectTask>("cyclonedxDirectBom") {
-        projectType = org.cyclonedx.model.Component.Type.LIBRARY
-        schemaVersion = Version.VERSION_16
-        componentName = project.name
-        componentVersion = project.version.toString()
-        skipConfigs = listOf(".*test.*", ".*Test.*")
-        jsonOutput = project.file("build/reports/sbom/${project.name}-sbom.json")
-        xmlOutput = project.file("build/reports/sbom/${project.name}-sbom.xml")
-
-        includeBomSerialNumber = true
-        includeLicenseText = true
-        includeMetadataResolution = true
-    }
+    tasks.named("cyclonedxDirectBom") { enabled = false }
 }
 
-// Configure aggregated SBOM (combines all subprojects into single SBOM)
+// Aggregated SBOM — single BOM for the entire project hierarchy
 tasks.named<CyclonedxAggregateTask>("cyclonedxBom") {
     projectType = org.cyclonedx.model.Component.Type.LIBRARY
     schemaVersion = Version.VERSION_16
     componentName = rootProject.name
     componentVersion = rootProject.version.toString()
-
     includeBomSerialNumber = true
     includeLicenseText = true
 }
@@ -354,5 +351,7 @@ nmcpAggregation {
         password = providers.environmentVariable("MAVEN_PASSWORD")
         publishingType = "AUTOMATIC"
     }
-    publishAllProjectsProbablyBreakingProjectIsolation()
+    subprojects.forEach { subproject ->
+        project(subproject.path)
+    }
 }

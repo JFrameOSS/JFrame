@@ -2,197 +2,197 @@
 
 # JFrame
 
-**A modern Java framework for building enterprise-grade Spring Boot applications**
+**Enterprise-grade utilities for Spring Boot and Quarkus applications**
 
-[![GitHub stars](https://img.shields.io/github/stars/JFrameOSS/JFrame?style=social)](https://github.com/JFrameOSS/JFrame/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Spring Boot](https://img.shields.io/badge/spring--boot-3.5.3-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
-[![Java](https://img.shields.io/badge/java-25--temurin-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.java.net/projects/jdk/25/)
-[![Maven Central](https://img.shields.io/badge/maven--central--0.10.0-SNAPSHOT-blue.svg)](https://search.maven.org/search?q=g:io.github.jframeoss)
+[![Spring Boot](https://img.shields.io/badge/spring--boot-4.1.0--M1-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/quarkus-3.20.3-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
+[![Java](https://img.shields.io/badge/java-21-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.java.net/projects/jdk/21/)
 
 [Features](#-features) •
 [Quick Start](#-quick-start) •
 [Documentation](#-documentation) •
-[Modules](#-modules) •
-[Contributing](#-contributing) •
+[Building](#-building-from-source) •
 [License](#-license)
 
 </div>
 
 ---
 
-## 📋 Overview
+## Overview
 
-JFrame is a comprehensive Java framework providing enterprise-grade utilities, configurations, and best practices for building robust, scalable, and maintainable Spring Boot applications. It offers a modular architecture with specialized starters that enhance your development experience and accelerate application delivery.
+JFrame provides structured exception handling, ECS-compliant logging, paginated search, and OpenTelemetry tracing for Spring Boot and Quarkus. A shared framework-agnostic core ensures consistent behaviour across both runtimes.
 
 ## ✨ Features
 
-- **Core Utilities**: JSON processing, object mapping with MapStruct, and resource loading utilities
-- **JPA Enhancements**: Advanced search capabilities, pagination, and database query logging
-- **OpenTelemetry Integration**: Distributed tracing, metrics collection, and observability out-of-the-box
-- **Type-Safe Configuration**: Strongly-typed configuration properties with IDE autocomplete support
-- **Zero Dependencies**: Minimal external dependencies, reducing potential conflicts
-- **Java 21+ Ready**: Built with modern Java features and best practices
+| Feature | Spring Boot | Quarkus |
+|---------|:-----------:|:-------:|
+| Structured exception handling with error enrichers | ✅ | ✅ |
+| ECS-compliant MDC logging (request/transaction ID, duration) | ✅ | ✅ |
+| Request/response body logging with content-type filtering | ✅ | ✅ |
+| Paginated search with type-safe specifications | ✅ | ✅ |
+| Fluent validation with `ValidatorBuilder` | ✅ | ✅ |
+| OpenTelemetry auto-tracing (`@Service`, `@Traced`) | ✅ AOP | ✅ CDI interceptor |
+| Build-time `@Traced` injection for `@ApplicationScoped` beans | — | ✅ |
+| Auto-instrumentation (JDBC, HTTP, Kafka, gRPC) | ✅ | ✅ |
+| Outbound HTTP correlation (RestTemplate / WebClient / JAX-RS client) | ✅ | ✅ |
+| SQL query logging via datasource-proxy | ✅ | ✅ |
+| OpenAPI error response schemas (400/429/500) | — | ✅ |
+| Jackson 3.x configuration | — | ✅ |
+| Jackson 2.x configuration | ✅ | — |
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Java 21 or higher (Temurin recommended)
-- Spring Boot 3.5.3+
+- Java 21+ (Temurin recommended)
+- Spring Boot 4.1.0-M1+ **or** Quarkus 3.20.3+
 - Gradle 9.x
 
 ### Installation
 
-#### Gradle (Kotlin DSL)
+#### Spring Boot — Gradle (Kotlin DSL)
 
 ```kotlin
 dependencies {
-    // Core utilities and shared configurations
-    implementation("io.github.jframeoss:starter-core:0.10.0-SNAPSHOT")
-
-    // JPA enhancements (optional)
-    implementation("io.github.jframeoss:starter-jpa:0.10.0-SNAPSHOT")
-
-    // OpenTelemetry integration (optional)
-    implementation("io.github.jframeoss:starter-otlp:0.10.0-SNAPSHOT")
+    implementation("io.github.jframeoss:jframe-spring-core:0.10.0-SNAPSHOT")
+    implementation("io.github.jframeoss:jframe-spring-jpa:0.10.0-SNAPSHOT")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:0.10.0-SNAPSHOT")  // optional
 }
 ```
 
-#### Maven
+#### Quarkus — Gradle (Kotlin DSL)
 
-```xml
-<dependencies>
-    <!-- Core utilities and shared configurations -->
-    <dependency>
-        <groupId>io.github.jframeoss</groupId>
-        <artifactId>starter-core</artifactId>
-        <version>0.10.0-SNAPSHOT</version>
-    </dependency>
-
-    <!-- JPA enhancements (optional) -->
-    <dependency>
-        <groupId>io.github.jframeoss</groupId>
-        <artifactId>starter-jpa</artifactId>
-        <version>0.10.0-SNAPSHOT</version>
-    </dependency>
-
-    <!-- OpenTelemetry integration (optional) -->
-    <dependency>
-        <groupId>io.github.jframeoss</groupId>
-        <artifactId>starter-otlp</artifactId>
-        <version>0.10.0-SNAPSHOT</version>
-    </dependency>
-</dependencies>
+```kotlin
+dependencies {
+    implementation("io.github.jframeoss:jframe-quarkus-core:0.10.0-SNAPSHOT")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:0.10.0-SNAPSHOT")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:0.10.0-SNAPSHOT")  // optional
+}
 ```
 
-### Basic Configuration
+<details>
+<summary>Maven coordinates</summary>
 
-Add to your `application.yml`:
+```xml
+<!-- Spring Boot -->
+<dependency>
+    <groupId>io.github.jframeoss</groupId>
+    <artifactId>jframe-spring-core</artifactId>
+    <version>0.10.0-SNAPSHOT</version>
+</dependency>
+
+<!-- Quarkus -->
+<dependency>
+    <groupId>io.github.jframeoss</groupId>
+    <artifactId>jframe-quarkus-core</artifactId>
+    <version>0.10.0-SNAPSHOT</version>
+</dependency>
+```
+
+Replace `core` with `jpa` or `otlp` as needed.
+</details>
+
+### Minimal Configuration
+
+#### Spring Boot (`application.yml`)
 
 ```yaml
 jframe:
   application:
-    name: my-awesome-app
+    name: my-service
     group: com.example
     version: 1.0.0
     environment: dev
 ```
 
+#### Quarkus (`application.properties`)
+
+```properties
+jframe.application.name=my-service
+jframe.application.group=com.example
+jframe.application.version=1.0.0
+jframe.application.environment=dev
+```
+
+All four properties are **required**. See the [Configuration Reference](./src/docs/shared/configuration.md) for the full property list.
+
 ## 📚 Documentation
 
-### Framework Modules
+| Document | Description |
+|----------|-------------|
+| [Getting Started](./src/docs/getting-started.md) | Installation, configuration, feature matrix |
+| [Configuration Reference](./src/docs/shared/configuration.md) | All `jframe.*` properties, filter toggles, OTEL mapping, MDC fields |
+| [Core API](./src/docs/shared/core.md) | Exceptions, validation, search framework, ECS logging |
 
-JFrame is organized into focused, reusable modules:
+### Spring Boot
 
-- **[Architecture Overview](./src/docs/architecture.md)** - Framework design and patterns
+| Module | Documentation |
+|--------|---------------|
+| `jframe-spring-core` — Filters, exception handling, logging, caching | [📖 Docs](./src/docs/spring/core.md) |
+| `jframe-spring-jpa` — Search specifications, pagination, SQL logging | [📖 Docs](./src/docs/spring/jpa.md) |
+| `jframe-spring-otlp` — Tracing, auto-instrumentation, HTTP client | [📖 Docs](./src/docs/spring/otlp.md) |
 
-| Module | Description | Documentation |
-|--------|-------------|---------------|
-| **starter-core** | Core utilities, JSON processing, and shared application properties | [📖 Documentation](./src/docs/starter-core.md) |
-| **starter-jpa** | JPA enhancements including advanced search, pagination, and query logging | [📖 Documentation](./src/docs/starter-jpa.md) |
-| **starter-otlp** | OpenTelemetry integration for distributed tracing and observability | [📖 Documentation](./src/docs/starter-otlp.md) |
+### Quarkus
 
-### CI/CD & Automation
+| Module | Documentation |
+|--------|---------------|
+| `jframe-quarkus-core` — Exception mappers, JAX-RS filters, outbound correlation | [📖 Docs](./src/docs/quarkus/core.md) |
+| `jframe-quarkus-jpa` — Panache search, repository, page mapping | [📖 Docs](./src/docs/quarkus/jpa.md) |
+| `jframe-quarkus-otlp` — CDI tracing, build-time `@Traced`, auto-instrumentation | [📖 Docs](./src/docs/quarkus/otlp.md) |
 
-- **[GitHub Actions Workflows](./src/docs/github-actions/)** - CI/CD pipelines and automation
-  - [CI Pipeline](./src/docs/github-actions/ci.md) - Build, test, and publish to Maven Central
-  - [Gradle Wrapper Auto-Update](./src/docs/github-actions/gradle-wrapper-update.md) - Automated dependency management
+### Migration Guides
 
-
-## 🛠️ Building from Source
-
-```bash
-# Clone the repository
-git clone https://github.com/JFrameOSS/JFrame.git
-cd JFrame
-
-# Build all modules
-./gradlew clean build
-
-# Run code quality checks
-./gradlew spotlessApply checkQualityMain
-
-# Publish to local Maven repository
-./gradlew publishLocal
-```
+- [Spring Boot 1.0.0 Migration](./src/docs/migration/spring-migration-1.0.0.md) — `jframe-starter-*` → `jframe-spring-*`
+- [ECS Naming Convention Migration](./src/docs/migration/ecs-naming-convention-migration.md) — `KibanaLogField*` → `EcsField*`
 
 ## 🏗️ Project Structure
 
 ```
 jframe/
-├── starter-core/          # Core utilities and shared properties
-├── starter-jpa/           # JPA enhancements and search framework
-├── starter-otlp/          # OpenTelemetry integration
-├── src/
-│   ├── docs/             # Module documentation
-│   ├── quality/          # Code quality configurations
-│   └── dist/             # Distribution files
-└── gradle/               # Gradle wrapper and configurations
+├── jframe-core/                  # Framework-agnostic: exceptions, validation, search, ECS logging, tracing utils
+├── jframe-spring/
+│   ├── core/                     # Auto-configuration, servlet filters, exception handler, logging
+│   ├── jpa/                      # JPA search specifications, pagination, datasource-proxy
+│   └── otlp/                     # AOP tracing, span management, HTTP client tracing
+├── jframe-quarkus/
+│   ├── core/                     # CDI producers, JAX-RS filters, exception mappers, OpenAPI
+│   ├── jpa/                      # Panache search repository, page mapping, datasource-proxy
+│   ├── otlp/                     # CDI tracing interceptor, auth utilities
+│   └── otlp-deployment/          # Build-time @Traced annotation processor
+└── src/
+    ├── docs/                     # Documentation wiki
+    ├── quality/                  # Spotless, SpotBugs, PMD, Checkstyle configs
+    └── dist/                     # LICENSE, CHANGELOG
+```
+
+## 🛠️ Building from Source
+
+```bash
+git clone https://github.com/JFrameOSS/JFrame.git
+cd JFrame
+
+./gradlew clean build                          # Build + test all modules
+./gradlew spotlessApply checkQualityMain       # Code style + quality checks
+./gradlew publishToMavenLocal                  # Install to local Maven repo
 ```
 
 ## 🤝 Contributing
 
-Any contributions are welcome! Contact me via GitHub issues or pull requests.
+Contributions welcome — open an issue or pull request on GitHub.
 
-### Development Guidelines
-
-- **Java Version**: Java 21+ (Temurin distribution recommended)
-- **Code Style**: Follow the Spotless configuration in `src/quality/config/`
-- **Testing**: Write tests for new features (test framework TBD)
-- **Documentation**: Update relevant documentation for API changes
-- **Commits**: Use conventional commit messages
-
-### Quick Contribution Steps
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes and ensure tests pass
-4. Run code quality checks (`./gradlew spotlessApply checkQualityMain`)
-5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-## 🔄 Release Management
-
-This project follows [Git Flow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow):
-
-- **master**: Production-ready releases
-- **develop**: Active development branch
-- **feature/***: New features
-- **release/***: Release preparation
-- **hotfix/***: Production hotfixes
+- **Java 21+** with Temurin
+- **Code style**: Spotless (`./gradlew spotlessApply`)
+- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/)
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](src/dist/LICENSE) file for details.
+Apache License 2.0 — see [LICENSE](src/dist/LICENSE).
 
 ---
 
 <div align="center">
 
 **[⭐ Star this repository](https://github.com/JFrameOSS/JFrame) if you find it useful!**
-
-[![Stargazers over time](https://starchart.cc/JFrameOSS/JFrame.svg?variant=adaptive)](https://starchart.cc/JFrameOSS/JFrame)
 
 </div>

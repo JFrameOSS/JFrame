@@ -4,7 +4,7 @@
       <option name="env">
         <map>
           <entry key="JAVA_HOME" value="$USER_HOME$/.local/share/mise/installs/java/temurin-21.0.7+6.0.LTS" />
-          <entry key="PATH" value="$USER_HOME$/.local/share/mise/installs/bun/1.2.16/bin:$USER_HOME$/.local/share/mise/installs/java/temurin-21.0.7+6.0.LTS/bin:$USER_HOME$/.local/share/mise/installs/node/22.17.0/bin:$USER_HOME$/.local/share/mise/installs/usage/2.0.7:$PROJECT_DIR$../../../homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" />
+          <entry key="PATH" value="$USER_HOME$/.local/share/mise/installs/bun/1.2.16/bin:$USER_HOME$/.local/share/mise/installs/java/temurin-21.0.7+6.0.LTS/bin:$USER_HOME$/.local/share/mise/installs/node/22.17.0/bin:$USER_HOME$/.local/share/mise/installs/usage/2.0.7:$PROJECT_DIR$/../jframe../../../homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" />
         </map>
       </option>
       <option name="executionName" />
@@ -23,11 +23,14 @@
     </ExternalSystemSettings>
     <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
     <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+    <ExternalSystemDebugDisabled>false</ExternalSystemDebugDisabled>
     <EXTENSION ID="com.intellij.execution.ExternalSystemRunConfigurationJavaExtension">
-      <extension name="com.github.l34130.mise.core.run.MiseRunConfigurationSettingsEditor" myConfigEnvironmentStrategy="use_project_settings" myMiseDirEnvCb="false" myMiseConfigEnvironmentTf="" />
+      <extension name="com.github.l34130.mise.core.run.MiseRunConfigurationSettingsEditor" myConfigEnvironmentStrategy="use_project_settings" myMiseDirEnvCb="true" myMiseConfigEnvironmentTf="" />
     </EXTENSION>
     <DebugAllEnabled>false</DebugAllEnabled>
     <RunAsTest>false</RunAsTest>
+    <GradleProfilingDisabled>false</GradleProfilingDisabled>
+    <GradleCoverageDisabled>false</GradleCoverageDisabled>
     <method v="2" />
   </configuration>
 </component>

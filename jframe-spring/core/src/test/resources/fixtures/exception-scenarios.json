@@ -1,0 +1,50 @@
+[
+  {
+    "name": "bad_request",
+    "exceptionType": "BadRequestException",
+    "endpoint": "/bad-request",
+    "message": "Invalid input provided",
+    "expectedStatusCode": 400,
+    "expectedErrorMessage": "Invalid input provided"
+  },
+  {
+    "name": "resource_not_found",
+    "exceptionType": "ResourceNotFoundException",
+    "endpoint": "/not-found",
+    "message": "Entity with ID 42 not found",
+    "expectedStatusCode": 404,
+    "expectedErrorMessage": "Entity with ID 42 not found"
+  },
+  {
+    "name": "unauthorized",
+    "exceptionType": "UnauthorizedRequestException",
+    "endpoint": "/unauthorized",
+    "message": "Access denied",
+    "expectedStatusCode": 401,
+    "expectedErrorMessage": "Access denied"
+  },
+  {
+    "name": "rate_limited",
+    "exceptionType": "RateLimitExceededException",
+    "endpoint": "/rate-limit",
+    "message": "Too many requests",
+    "expectedStatusCode": 429,
+    "expectedErrorMessage": "Too many requests"
+  },
+  {
+    "name": "internal_server_error",
+    "exceptionType": "InternalServerErrorException",
+    "endpoint": "/internal-error",
+    "message": "Unexpected error",
+    "expectedStatusCode": 500,
+    "expectedErrorMessage": "Unexpected error"
+  },
+  {
+    "name": "data_not_found",
+    "exceptionType": "DataNotFoundException",
+    "endpoint": "/data-not-found",
+    "message": "Data not available",
+    "expectedStatusCode": 404,
+    "expectedErrorMessage": "Data not available"
+  }
+]

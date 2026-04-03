@@ -1,0 +1,816 @@
+# jframe — AI Reference (llms-full.txt)
+
+> Java 21 enterprise framework library. Group: `io.github.jframeoss`. Version: 1.0.0.
+> Supports **Spring Boot 4.1** and **Quarkus 3.20** via a shared core + adapter architecture.
+
+## Module Map
+
+| Module | Artifact | Purpose |
+|--------|----------|---------|
+| `jframe-core` | `jframe-core` | Framework-agnostic foundation: exceptions, ECS logging, search specs, validation, tracing utils |
+| `jframe-spring-core` | `jframe-spring-core` | Spring Boot adapter: auto-config, servlet filters, exception handler, Jackson, logging |
+| `jframe-spring-jpa` | `jframe-spring-jpa` | Spring Data JPA: search specifications, pagination, SQL logging |
+| `jframe-spring-otlp` | `jframe-spring-otlp` | Spring OpenTelemetry: AOP tracing, span management, OTLP exporter |
+| `jframe-quarkus-core` | `jframe-quarkus-core` | Quarkus adapter: JAX-RS mappers, filters, CDI producers, OpenAPI |
+| `jframe-quarkus-jpa` | `jframe-quarkus-jpa` | Quarkus Panache JPA: search specifications, pagination, SQL logging |
+| `jframe-quarkus-otlp` | `jframe-quarkus-otlp` | Quarkus OpenTelemetry: CDI interceptor tracing, build-time annotation processing |
+
+## Dependency Graph
+
+```
+jframe-core (framework-agnostic)
+  ├─ jframe-spring-core → jframe-spring-jpa
+  │                     → jframe-spring-otlp
+  └─ jframe-quarkus-core → jframe-quarkus-jpa
+                         → jframe-quarkus-otlp (+ otlp-deployment)
+```
+
+---
+
+# jframe-core
+
+> Framework-agnostic foundation for Java 21 enterprise applications. Shared by Spring Boot and Quarkus adapters.
+
+## Exception Hierarchy
+
+```
+RuntimeException
+  └─ JFrameException (base)
+      ├─ HttpException (+ Response.Status from jakarta.ws.rs)
+      │   ├─ BadRequestException (400)
+      │   ├─ DataNotFoundException (404)
+      │   ├─ ResourceNotFoundException (404)
+      │   ├─ UnauthorizedRequestException (401)
+      │   ├─ InternalServerErrorException (500)
+      │   └─ RateLimitExceededException (429, + limit/remaining/resetDate)
+      ├─ ApiException (+ ApiError interface with errorCode/reason)
+      └─ ValidationException (+ ValidationResult with List<ValidationError>)
+```
+
+**Error Response Resources** — DTOs for JSON error responses:
+- `ErrorResponseResource` — base: method, uri, query, statusCode, statusMessage, errorMessage, txId, traceId, spanId
+- `ApiErrorResponseResource` — adds apiErrorCode, apiErrorReason
+- `ValidationErrorResponseResource` — adds List<ValidationErrorResource> (code + field)
+- `ConstraintViolationResponseResource` — for Jakarta Bean Validation
+- `RateLimitErrorResponseResource` — adds limit, remaining, resetDate
+- `ExceptionResponseFactory` — functional interface to create responses from exceptions
+
+## ECS Structured Logging
+
+All logging uses Elastic Common Schema field names via SLF4J MDC.
+
+### Core API
+
+```java
+// Interface — implement for custom fields
+public interface EcsField {
+    String getKey(); // MDC key (e.g., "transaction.id")
+}
+
+// Tag fields (sets MDC)
+EcsFields.tag(EcsFieldNames.TX_ID, transactionId);
+EcsFields.tag(EcsFieldNames.CALL_STATUS, CallResultTypes.SUCCESS);
+
+// Auto-closeable (clears on scope exit)
+try (var field = EcsFields.tagCloseable(LOG_TYPE, CALL_START)
+        .and(CALL_REQUEST_METHOD, "POST")
+        .and(CALL_REQUEST_URI, "/api/users")) {
+    log.info("Outbound call started");
+} // all 3 fields cleared
+
+// Read/clear
+String txId = EcsFields.get(EcsFieldNames.TX_ID);
+EcsFields.clear(EcsFieldNames.TX_ID);
+EcsFields.clear(); // clear all
+
+// Cross-thread propagation
+MdcLogContext ctx = EcsFields.getMdcContext();
+executor.submit(() -> {
+    EcsFields.populateFromContext(ctx);
+    // child thread inherits MDC
+});
+```
+
+### Key Field Names (EcsFieldNames enum)
+
+| Constant | ECS Key | Usage |
+|----------|---------|-------|
+| `TX_ID` | `transaction.id` | Transaction correlation |
+| `REQUEST_ID` | `request.id` | Request correlation |
+| `TRACE_ID` | `trace.id` | OpenTelemetry trace |
+| `SPAN_ID` | `span.id` | OpenTelemetry span |
+| `TX_REQUEST_METHOD` | `http.request.method` | Inbound HTTP method |
+| `TX_REQUEST_URI` | `url.path` | Inbound request path |
+| `HTTP_STATUS` | `http.response.status_code` | Response status |
+| `REQUEST_DURATION` | `event.duration` | Request duration |
+| `LOG_TYPE` | `event.category` | Log entry type |
+| `CALL_REQUEST_METHOD` | `http.client.request.method` | Outbound HTTP method |
+| `CALL_REQUEST_URI` | `url.full` | Outbound URL |
+| `CALL_STATUS` | `event.outcome` | Call result |
+| `USER_NAME` | `user.name` | Authenticated user |
+
+### Enums
+- `CallResultTypes`: SUCCESS, TIMEOUT, FAILURE
+- `LogTypeNames`: START, END, CALL_START, CALL_END, REQUEST_BODY, RESPONSE_BODY, CALL_REQUEST_BODY, CALL_RESPONSE_BODY
+
+## Search Specification Framework
+
+Type-safe, framework-agnostic search criteria system.
+
+### Search Types
+
+| SearchType | Field Class | SQL | Inverse |
+|------------|------------|-----|---------|
+| `TEXT` | `TextField` | `= value` | `!value` prefix |
+| `MULTI_TEXT` | `MultiTextField` | `IN (values)` | No |
+| `FUZZY_TEXT` | `FuzzyTextField` | `LIKE %value%` (case-insensitive) | No |
+| `MULTI_FUZZY` | `MultiFuzzyField` | Multiple LIKE + AND/OR | No |
+| `MULTI_COLUMN_FUZZY` | `MultiColumnFuzzyField` | LIKE across columns | No |
+| `ENUM` | `EnumField` | `= enum` | `!value` prefix |
+| `MULTI_ENUM` | `MultiEnumField` | `IN (enums)` | No |
+| `BOOLEAN` | `BooleanField` | `= true/false` | No |
+| `DATE` | `DateField` | `BETWEEN from AND to` | No |
+| `NUMERIC` | `NumericField` | `= number` | `!value` prefix |
+
+### DTOs (REST API)
+
+```java
+// Request
+SortablePageInput {
+    int pageNumber;       // 0-based
+    int pageSize;
+    List<SortableColumn> sortOrder;   // [{name, direction}]
+    List<SearchInput> searchInputs;   // [{fieldName, operator, textValue, textValueList, fromDateValue, toDateValue}]
+}
+
+// Response
+PageResource<T> {
+    long totalElements;
+    int totalPages, pageSize, pageNumber;
+    List<T> content;
+}
+```
+
+### Building Specifications
+
+```java
+List<SearchCriterium> criteria = List.of(
+    new TextField("status", "ACTIVE"),
+    new FuzzyTextField("name", "john"),
+    new DateField("created_at", "2024-01-01T00:00:00", null)
+);
+BaseSearchSpecification<User> spec = new BaseSearchSpecification<>(criteria);
+```
+
+## Validation API
+
+```java
+// Fluent validation
+ValidatorBuilder.create()
+    .that(order.getAmount()).is(greaterThan(0))
+        .otherwise("amount", "must be positive")
+    .that(order.getEmail()).given(order.isNotifyEnabled())
+        .is(notBlank())
+        .otherwise("email", "required when notifications enabled")
+    .validate(); // throws ValidationException if errors
+
+// With Hamcrest matchers
+HamcrestValidatorBuilder.create()
+    .that(value).is(greaterThan(0)).otherwise("field", "error")
+    .validate();
+```
+
+## Password Masking
+
+```java
+PasswordMasker masker = new PasswordMasker(List.of("password", "secret"));
+String safe = masker.maskPasswordsIn(jsonOrUri);
+// {"password":"***"} or ?password=***
+```
+
+Built-in maskers: `JsonPasswordMasker`, `UriQueryStringPasswordMasker`.
+
+## Tracing Utilities
+
+- `OtlpDefaults` — shared defaults: url=`http://localhost:4318`, timeout=`10s`, sampling=`1.0`, excluded=`health,actuator,ping,status,info,metrics`
+- `SpanNamingUtil.resolveClassName("UserService_Subclass")` → `"UserService"` (strips CDI/CGLIB proxy suffixes)
+- `MethodExclusionRules.isExcluded(name, configSet)` — excludes getters/setters, toString/hashCode/equals, and configured methods
+
+## Security
+
+```java
+// Interface for authentication resolution
+public interface AuthenticationResolver {
+    String getAuthenticatedSubject();
+    // Returns user ID, or AuthenticationConstants.ANONYMOUS / INCOMPLETE
+}
+```
+
+## SQL Logging Control
+
+```java
+try (var s = SqlStatementLogging.suppress()) {
+    repository.saveAll(batch); // SQL not logged
+}
+```
+
+## Utilities
+
+- `Constants.Headers` — TX_ID_HEADER, REQ_ID_HEADER, TRACE_ID_HEADER, SPAN_ID_HEADER, rate limit headers
+- `Constants.DateTime` — EUROPE_AMSTERDAM zone, ISO formatter, epoch start
+- `RequestId` / `TransactionId` — ThreadLocal UUID storage
+- `PathDefinition` — Ant-style path matcher (`/api/**`, `/user/*`, `/item/?`)
+- `HttpBodyUtil` — truncate + mask request/response bodies for logging
+- `JsonUtil`, `ModelConverter`, `IndentUtil`, `ConverterUtil`
+
+---
+
+# jframe-spring-core
+
+> Spring Boot 4.x adapter for jframe. Auto-configures filters, exception handling, logging, and Jackson.
+
+## Auto-Configuration
+
+`CoreAutoConfiguration` — registered via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
+
+- Imports `FilterConfiguration`, `JacksonConfig`
+- Enables `ApplicationProperties`, `LoggingProperties`
+- Component-scans `io.github.jframe.*`
+- Loads defaults from `classpath:jframe-properties.yml`
+
+## Configuration Properties
+
+### `jframe.application` (ApplicationProperties)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `name` | String | `--- UNSET ---` | Service name (@NotBlank) |
+| `group` | String | `--- UNSET ---` | Service namespace (@NotBlank) |
+| `version` | String | `--- UNSET ---` | Service version (@NotBlank) |
+| `environment` | String | `dev` | Environment (dev, test, staging, prod) |
+| `url` | String | `http://localhost:8080` | Base URL |
+
+### `jframe.logging` (LoggingProperties)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `disabled` | boolean | `false` | Disable all JFrame logging |
+| `responseLength` | int | `-1` | Max response body chars (-1 = unlimited) |
+| `bodyExcludedContentTypes` | List | `multipart/form-data` | Content types to exclude body |
+| `excludePaths` | List | `/actuator/*` | Paths to exclude from logging |
+| `fieldsToMask` | List | `password, keyPassphrase, client_secret, secret` | Sensitive field names |
+| `allowedContentTypes` | List | JSON, XML, form-data, text variants | Loggable content types |
+
+## Servlet Filters
+
+All extend `AbstractGenericFilter` (extends `OncePerRequestFilter`). Toggle with `jframe.logging.filters.{name}.enabled`.
+
+| Filter | Default Order | MDC Fields | Purpose |
+|--------|--------------|------------|---------|
+| `RequestDurationFilter` | -17500 | `event.duration`, `transaction.duration` | Measures request duration |
+| `TracingResponseFilter` | -1000 | `trace.id`, `span.id` | Adds trace context to response (from OTLP module) |
+| `RequestResponseLogFilter` | -950 | `event.category`, request/response fields | Logs HTTP request/response |
+| `TransactionIdFilter` | -500 | `transaction.id` | Reads/generates TX-ID from header |
+| `RequestIdFilter` | -400 | `request.id` | Generates unique request ID |
+
+## Global Exception Handling
+
+`JFrameResponseEntityExceptionHandler` — `@RestControllerAdvice`, `Ordered.HIGHEST_PRECEDENCE`.
+
+| Exception | Status | Response Type |
+|-----------|--------|---------------|
+| `HttpException` | Varies | `ErrorResponseResource` |
+| `RateLimitExceededException` | 429 | `RateLimitErrorResponseResource` + X-RateLimit-* headers |
+| `ApiException` | 400 | `ApiErrorResponseResource` |
+| `ValidationException` | 400 | `ValidationErrorResponseResource` |
+| `BadCredentialsException` | 401 | `ErrorResponseResource` |
+| `AccessDeniedException` | 403 | `ErrorResponseResource` |
+| `MethodArgumentNotValidException` | 400 | `MethodArgumentNotValidResponseResource` |
+| `NoResourceFoundException` | 404 | `ErrorResponseResource` |
+| `Throwable` | 500 | `ErrorResponseResource` |
+
+**Enrichers** — 8 `ErrorResponseEnricher` beans populate response fields: StatusCode, ErrorMessage, RequestInfo, TransactionId, ApiError, RateLimit, MethodArgumentNotValid, ValidationError.
+
+## Outbound HTTP Logging
+
+`LoggingClientHttpRequestInterceptor` — `ClientHttpRequestInterceptor` for RestTemplate/WebClient.
+
+```java
+@Bean
+public RestTemplate restTemplate(LoggingClientHttpRequestInterceptor interceptor) {
+    RestTemplate rt = new RestTemplate();
+    rt.getInterceptors().add(interceptor);
+    return rt;
+}
+```
+
+Logs request/response bodies, headers. Tags MDC with `CALL_STATUS` (SUCCESS/TIMEOUT/FAILURE).
+
+## Scheduled Task Support
+
+`ScheduledAspect` — AOP aspect for `@Scheduled` methods. Auto-generates `RequestId` + `TransactionId`, tags MDC, clears in finally.
+
+## Jackson Configuration
+
+`JacksonConfig` — `JsonMapperBuilderCustomizer`:
+- Include: ALWAYS (even nulls)
+- Disable: FAIL_ON_UNKNOWN_PROPERTIES, INDENT_OUTPUT, WRITE_DATES_AS_TIMESTAMPS
+- Naming: LOWER_CAMEL_CASE
+
+## Request-Scoped Cache
+
+```java
+@Component @RequestScope
+public class UserCache extends RequestScopedCache<Long, User> {
+    @Override protected Long getId(User entity) { return entity.getId(); }
+}
+// cache.getOrLoad(id, repo::findById)
+// cache.getAllOrLoad(ids, repo::findAllById)
+```
+
+## Utilities
+
+- `ResourceLoaderUtil` — `getResourceFile(path)`, `getResourceAsString(path)`, `getResource(path)`
+- `DateTimeMapper` — MapStruct mapper for ZonedDateTime/OffsetDateTime/LocalDateTime (UTC)
+- `FilterVoter` — combines `MediaTypeVoter` + `RequestVoter` for filter decisions
+- `CorePackageLogger` — logs app metadata + registered filters at startup
+
+---
+
+# jframe-spring-jpa
+
+> Spring Data JPA adapter for jframe. Provides search specification integration, pagination, and SQL query logging.
+
+## Search Specification
+
+`JpaSearchSpecification<T>` extends `BaseSearchSpecification<T>` and implements Spring's `Specification<T>`.
+
+```java
+List<SearchCriterium> criteria = metaData.toSearchCriteria(searchInputs);
+var spec = new JpaSearchSpecification<User>(criteria);
+Page<User> page = repository.findAll(spec, pageable);
+```
+
+Composable with `spec.and(otherSpec)` and `spec.or(otherSpec)`.
+
+## Search Metadata
+
+`AbstractSortSearchMetaData` — maps frontend field names to DB columns with `SearchType`.
+
+```java
+@Component
+public class UserSearchMetaData extends AbstractSortSearchMetaData {
+    public UserSearchMetaData() {
+        addField("name", "user_name", SearchType.FUZZY_TEXT, true);
+        addField("status", "status", SearchType.ENUM, UserStatus.class, true);
+        addField("createdDate", "created_at", SearchType.DATE, true);
+        addField("quickSearch", List.of("first_name", "last_name"),
+                 SearchType.MULTI_COLUMN_FUZZY, false);
+    }
+}
+```
+
+**Methods:**
+- `toSearchCriteria(List<SearchInput>)` → `List<SearchCriterium>`
+- `toSort(List<SortableColumn>)` → Spring `Sort`
+
+## Paginated Search Service
+
+`PagedSearchingService` — abstract base for repository search.
+
+```java
+@Service
+public class UserSearchService extends PagedSearchingService {
+    public Page<User> search(SortablePageInput input) {
+        return searchPage(input, metadata, repository);
+    }
+}
+```
+
+**Overloads:**
+- `searchPage(input, metaData, repository)` — auto-builds spec from input
+- `searchPage(input, metaData, spec, repository)` — uses pre-built spec
+
+## Pagination Adapters
+
+- `SpringPageAdapter.toPageResource(Page<T>)` → `PageResource<T>` — converts Spring Page to framework DTO
+- `PageMapper<T extends PageableItemResource, S extends PageableItem>` — abstract entity→DTO page mapper
+
+```java
+@Component
+public class UserMapper extends PageMapper<UserResource, User> {
+    @Override
+    public UserResource toResourceObject(User source) {
+        return new UserResource(source.getId(), source.getName());
+    }
+}
+```
+
+## SQL Query Logging
+
+`DatasourceProxyConfiguration` — `BeanPostProcessor` that auto-wraps all `DataSource` beans with `ProxyDataSource`.
+- Uses `PrettyQueryEntryCreator` (Hibernate FormatStyle: NONE, BASIC, DDL, HIGHLIGHT)
+- Logs via `DefaultQueryExecutionListener` (from jframe-core)
+- No manual configuration required
+
+## Repository Pattern
+
+No base repository provided. Use standard Spring Data:
+
+```java
+public interface UserRepository extends
+    JpaRepository<User, Long>,
+    JpaSpecificationExecutor<User> {
+}
+```
+
+Entities must implement `PageableItem` (marker interface from jframe-core).
+
+## No Auto-Configuration
+
+This module has no `@AutoConfiguration`. Add manually:
+
+```java
+@Configuration
+@EnableJpaRepositories(basePackages = "com.mycompany.repository")
+@EntityScan(basePackages = "com.mycompany.entity")
+public class JpaConfig {}
+```
+
+---
+
+# jframe-spring-otlp
+
+> Spring Boot OpenTelemetry tracing module. AOP-based auto-instrumentation, span management, and OTLP exporter configuration.
+
+## Auto-Instrumentation
+
+`TracingAspect` — `@Aspect` auto-traces methods in `@Service`, `@Controller`, `@RestController`, and `@Traced` classes.
+
+**Auto-excluded methods:** `get*()`, `set*()`, `is*()`, `toString()`, `hashCode()`, `equals(..)`.
+**Configurable exclusions:** `jframe.otlp.excluded-methods` (default: health, actuator, ping, status, info, metrics).
+
+### Span Attributes
+
+| Attribute | Source |
+|-----------|--------|
+| `service.name` | Resolved class name (proxy suffixes stripped) |
+| `service.method` | Method name |
+| `http.remote_user` | Spring Security subject |
+| `tx.id` | Transaction ID from MDC |
+| `request.id` | Request ID from MDC |
+
+### @Traced Annotation
+
+`ElementType.TYPE` only (class-level). Classes annotated with `@Service`/`@Controller`/`@RestController` are auto-traced without needing `@Traced`.
+
+## Configuration Properties
+
+Prefix: `jframe.otlp` (OpenTelemetryProperties)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `disabled` | boolean | `false` | Disable tracing |
+| `url` | String | `http://localhost:4318` | OTLP endpoint |
+| `timeout` | String | `10s` | Export timeout (pattern: `\d+[smh]`) |
+| `exporter` | String | `otlp` | Exporter type: otlp, jaeger, zipkin |
+| `samplingRate` | double | `1.0` | Trace sampling rate (0.0–1.0) |
+| `excludedMethods` | Set | health, actuator, ping, status, info, metrics | Methods to exclude |
+| `propagators` | String | `tracecontext,baggage` | W3C propagators |
+
+## Auto-Configuration
+
+`OpenTelemetryAutoConfiguration` — registers `Tracer` bean when `jframe.otlp.disabled=false`.
+
+**Default config in jframe-properties.yml:**
+- Auto-instrumentation: JDBC, spring-web, spring-webmvc, kafka, mongo, r2dbc, logback-mdc
+
+## Outbound HTTP Tracing
+
+`HttpFilter` — provides tracing interceptors for outbound HTTP calls:
+
+```java
+@Bean
+public RestTemplate restTemplate(HttpFilter httpFilter) {
+    RestTemplate rt = new RestTemplate();
+    rt.getInterceptors().add(httpFilter.getRequestInterceptor("order-service"));
+    return rt;
+}
+
+@Bean
+public WebClient webClient(HttpFilter httpFilter) {
+    return WebClient.builder()
+        .filter(httpFilter.getExchangeFilter("payment-service"))
+        .build();
+}
+```
+
+`SpanManager` — creates/enriches outbound spans with attributes: `peer.service`, HTTP method/URI, response status.
+
+## Response Filter
+
+`TracingResponseFilter` (order -1000) — adds `x-trace-id` and `x-span-id` to HTTP response headers + MDC. Toggle: `jframe.logging.filters.tracing-id.enabled`.
+
+## Error Response Enrichment
+
+`TracingResponseEnricher` — adds trace/span IDs to error responses, records exceptions on current span with HTTP attributes.
+
+## Execution Timer
+
+```java
+@LogExecutionTime
+public void slowMethod() { ... }
+// Logs: [Execution Timer] Method 'slowMethod' took 123ms
+```
+
+## Security
+
+`AuthenticationUtil` — static method `getAuthenticatedSubject()` returns user name from Spring Security, or `ANONYMOUS`/`INCOMPLETE`.
+
+## SSL Factory
+
+`HttpClientSSLFactory.createRequestFactory(useSecure, trustStorePath, trustStorePassword, connectTimeout, readTimeout)` — creates `HttpComponentsClientHttpRequestFactory` with optional TLS.
+
+---
+
+# jframe-quarkus-core
+
+> Quarkus adapter for jframe. JAX-RS exception mappers, request/response filters, ECS logging, CDI producers, and OpenAPI integration.
+
+## Exception Mappers
+
+All extend `AbstractExceptionMapper<T>` (`@Provider @ApplicationScoped`).
+
+| Mapper | Exception | Status |
+|--------|-----------|--------|
+| `ApiExceptionMapper` | `ApiException` | 400 |
+| `HttpExceptionMapper` | `HttpException` | From `exception.getHttpStatus()` |
+| `RateLimitExceededExceptionMapper` | `RateLimitExceededException` | 429 + X-RateLimit-* headers |
+| `ValidationExceptionMapper` | `ValidationException` | 400 |
+| `ThrowableMapper` | `Throwable` (catch-all) | 500 (generic message) |
+
+**Response enrichment:** `ErrorResponseEntityBuilder` creates base response via `DefaultErrorResponseFactory`, then applies 8 `ErrorResponseEnricher` beans: StatusCode, ErrorMessage, RequestInfo, TransactionId, ApiError, RateLimit, ConstraintViolation, ValidationError.
+
+## JAX-RS Filters
+
+All `@Provider @ApplicationScoped`, implement `ContainerRequestFilter` + `ContainerResponseFilter`.
+
+### Inbound Filters
+
+| Filter | @Priority | MDC Fields | Purpose |
+|--------|-----------|------------|---------|
+| `TransactionIdFilter` | 100 | `transaction.id` | Reads/generates TX-ID from header |
+| `RequestIdFilter` | 200 | `request.id` | Generates unique request ID |
+| `RequestDurationFilter` | 300 | `event.duration`, `transaction.duration` | Measures request duration |
+| `RequestResponseLogFilter` | 400 | request/response fields | Logs HTTP request/response |
+
+### Outbound Filters (`ClientRequestFilter`)
+
+| Filter | @Priority | Purpose |
+|--------|-----------|---------|
+| `OutboundCorrelationFilter` | 100 | Propagates txId, reqId, traceId to outbound headers |
+| `OutboundLoggingFilter` | 300 | Logs outbound HTTP request/response |
+
+Toggle all with `jframe.logging.filters.{name}.enabled` (default: `true`).
+
+## Configuration
+
+### `jframe.application` (ApplicationConfig, @ConfigMapping)
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `name` | required | Service name |
+| `group` | required | Service namespace |
+| `version` | required | Service version |
+| `environment` | `dev` | Environment |
+| `url` | `http://localhost:8080` | Base URL |
+
+### `jframe.logging` (LoggingConfig, @ConfigMapping)
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `disabled` | `false` | Disable all logging |
+| `responseLength` | `-1` | Max response body chars |
+| `bodyExcludedContentTypes` | `multipart/form-data` | Exclude body for types |
+| `excludePaths` | `/actuator/*` | Paths to exclude |
+| `fieldsToMask` | `password, keyPassphrase, client_secret, secret` | Sensitive fields |
+| `allowedContentTypes` | JSON, XML, text variants | Loggable types |
+
+### `jframe.logging.filters` (FilterConfig, @ConfigMapping)
+
+Each sub-config has `enabled()` (default: `true`): `transactionId`, `requestId`, `requestDuration`, `requestResponse`, `outboundCorrelation`, `outboundLogging`, `tracingResponse`.
+
+## CDI Producers
+
+| Producer | Bean | Purpose |
+|----------|------|---------|
+| `FilterVoterProducer` | `FilterVoter` | Media type + path voting |
+| `PasswordMaskerProducer` | `PasswordMasker` | Sensitive field masking |
+| `RequestResponseLoggerProducer` | `RequestResponseLogger` | HTTP logging facade |
+| `JFrameJacksonCustomizer` | `ObjectMapper` | Jackson 3.x config (LOWER_CAMEL_CASE, no indent, ISO dates) |
+
+## OpenAPI Integration
+
+`JFrameErrorResponseFilter` (`OASFilter`) — auto-adds standard error responses (400, 429, 500) to all OpenAPI operations.
+
+## Scheduled Task Support
+
+`@ScheduledWithContext` — CDI interceptor binding. `ScheduledContextInterceptor` generates RequestId + TransactionId, tags MDC, clears in finally.
+
+## Request-Scoped Cache
+
+Same as jframe-core's `RequestScopedCache<K, V>`. Extend and annotate with `@RequestScoped`.
+
+## Startup Logging
+
+`CorePackageLogger` — logs application metadata and registered `JFrameFilter` instances on `StartupEvent`.
+
+---
+
+# jframe-quarkus-jpa
+
+> Quarkus Hibernate/Panache JPA adapter for jframe. Search specification, pagination, sorting, and SQL query logging.
+
+## Search Specification
+
+`PanacheSearchSpecification<T>` extends `BaseSearchSpecification<T>` — wraps search criteria into JPA Criteria API predicates.
+
+```java
+List<SearchCriterium> criteria = metaData.toSearchCriteria(searchInputs);
+var spec = new PanacheSearchSpecification<User>(criteria);
+PageResource<User> page = repository.searchPage(spec, 0, 20, sort);
+```
+
+## Search Metadata
+
+`AbstractPanacheSearchMetaData` — maps frontend field names to DB columns with `SearchType`.
+
+```java
+@ApplicationScoped
+public class UserSearchMetaData extends AbstractPanacheSearchMetaData {
+    public UserSearchMetaData() {
+        addField("name", "name", SearchType.FUZZY_TEXT, true);
+        addField("email", "email", SearchType.TEXT, true);
+        addField("status", "status", SearchType.ENUM, UserStatus.class, true);
+        addField("createdDate", "createdAt", SearchType.DATE, true);
+        addField("quickSearch", List.of("name", "email"),
+                 SearchType.MULTI_COLUMN_FUZZY, false);
+    }
+}
+```
+
+**Methods:**
+- `toSearchCriteria(List<SearchInput>)` → `List<SearchCriterium>`
+- `toSort(List<SortableColumn>)` → Panache `Sort` (returns null if empty)
+
+## Repository
+
+`PanacheSearchRepository<T extends PageableItem>` — abstract base for specification-based paginated queries.
+
+```java
+@ApplicationScoped
+public class UserRepository extends PanacheSearchRepository<User> {
+    @Inject EntityManager em;
+
+    @Override protected Class<User> entityClass() { return User.class; }
+    @Override protected EntityManager entityManager() { return em; }
+}
+```
+
+**Key method:**
+```java
+PageResource<T> searchPage(SearchSpecification<T> spec, int pageNumber, int pageSize, Sort sort)
+```
+- Builds JPA Criteria query with spec as WHERE predicate
+- Applies Panache Sort as ORDER BY
+- Executes data + count queries
+- Returns `PageResource<T>`
+
+## Pagination & Mapping
+
+- `QuarkusPageAdapter.toPageResource(content, totalElements, totalPages, pageSize, pageNumber)` — converts raw results to `PageResource<T>`
+- `QuarkusPageMapper<S, T>` — abstract entity→DTO page mapper
+
+```java
+@ApplicationScoped
+public class UserPageMapper extends QuarkusPageMapper<User, UserDto> {
+    @Override protected UserDto mapItem(User user) {
+        return new UserDto(user.getId(), user.getName());
+    }
+}
+```
+
+## Sorting
+
+`PanacheSortAdapter.toSort(List<SortableColumn>)` — converts `SortableColumn` list to Panache `Sort`. Returns null if input is null, `Sort.empty()` if empty.
+
+## SQL Query Logging
+
+`DatasourceProxyProducer` — CDI producer (`@Alternative @Priority(1)`) wraps Agroal `DataSource` with `ProxyDataSource`.
+
+Enable via:
+```properties
+quarkus.arc.selected-alternatives=io.github.jframe.datasource.config.DatasourceProxyProducer
+```
+
+Uses `PrettyQueryEntryCreator` (Hibernate FormatStyle) + `DefaultQueryExecutionListener`.
+
+## Entity Requirements
+
+- Must implement `PageableItem` (marker interface)
+- Standard JPA `@Entity` — no base entity classes provided
+- Auditing: use JPA lifecycle callbacks (`@PrePersist`, `@PreUpdate`) or custom listeners
+
+---
+
+# jframe-quarkus-otlp
+
+> Quarkus OpenTelemetry tracing module. CDI interceptor-based auto-instrumentation with build-time annotation processing.
+
+## @Traced Annotation
+
+CDI interceptor binding. Target: `TYPE` + `METHOD`. Inherited.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `value()` | String | `""` | Custom span name (empty = `ClassName.methodName`) |
+| `recordParameters()` | boolean | `false` | Record method params as span attributes |
+
+```java
+@Traced
+@ApplicationScoped
+public class OrderService {
+    public Order processOrder(OrderRequest req) { ... } // auto-traced
+}
+
+@Traced("custom-span-name")
+public void specialMethod() { ... }
+```
+
+## Build-Time Auto-Instrumentation
+
+`OtlpProcessor` (deployment module) auto-adds `@Traced` to public, non-static methods of `@ApplicationScoped` and `@Route` beans at build time.
+
+**Excluded packages:** `io.quarkus.*`, `io.smallrye.*`, `io.vertx.*`, `io.netty.*`, `io.opentelemetry.*`, `org.jboss.*`, `org.hibernate.*`, `org.eclipse.microprofile.*`, `jakarta.*`, `com.fasterxml.*`, `io.github.jframe.*`.
+
+**Method selection:** public + non-static + not already annotated + not constructor/initializer.
+
+## TracingInterceptor
+
+`@Interceptor` at `Priority.LIBRARY_BEFORE`. Uses `GlobalOpenTelemetry.getTracer("jframe-otlp")`.
+
+**Span attributes:** `service.name`, `service.method`, `http.remote_user`, `http.transaction_id`, `http.request_id`.
+
+**Method exclusion:**
+- Prefixes: `get`, `set`, `is`
+- Names: `toString`, `hashCode`, `equals`, `clone`
+- Config: `jframe.otlp.excluded-methods` (default: health, actuator, ping, status, info, metrics)
+
+On exception: `span.recordException()`, `span.setStatus(ERROR)`, rethrow.
+
+## Configuration
+
+Prefix: `jframe.otlp` (OpenTelemetryConfig, @ApplicationScoped, lazy init with ReentrantLock)
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `disabled` | `false` | Disable tracing |
+| `url` | `http://localhost:4318` | OTLP endpoint |
+| `timeout` | `10s` | Export timeout |
+| `exporter` | `otlp` | Exporter type |
+| `sampling-rate` | `1.0` | Trace sampling (0.0–1.0) |
+| `excluded-methods` | `health,actuator,ping,status,info,metrics` | Methods to skip |
+| `propagators` | `tracecontext,baggage` | W3C propagators |
+
+### Quarkus OTEL Mapping (microprofile-config.properties)
+
+jframe properties are mapped to Quarkus OTEL properties:
+- `quarkus.otel.service.name` = `${jframe.application.name}-${jframe.application.environment}`
+- `quarkus.otel.exporter.otlp.endpoint` = `${jframe.otlp.url}`
+- `quarkus.otel.exporter.otlp.protocol` = `http/protobuf`
+- `quarkus.otel.exporter.otlp.compression` = `gzip`
+- `quarkus.otel.traces.sampler` = `traceidratio`
+- `quarkus.otel.traces.sampler.arg` = `${jframe.otlp.sampling-rate}`
+
+## Auto-Instrumented Libraries
+
+| Library | Property | Default |
+|---------|----------|---------|
+| JDBC | `quarkus.datasource.jdbc.telemetry` | `true` |
+| REST server | `quarkus.otel.instrument.resteasy` | `true` |
+| REST client | `quarkus.otel.instrument.resteasy-client` | `true` |
+| gRPC | `quarkus.otel.instrument.grpc` | `true` |
+| Messaging | `quarkus.otel.instrument.messaging` | `true` |
+| Vert.x HTTP | `quarkus.otel.instrument.rest` | `true` |
+
+## Response Filter
+
+`TracingResponseFilter` (@Priority 350) — adds `x-trace-id` and `x-span-id` to response headers + MDC. Toggle: `jframe.logging.filters.tracing-response.enabled`.
+
+## Error Enrichment
+
+`TracingEnricher` — adds trace/span IDs to error responses, records exception on span with HTTP attributes (uri, method, status, content-type).
+
+## Security
+
+`QuarkusAuthenticationUtil` — resolves authenticated subject from `SecurityIdentity`. Returns `ANONYMOUS` if not authenticated, `INCOMPLETE` if principal name blank. Safe when Quarkus Security not configured.
