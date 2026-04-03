@@ -27,7 +27,6 @@ plugins {
     id("maven-publish") apply true
     id("signing") apply true
     id("com.github.ben-manes.versions") apply true
-    id("com.gradleup.nmcp.aggregation") apply true
 }
 
 repositories {
@@ -343,15 +342,3 @@ fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")
 
-
-// =============== NEW CENTRAL PORTAL PUBLISHING =================
-nmcpAggregation {
-    centralPortal {
-        username = providers.environmentVariable("MAVEN_USERNAME")
-        password = providers.environmentVariable("MAVEN_PASSWORD")
-        publishingType = "AUTOMATIC"
-    }
-    subprojects.forEach { subproject ->
-        project(subproject.path)
-    }
-}

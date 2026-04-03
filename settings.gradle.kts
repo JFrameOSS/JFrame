@@ -21,13 +21,21 @@ pluginManagement {
         id("com.diffplug.spotless") version spotlessPluginVersion
         id("com.github.ben-manes.versions") version dependencyUpdatesPluginVersion
         id("publishing") version publishingVersion
-        id("com.gradleup.nmcp.aggregation") version nmcpPluginVersion
+        id("com.gradleup.nmcp.settings") version nmcpPluginVersion
         id("com.github.vlsi.jandex") version jandexPluginVersion
     }
 }
 
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+    id("com.gradleup.nmcp.settings")
+}
+
+nmcpSettings {
+    centralPortal {
+        username = System.getenv("MAVEN_USERNAME") ?: ""
+        password = System.getenv("MAVEN_PASSWORD") ?: ""
+        publishingType = "AUTOMATIC"
+    }
 }
 
 rootProject.name = "jframe"
