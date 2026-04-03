@@ -255,6 +255,11 @@ subprojects {
 }
 
 // =============== CYCLONEDX SBOM CONFIGURATION =================
+// Disable per-project SBOM tasks — we only need the aggregated one
+allprojects {
+    tasks.named("cyclonedxDirectBom") { enabled = false }
+}
+
 // Aggregated SBOM — single BOM for the entire project hierarchy
 tasks.named<CyclonedxAggregateTask>("cyclonedxBom") {
     projectType = org.cyclonedx.model.Component.Type.LIBRARY
