@@ -91,7 +91,7 @@ public class TracingAspect {
         try (Scope scope = span.makeCurrent()) {
             EcsFields.tag(TRACE_ID, span.getSpanContext().getTraceId());
             EcsFields.tag(SPAN_ID, span.getSpanContext().getSpanId());
-            log.debug(
+            log.trace(
                 "[OPENTELEMETRY] Entering {} | user={} traceId={} spanId={}",
                 spanName,
                 EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS),
@@ -100,7 +100,7 @@ public class TracingAspect {
             );
             final Object result = joinPoint.proceed();
             final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            log.debug("[OPENTELEMETRY] Completed {} in {}ms", spanName, durationMs);
+            log.trace("[OPENTELEMETRY] Completed {} in {}ms", spanName, durationMs);
             return result;
         } catch (final Throwable throwable) {
             final long durationMs = (System.nanoTime() - startTime) / 1_000_000;

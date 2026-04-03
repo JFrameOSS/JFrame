@@ -102,7 +102,7 @@ public class TracingInterceptor {
         try (Scope scope = span.makeCurrent()) {
             final Object result = context.proceed();
             final long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            log.debug("[OPENTELEMETRY] Completed {} in {}ms", spanName, durationMs);
+            log.trace("[OPENTELEMETRY] Completed {} in {}ms", spanName, durationMs);
             return result;
         } catch (final Exception exception) {
             handleSpanError(span, spanName, startTime, exception);
@@ -123,7 +123,7 @@ public class TracingInterceptor {
         setAttributeIfPresent(span, SPAN_HTTP_TRANSACTION_ID.getKey(), txId);
         setAttributeIfPresent(span, SPAN_HTTP_REQUEST_ID.getKey(), requestId);
 
-        log.debug(
+        log.trace(
             "[OPENTELEMETRY] Entering {} | user={} traceId={} spanId={}",
             spanName,
             user,
