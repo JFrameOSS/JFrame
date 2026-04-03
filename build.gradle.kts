@@ -68,7 +68,7 @@ subprojects {
         withJavadocJar()
         withSourcesJar()
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(25)
             implementation = JvmImplementation.VENDOR_SPECIFIC
             vendor = JvmVendorSpec.ADOPTIUM
         }
@@ -95,6 +95,7 @@ subprojects {
 
     tasks.withType<JavaCompile> {
         dependsOn("spotlessApply")
+        options.release = 21
         options.isDeprecation = true
         options.encoding = Charsets.UTF_8.name()
         options.compilerArgs.addAll(

@@ -1,31 +1,3 @@
-rootProject.name = "jframe"
-
-include("jframe-core")
-
-// Spring modules — grouped under jframe-spring/
-include("jframe-spring-core")
-project(":jframe-spring-core").projectDir = file("jframe-spring/core")
-
-include("jframe-spring-jpa")
-project(":jframe-spring-jpa").projectDir = file("jframe-spring/jpa")
-
-include("jframe-spring-otlp")
-project(":jframe-spring-otlp").projectDir = file("jframe-spring/otlp")
-
-// Quarkus modules — grouped under jframe-quarkus/
-include("jframe-quarkus-core")
-project(":jframe-quarkus-core").projectDir = file("jframe-quarkus/core")
-
-include("jframe-quarkus-jpa")
-project(":jframe-quarkus-jpa").projectDir = file("jframe-quarkus/jpa")
-
-include("jframe-quarkus-otlp")
-project(":jframe-quarkus-otlp").projectDir = file("jframe-quarkus/otlp")
-
-include("jframe-quarkus-otlp-deployment")
-project(":jframe-quarkus-otlp-deployment").projectDir = file("jframe-quarkus/otlp-deployment")
-
-
 pluginManagement {
     val springBootPluginVersion: String by settings
     val springDependencyPluginVersion: String by settings
@@ -53,3 +25,34 @@ pluginManagement {
         id("com.github.vlsi.jandex") version jandexPluginVersion
     }
 }
+
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
+rootProject.name = "jframe"
+
+include("jframe-core")
+
+// Spring modules — grouped under jframe-spring/
+include("jframe-spring-core")
+project(":jframe-spring-core").projectDir = file("jframe-spring/core")
+
+include("jframe-spring-jpa")
+project(":jframe-spring-jpa").projectDir = file("jframe-spring/jpa")
+
+include("jframe-spring-otlp")
+project(":jframe-spring-otlp").projectDir = file("jframe-spring/otlp")
+
+// Quarkus modules — grouped under jframe-quarkus/
+include("jframe-quarkus-core")
+project(":jframe-quarkus-core").projectDir = file("jframe-quarkus/core")
+
+include("jframe-quarkus-jpa")
+project(":jframe-quarkus-jpa").projectDir = file("jframe-quarkus/jpa")
+
+include("jframe-quarkus-otlp")
+project(":jframe-quarkus-otlp").projectDir = file("jframe-quarkus/otlp")
+
+include("jframe-quarkus-otlp-deployment")
+project(":jframe-quarkus-otlp-deployment").projectDir = file("jframe-quarkus/otlp-deployment")
