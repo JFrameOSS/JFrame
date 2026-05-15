@@ -87,6 +87,14 @@ public abstract class AbstractSortSearchMetaData {
             SearchType.MULTI_COLUMN_FUZZY,
             (c, i) -> new MultiColumnFuzzyField(c, i.getTextValue())
         );
+        factories.put(
+            SearchType.MULTI_NUMERIC,
+            (c, i) -> new MultiNumericField(c.getFirst(), i.getTextValueList())
+        );
+        factories.put(
+            SearchType.NUMERIC_RANGE,
+            (c, i) -> new NumericRangeField(c.getFirst(), i.getFromNumericValue(), i.getToNumericValue())
+        );
     }
 
     /* -------------------------------------------------

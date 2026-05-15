@@ -13,7 +13,7 @@ import lombok.Getter;
 public enum SearchType {
 
     NONE("Does not use any operator"),
-    DATE("For use by an equal-operator on a date value"),
+    DATE("For use by a range-operator on date from/to values"),
     NUMERIC("For use by an equal-operator on a numeric value"),
     BOOLEAN("For use by an equal-operator on a boolean value"),
     ENUM("For use by an equal-operator on a single enum value"),
@@ -22,7 +22,9 @@ public enum SearchType {
     MULTI_TEXT("For use by an in-operator on a set of string values"),
     FUZZY_TEXT("For use by a like-operator on a single string value"),
     MULTI_FUZZY("For use by multiple like-operators on strings, which are combined depending on operator"),
-    MULTI_COLUMN_FUZZY("For use by multiple like-operators on multiple columns, which are combined depending on operator");
+    MULTI_COLUMN_FUZZY("For use by multiple like-operators on multiple columns, which are combined depending on operator"),
+    MULTI_NUMERIC("For use by an in-operator on a set of numeric values"),
+    NUMERIC_RANGE("For use by range operators (>= and <=) on a numeric value");
 
     private final String description;
 

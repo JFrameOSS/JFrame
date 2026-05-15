@@ -26,6 +26,8 @@ public class UserSearchMetaData extends AbstractPanacheSearchMetaData {
         addField("createdDate", "createdAt", SearchType.DATE, true);
         addField("quickSearch", List.of("name", "email"),
                  SearchType.MULTI_COLUMN_FUZZY, false);
+        addField("categoryIds", "categoryId", SearchType.MULTI_NUMERIC, false);
+        addField("score", "score", SearchType.NUMERIC_RANGE, false);
     }
 }
 ```

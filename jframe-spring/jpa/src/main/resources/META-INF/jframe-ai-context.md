@@ -27,6 +27,8 @@ public class UserSearchMetaData extends AbstractSortSearchMetaData {
         addField("createdDate", "created_at", SearchType.DATE, true);
         addField("quickSearch", List.of("first_name", "last_name"),
                  SearchType.MULTI_COLUMN_FUZZY, false);
+        addField("categoryIds", "category_id", SearchType.MULTI_NUMERIC, false);
+        addField("score", "score", SearchType.NUMERIC_RANGE, false);
     }
 }
 ```

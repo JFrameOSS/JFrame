@@ -9,8 +9,10 @@ import io.github.jframe.datasource.search.fields.FuzzyTextField;
 import io.github.jframe.datasource.search.fields.MultiColumnFuzzyField;
 import io.github.jframe.datasource.search.fields.MultiEnumField;
 import io.github.jframe.datasource.search.fields.MultiFuzzyField;
+import io.github.jframe.datasource.search.fields.MultiNumericField;
 import io.github.jframe.datasource.search.fields.MultiTextField;
 import io.github.jframe.datasource.search.fields.NumericField;
+import io.github.jframe.datasource.search.fields.NumericRangeField;
 import io.github.jframe.datasource.search.fields.TextField;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -136,6 +138,10 @@ public class BaseSearchSpecification<T> implements SearchSpecification<T> {
                 final MultiTextField f = (MultiTextField) crit;
                 predicates.add(path.in(f.getValues()));
             }
+            case MULTI_NUMERIC -> {
+                final MultiNumericField f = (MultiNumericField) crit;
+                predicates.add(path.in(f.getValues()));
+            }
             case FUZZY_TEXT -> {
                 final FuzzyTextField f = (FuzzyTextField) crit;
                 predicates.add(
@@ -163,6 +169,7 @@ public class BaseSearchSpecification<T> implements SearchSpecification<T> {
                 };
                 predicates.add(combined);
             }
+            case NUMERIC_RANGE -> addNumericRangeCriteria(root, cb, predicates, (NumericRangeField) crit);
             case MULTI_COLUMN_FUZZY -> {
                 final MultiColumnFuzzyField f = (MultiColumnFuzzyField) crit;
                 final List<String> terms = f.getSearchTerms();
@@ -201,6 +208,17 @@ public class BaseSearchSpecification<T> implements SearchSpecification<T> {
             return joined.get(columnNameParts[columnNameParts.length - 1]);
         } else {
             return root.get(columnName);
+        }
+    }
+
+    private void addNumericRangeCriteria(final Root<T> root, final CriteriaBuilder cb, final List<Predicate> predicates,
+        final NumericRangeField f) {
+        final Path<Integer> columnPath = getColumnPath(root, f.getColumnName());
+        if (f.getFromValue() != null) {
+            predicates.add(cb.greaterThanOrEqualTo(columnPath, f.getFromValue()));
+        }
+        if (f.getToValue() != null) {
+            predicates.add(cb.lessThanOrEqualTo(columnPath, f.getToValue()));
         }
     }
 

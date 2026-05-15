@@ -9,8 +9,10 @@ import io.github.jframe.datasource.search.fields.FuzzyTextField;
 import io.github.jframe.datasource.search.fields.MultiColumnFuzzyField;
 import io.github.jframe.datasource.search.fields.MultiEnumField;
 import io.github.jframe.datasource.search.fields.MultiFuzzyField;
+import io.github.jframe.datasource.search.fields.MultiNumericField;
 import io.github.jframe.datasource.search.fields.MultiTextField;
 import io.github.jframe.datasource.search.fields.NumericField;
+import io.github.jframe.datasource.search.fields.NumericRangeField;
 import io.github.jframe.datasource.search.fields.TextField;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
@@ -101,6 +103,8 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
             addField("fuzzy", "u.fuzzy", SearchType.MULTI_FUZZY, false);
             addField("search", List.of("u.first_name", "u.last_name"), SearchType.MULTI_COLUMN_FUZZY, false);
             addField("custom", "u.custom", false);
+            addField("ids", "u.id", SearchType.MULTI_NUMERIC, false);
+            addField("score", "u.score", SearchType.NUMERIC_RANGE, false);
         }
     }
 
@@ -160,6 +164,15 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
         final SearchInput input = new SearchInput();
         input.setFieldName(fieldName);
         input.setTextValueList(values);
+        return input;
+    }
+
+    private static SearchInput aNumericRangeSearchInput(final String fieldName,
+        final Integer fromNumericValue, final Integer toNumericValue) {
+        final SearchInput input = new SearchInput();
+        input.setFieldName(fieldName);
+        input.setFromNumericValue(fromNumericValue);
+        input.setToNumericValue(toNumericValue);
         return input;
     }
 
@@ -925,6 +938,136 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
         // Then: Field is absent from sortableFields
         assertThat(testMetaData.getSortableFields().contains("notSortable"), is(false));
         assertThat(testMetaData.getSortableFields(), is(empty()));
+    }
+
+    // =========================================================================
+    // Section 7: MULTI_NUMERIC and NUMERIC_RANGE factory tests
+    // =========================================================================
+
+    @Test
+    @DisplayName("Should produce MultiNumericField criterium for MULTI_NUMERIC search type")
+    public void shouldProduceMultiNumericFieldCriteriumForMultiNumericSearchType() {
+        // Given: A search input for the 'ids' MULTI_NUMERIC field with numeric string values
+        final SearchInput input = aMultiValueSearchInput("ids", List.of("1", "2", "3"));
+
+        // When: Converting to search criteria
+        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+
+        // Then: A single MultiNumericField criterium is returned with parsed integer values
+        assertThat(result, hasSize(1));
+        assertThat(result.getFirst(), is(instanceOf(MultiNumericField.class)));
+        final MultiNumericField multiNumericField = (MultiNumericField) result.getFirst();
+        assertThat(multiNumericField.getValues(), hasSize(3));
+    }
+
+    @Test
+    @DisplayName("Should produce MultiNumericField with empty values when all strings are unparseable")
+    public void shouldProduceMultiNumericFieldWithEmptyValuesWhenAllStringsAreUnparseable() {
+        // Given: A search input for the 'ids' MULTI_NUMERIC field with non-numeric strings
+        final SearchInput input = aMultiValueSearchInput("ids", List.of("abc", "xyz"));
+
+        // When: Converting to search criteria
+        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+
+        // Then: A MultiNumericField is returned with empty values list
+        assertThat(result, hasSize(1));
+        assertThat(result.getFirst(), is(instanceOf(MultiNumericField.class)));
+        final MultiNumericField multiNumericField = (MultiNumericField) result.getFirst();
+        assertThat(multiNumericField.getValues(), is(empty()));
+    }
+
+    @Test
+    @DisplayName("Should produce NumericRangeField criterium for NUMERIC_RANGE search type with both values")
+    public void shouldProduceNumericRangeFieldCriteriumForNumericRangeSearchTypeWithBothValues() {
+        // Given: A search input for the 'score' NUMERIC_RANGE field with from and to values
+        final SearchInput input = aNumericRangeSearchInput("score", 10, 100);
+
+        // When: Converting to search criteria
+        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+
+        // Then: A single NumericRangeField criterium is returned with both values
+        assertThat(result, hasSize(1));
+        assertThat(result.getFirst(), is(instanceOf(NumericRangeField.class)));
+        final NumericRangeField rangeField = (NumericRangeField) result.getFirst();
+        assertThat(rangeField.getFromValue(), is(equalTo(10)));
+        assertThat(rangeField.getToValue(), is(equalTo(100)));
+    }
+
+    @Test
+    @DisplayName("Should produce NumericRangeField with null values when no numeric range input provided")
+    public void shouldProduceNumericRangeFieldWithNullValuesWhenNoNumericRangeInputProvided() {
+        // Given: A search input for the 'score' NUMERIC_RANGE field with no range values
+        final SearchInput input = aNumericRangeSearchInput("score", null, null);
+
+        // When: Converting to search criteria
+        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+
+        // Then: A NumericRangeField is returned with both values null
+        assertThat(result, hasSize(1));
+        assertThat(result.getFirst(), is(instanceOf(NumericRangeField.class)));
+        final NumericRangeField rangeField = (NumericRangeField) result.getFirst();
+        assertThat(rangeField.getFromValue(), is(nullValue()));
+        assertThat(rangeField.getToValue(), is(nullValue()));
+    }
+
+    @Test
+    @DisplayName("Should produce NumericRangeField with only fromValue when toValue is null")
+    public void shouldProduceNumericRangeFieldWithOnlyFromValueWhenToValueIsNull() {
+        // Given: A search input for the 'score' NUMERIC_RANGE field with only fromValue
+        final SearchInput input = aNumericRangeSearchInput("score", 10, null);
+
+        // When: Converting to search criteria
+        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+
+        // Then: A NumericRangeField is returned with fromValue set and toValue null
+        assertThat(result, hasSize(1));
+        assertThat(result.getFirst(), is(instanceOf(NumericRangeField.class)));
+        final NumericRangeField rangeField = (NumericRangeField) result.getFirst();
+        assertThat(rangeField.getFromValue(), is(equalTo(10)));
+        assertThat(rangeField.getToValue(), is(nullValue()));
+    }
+
+    @Test
+    @DisplayName("Should produce NumericRangeField with only toValue when fromValue is null")
+    public void shouldProduceNumericRangeFieldWithOnlyToValueWhenFromValueIsNull() {
+        // Given: A search input for the 'score' NUMERIC_RANGE field with only toValue
+        final SearchInput input = aNumericRangeSearchInput("score", null, 100);
+
+        // When: Converting to search criteria
+        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+
+        // Then: A NumericRangeField is returned with fromValue null and toValue set
+        assertThat(result, hasSize(1));
+        assertThat(result.getFirst(), is(instanceOf(NumericRangeField.class)));
+        final NumericRangeField rangeField = (NumericRangeField) result.getFirst();
+        assertThat(rangeField.getFromValue(), is(nullValue()));
+        assertThat(rangeField.getToValue(), is(equalTo(100)));
+    }
+
+    @Test
+    @DisplayName("Should register MULTI_NUMERIC field and store correct search type")
+    public void shouldRegisterMultiNumericFieldAndStoreCorrectSearchType() {
+        // Given: A fresh metadata instance
+
+        // When: Registering a MULTI_NUMERIC field
+        testMetaData.registerField("ids", "u.id", SearchType.MULTI_NUMERIC, false);
+
+        // Then: SearchType is MULTI_NUMERIC
+        assertThat(testMetaData.getSearchTypes().get("ids"), is(SearchType.MULTI_NUMERIC));
+        assertThat(testMetaData.getColumnNames().get("ids"), is(List.of("u.id")));
+    }
+
+    @Test
+    @DisplayName("Should register NUMERIC_RANGE field and store correct search type")
+    public void shouldRegisterNumericRangeFieldAndStoreCorrectSearchType() {
+        // Given: A fresh metadata instance
+
+        // When: Registering a NUMERIC_RANGE field
+        testMetaData.registerField("score", "u.score", SearchType.NUMERIC_RANGE, false);
+
+        // Then: SearchType is NUMERIC_RANGE
+        assertThat(testMetaData.getSearchTypes().get("score"), is(SearchType.NUMERIC_RANGE));
+        assertThat(testMetaData.getColumnNames().get("score"), is(List.of("u.score")));
     }
 
 }

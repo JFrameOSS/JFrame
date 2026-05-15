@@ -230,18 +230,20 @@ The client sends a `SortablePageInput` as JSON:
 
 ### SearchInput fields per SearchType
 
-| SearchType | Use `textValue` | Use `textValueList` | Use `fromDateValue` + `toDateValue` | `operator` |
-|-----------|:-:|:-:|:-:|:-:|
-| `TEXT` | ✅ | — | — | — |
-| `FUZZY_TEXT` | ✅ | — | — | — |
-| `NUMERIC` | ✅ | — | — | — |
-| `BOOLEAN` | ✅ | — | — | — |
-| `ENUM` | ✅ | — | — | — |
-| `MULTI_TEXT` | — | ✅ | — | — |
-| `MULTI_ENUM` | — | ✅ | — | — |
-| `MULTI_FUZZY` | — | ✅ | — | `AND` / `OR` |
-| `MULTI_COLUMN_FUZZY` | ✅ | — | — | — |
-| `DATE` | — | — | ✅ | — |
+| SearchType | Use `textValue` | Use `textValueList` | Use `fromDateValue` + `toDateValue` | Use `fromNumericValue` + `toNumericValue` | `operator` |
+|-----------|:-:|:-:|:-:|:-:|:-:|
+| `TEXT` | ✅ | — | — | — | — |
+| `FUZZY_TEXT` | ✅ | — | — | — | — |
+| `NUMERIC` | ✅ | — | — | — | — |
+| `BOOLEAN` | ✅ | — | — | — | — |
+| `ENUM` | ✅ | — | — | — | — |
+| `MULTI_TEXT` | — | ✅ | — | — | — |
+| `MULTI_ENUM` | — | ✅ | — | — | — |
+| `MULTI_FUZZY` | — | ✅ | — | — | `AND` / `OR` |
+| `MULTI_COLUMN_FUZZY` | ✅ | — | — | — | — |
+| `DATE` | — | — | ✅ | — | — |
+| `MULTI_NUMERIC` | — | ✅ (parsed as integers) | — | — | — |
+| `NUMERIC_RANGE` | — | — | — | ✅ (both nullable) | — |
 
 ### Inverse search
 
@@ -280,6 +282,8 @@ Generates `role != 'DISABLED'` instead of `role = 'DISABLED'`.
 | `MULTI_FUZZY` | `LIKE %?% AND/OR LIKE %?%` | Multiple fuzzy terms |
 | `MULTI_COLUMN_FUZZY` | `col1 LIKE %?% OR col2 LIKE %?%` | Global search box |
 | `NUMERIC` | `= ?` | Numeric equality |
+| `MULTI_NUMERIC` | `IN (?, ?, ...)` | Multiple numeric values |
+| `NUMERIC_RANGE` | `>= ? AND/OR <= ?` | Numeric range (from/to, both nullable) |
 | `BOOLEAN` | `= ?` | Boolean flag |
 | `DATE` | `>= ? AND <= ?` | Date range (from/to) |
 | `ENUM` | `= ?` | Single enum value |

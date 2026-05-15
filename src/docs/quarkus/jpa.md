@@ -231,18 +231,20 @@ The client sends a `SortablePageInput` as JSON:
 
 ### SearchInput fields per SearchType
 
-| SearchType | Use `textValue` | Use `textValueList` | Use `fromDateValue` + `toDateValue` | `operator` |
-|-----------|:-:|:-:|:-:|:-:|
-| `TEXT` | ✅ | — | — | — |
-| `FUZZY_TEXT` | ✅ | — | — | — |
-| `NUMERIC` | ✅ | — | — | — |
-| `BOOLEAN` | ✅ | — | — | — |
-| `ENUM` | ✅ | — | — | — |
-| `MULTI_TEXT` | — | ✅ | — | — |
-| `MULTI_ENUM` | — | ✅ | — | — |
-| `MULTI_FUZZY` | — | ✅ | — | `AND` / `OR` |
-| `MULTI_COLUMN_FUZZY` | ✅ | — | — | — |
-| `DATE` | — | — | ✅ | — |
+| SearchType | Use `textValue` | Use `textValueList` | Use `fromDateValue` + `toDateValue` | Use `fromNumericValue` + `toNumericValue` | `operator` |
+|-----------|:-:|:-:|:-:|:-:|:-:|
+| `TEXT` | ✅ | — | — | — | — |
+| `FUZZY_TEXT` | ✅ | — | — | — | — |
+| `NUMERIC` | ✅ | — | — | — | — |
+| `BOOLEAN` | ✅ | — | — | — | — |
+| `ENUM` | ✅ | — | — | — | — |
+| `MULTI_TEXT` | — | ✅ | — | — | — |
+| `MULTI_ENUM` | — | ✅ | — | — | — |
+| `MULTI_FUZZY` | — | ✅ | — | — | `AND` / `OR` |
+| `MULTI_COLUMN_FUZZY` | ✅ | — | — | — | — |
+| `MULTI_NUMERIC` | — | ✅ (parsed as integers) | — | — | — |
+| `NUMERIC_RANGE` | — | — | — | ✅ (both nullable) | — |
+| `DATE` | — | — | ✅ | — | — |
 
 ### Inverse search
 
