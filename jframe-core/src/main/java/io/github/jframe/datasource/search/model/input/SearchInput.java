@@ -59,6 +59,20 @@ public class SearchInput {
     )
     private List<String> textValueList = new ArrayList<>();
 
+    @Schema(
+        description = "From numeric value to search for (inclusive)",
+        requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+        example = "10"
+    )
+    private Integer fromNumericValue;
+
+    @Schema(
+        description = "To numeric value to search for (inclusive)",
+        requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+        example = "100"
+    )
+    private Integer toNumericValue;
+
     /**
      * A copy constructor that copies another SearchInput.
      */
@@ -69,6 +83,8 @@ public class SearchInput {
         this.fromDateValue = other.fromDateValue;
         this.toDateValue = other.toDateValue;
         this.textValueList = new ArrayList<>(other.textValueList);
+        this.fromNumericValue = other.fromNumericValue;
+        this.toNumericValue = other.toNumericValue;
     }
 
     /**

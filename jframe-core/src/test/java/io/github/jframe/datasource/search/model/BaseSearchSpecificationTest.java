@@ -8,8 +8,10 @@ import io.github.jframe.datasource.search.fields.FuzzyTextField;
 import io.github.jframe.datasource.search.fields.MultiColumnFuzzyField;
 import io.github.jframe.datasource.search.fields.MultiEnumField;
 import io.github.jframe.datasource.search.fields.MultiFuzzyField;
+import io.github.jframe.datasource.search.fields.MultiNumericField;
 import io.github.jframe.datasource.search.fields.MultiTextField;
 import io.github.jframe.datasource.search.fields.NumericField;
+import io.github.jframe.datasource.search.fields.NumericRangeField;
 import io.github.jframe.datasource.search.fields.TextField;
 import io.github.support.UnitTest;
 
@@ -65,6 +67,8 @@ class BaseSearchSpecificationTest extends UnitTest {
         lenient().when(cb.like(any(), anyString())).thenReturn(predicate);
         lenient().when(cb.greaterThanOrEqualTo(any(), any(LocalDateTime.class))).thenReturn(predicate);
         lenient().when(cb.lessThanOrEqualTo(any(), any(LocalDateTime.class))).thenReturn(predicate);
+        lenient().when(cb.greaterThanOrEqualTo(any(), any(Integer.class))).thenReturn(predicate);
+        lenient().when(cb.lessThanOrEqualTo(any(), any(Integer.class))).thenReturn(predicate);
 
         lenient().when(cb.and(any(Predicate[].class))).thenReturn(predicate);
         lenient().when(cb.or(any(Predicate[].class))).thenReturn(predicate);
@@ -311,6 +315,83 @@ class BaseSearchSpecificationTest extends UnitTest {
         verify(cb, times(4)).like(any(), anyString());
         verify(cb, times(2)).or(any(Predicate[].class));
         verify(cb, times(2)).and(any(Predicate[].class));
+    }
+
+    @Test
+    @DisplayName("Should create correct predicate for MultiNumericField")
+    void testToPredicate_WithMultiNumericField() {
+        // Given: A MultiNumericField for 'age' with multiple numeric values
+        final List<String> values = List.of("18", "25", "30");
+        final MultiNumericField field = new MultiNumericField("age", values);
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Root gets 'age' and path.in is called with the integer values list
+        verify(root).get("age");
+        verify(path).in(anyCollection());
+    }
+
+    @Test
+    @DisplayName("Should create correct predicate for NumericRangeField with both from and to values")
+    void testToPredicate_WithNumericRangeField_BothValues() {
+        // Given: A NumericRangeField for 'age' with both from and to values
+        final NumericRangeField field = new NumericRangeField("age", 18, 65);
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Root gets 'age' twice and both comparison predicates are created
+        verify(root, times(2)).get("age");
+        verify(cb).greaterThanOrEqualTo(any(), eq(18));
+        verify(cb).lessThanOrEqualTo(any(), eq(65));
+    }
+
+    @Test
+    @DisplayName("Should create only greaterThanOrEqualTo predicate for NumericRangeField with only fromValue")
+    void testToPredicate_WithNumericRangeField_OnlyFromValue() {
+        // Given: A NumericRangeField for 'age' with only fromValue set
+        final NumericRangeField field = new NumericRangeField("age", 18, null);
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Only greaterThanOrEqualTo is called, not lessThanOrEqualTo
+        verify(cb).greaterThanOrEqualTo(any(), eq(18));
+        verify(cb, times(0)).lessThanOrEqualTo(any(), any(Integer.class));
+    }
+
+    @Test
+    @DisplayName("Should create only lessThanOrEqualTo predicate for NumericRangeField with only toValue")
+    void testToPredicate_WithNumericRangeField_OnlyToValue() {
+        // Given: A NumericRangeField for 'age' with only toValue set
+        final NumericRangeField field = new NumericRangeField("age", null, 65);
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Only lessThanOrEqualTo is called, not greaterThanOrEqualTo
+        verify(cb, times(0)).greaterThanOrEqualTo(any(), any(Integer.class));
+        verify(cb).lessThanOrEqualTo(any(), eq(65));
+    }
+
+    @Test
+    @DisplayName("Should add no range predicates for NumericRangeField with both null values")
+    void testToPredicate_WithNumericRangeField_BothNull() {
+        // Given: A NumericRangeField for 'age' with both values null
+        final NumericRangeField field = new NumericRangeField("age", null, null);
+        final BaseSearchSpecification<Object> spec = new BaseSearchSpecification<>(Collections.singletonList(field));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Neither comparison predicate is created
+        verify(cb, times(0)).greaterThanOrEqualTo(any(), any(Integer.class));
+        verify(cb, times(0)).lessThanOrEqualTo(any(), any(Integer.class));
     }
 
     private enum TestStatus {

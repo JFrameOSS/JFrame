@@ -100,8 +100,10 @@ Type-safe, framework-agnostic search criteria system.
 | `ENUM` | `EnumField` | `= enum` | `!value` prefix |
 | `MULTI_ENUM` | `MultiEnumField` | `IN (enums)` | No |
 | `BOOLEAN` | `BooleanField` | `= true/false` | No |
-| `DATE` | `DateField` | `BETWEEN from AND to` | No |
+| `DATE` | `DateField` | `>= from AND <= to` | No |
 | `NUMERIC` | `NumericField` | `= number` | `!value` prefix |
+| `MULTI_NUMERIC` | `MultiNumericField` | `IN (numbers)` | No |
+| `NUMERIC_RANGE` | `NumericRangeField` | `>= from AND/OR <= to` | No |
 
 ### DTOs (REST API)
 
@@ -111,7 +113,7 @@ SortablePageInput {
     int pageNumber;       // 0-based
     int pageSize;
     List<SortableColumn> sortOrder;   // [{name, direction}]
-    List<SearchInput> searchInputs;   // [{fieldName, operator, textValue, textValueList, fromDateValue, toDateValue}]
+    List<SearchInput> searchInputs;   // [{fieldName, operator, textValue, textValueList, fromDateValue, toDateValue, fromNumericValue, toNumericValue}]
 }
 
 // Response

@@ -14,11 +14,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: develop
 
-      - name: Read Java version from .tool-versions
+      - name: Read Java version from mise.toml
         id: java-version
         run: |
-          version=$(grep "^java" .tool-versions | awk '{print $2}' | sed 's/temurin-//')
+          version=$(grep "^java" mise.toml | sed 's/.*temurin-//' | tr -d '"')
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "Java version: $version"
 
