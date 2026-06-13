@@ -56,7 +56,7 @@ public class DefaultErrorResponseFactoryTest extends UnitTest {
         // When: Creating error response resource
         final ErrorResponseResource resource = factory.create(exception);
 
-        // Then: Resource is base ErrorResponseResource (no separate ApiErrorResponseResource exists)
+        // Then: Resource is base ErrorResponseResource
         assertThat(resource, is(notNullValue()));
         assertThat(resource.getClass(), is(ErrorResponseResource.class));
         assertThat(resource.getThrowable(), is(notNullValue()));

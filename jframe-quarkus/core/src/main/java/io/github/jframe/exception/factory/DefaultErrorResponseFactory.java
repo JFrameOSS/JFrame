@@ -54,6 +54,6 @@ public class DefaultErrorResponseFactory implements ExceptionResponseFactory {
             }
             current = current.getCause();
         }
-        return throwable;
+        return null;
     }
 }

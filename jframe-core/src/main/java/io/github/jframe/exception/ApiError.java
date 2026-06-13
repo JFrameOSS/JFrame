@@ -12,24 +12,12 @@ import jakarta.ws.rs.core.Response;
  */
 public interface ApiError extends Serializable {
 
-    /**
-     * Getter for the error code.
-     *
-     * @return the error code
-     */
+    /** Returns the unique error code. */
     String getErrorCode();
 
-    /**
-     * Get the error reason.
-     *
-     * @return the reason
-     */
+    /** Returns the human-readable error reason. */
     String getReason();
 
-    /**
-     * Get the HTTP status associated with this error.
-     *
-     * @return the HTTP status
-     */
+    /** Returns the HTTP status associated with this error. */
     Response.Status getHttpStatus();
 }

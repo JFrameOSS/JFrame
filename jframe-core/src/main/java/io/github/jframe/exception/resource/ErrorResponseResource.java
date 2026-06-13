@@ -18,15 +18,19 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponseResource {
 
+    private int statusCode;
+
     private String method;
     private String uri;
     private String query;
     private String contentType;
-    private int statusCode;
-    private String statusMessage;
-    private String errorMessage;
-    private String apiErrorCode;
-    private String apiErrorReason;
+
+    private String errorCode;
+    private String errorReason;
+
+    /** String representation of the exception cause, if present. */
+    private String cause;
+
     private String txId;
     private String traceId;
     private String spanId;
@@ -35,12 +39,12 @@ public class ErrorResponseResource {
     @JsonIgnore
     private final Throwable throwable;
 
-    /** Default constructor. */
+    /** Constructs a new {@code ErrorResponseResource} with no throwable. */
     public ErrorResponseResource() {
         this(null);
     }
 
-    /** Construct an error resource with the given throwable. */
+    /** Constructs a new {@code ErrorResponseResource} with the given throwable. */
     public ErrorResponseResource(final Throwable throwable) {
         this.throwable = throwable;
     }

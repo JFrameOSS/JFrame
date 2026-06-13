@@ -15,7 +15,7 @@ RuntimeException
 ```
 
 **Error Response Resources** — DTOs for JSON error responses:
-- `ErrorResponseResource` — base: method, uri, query, statusCode, statusMessage, errorMessage, txId, traceId, spanId; also carries `apiErrorCode` + `apiErrorReason` when thrown via `HttpException(ApiError)`
+- `ErrorResponseResource` — base: method, uri, query, contentType, statusCode, errorCode, errorReason, cause (nullable), txId, traceId, spanId
 - `ValidationErrorResponseResource` — adds List<ValidationErrorResource> (code + field)
 - `ConstraintViolationResponseResource` — for Jakarta Bean Validation
 - `RateLimitErrorResponseResource` — adds limit, remaining, resetDate

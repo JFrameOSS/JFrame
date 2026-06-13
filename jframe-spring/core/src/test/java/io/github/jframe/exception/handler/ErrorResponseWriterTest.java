@@ -29,8 +29,8 @@ import static org.hamcrest.Matchers.*;
  * <li>Content-Type set to application/json</li>
  * <li>HTTP status code set from Response.Status</li>
  * <li>ErrorResponseResource fields populated from request and arguments</li>
- * <li>ApiError overload extracts status, code, and reason</li>
- * <li>Null error code and absent query string handled correctly</li>
+ * <li>ApiError overload extracts status, errorCode, and errorReason</li>
+ * <li>errorCode always serialized when provided; absent query string handled correctly</li>
  * </ul>
  */
 @DisplayName("Exception Handler - Error Response Writer")
@@ -38,42 +38,45 @@ public class ErrorResponseWriterTest extends UnitTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    // ======================== write(req, res, status, errorCode, message) ========================
+    // ======================== write(req, res, status, errorCode, errorReason) ========================
 
     @Test
     @DisplayName("Should write JSON error response with status code and error code")
     public void shouldWriteJsonErrorResponseWithStatusCodeAndErrorCode() throws IOException {
-        // Given: A GET request and a writable response with a specific status, code, and message
+        // Given: A GET request and a writable response with a specific status, code, and reason
         final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/users");
         final MockHttpServletResponse response = new MockHttpServletResponse();
         final Response.Status status = Response.Status.BAD_REQUEST;
-        final String errorCode = "ERR001";
-        final String message = "Input validation failed";
+        final String errorCode = "JFRAME_BAD_REQUEST";
+        final String errorReason = "Input validation failed";
 
         // When: Writing the error response
-        ErrorResponseWriter.write(request, response, status, errorCode, message);
+        ErrorResponseWriter.write(request, response, status, errorCode, errorReason);
 
-        // Then: Response body contains statusCode, errorMessage and apiErrorCode
+        // Then: Response body contains statusCode, errorCode and errorReason; cause is absent
         assertThat(response.getContentType(), containsString(MediaType.APPLICATION_JSON_VALUE));
         final Map<String, Object> body = parseBody(response);
         assertThat(body.get("statusCode"), is(equalTo(400)));
-        assertThat(body.get("errorMessage"), is(equalTo(message)));
-        assertThat(body.get("apiErrorCode"), is(equalTo(errorCode)));
+        assertThat(body.get("errorCode"), is(equalTo(errorCode)));
+        assertThat(body.get("errorReason"), is(equalTo(errorReason)));
+        assertThat(body.get("cause"), is(nullValue()));
     }
 
     @Test
-    @DisplayName("Should write JSON error response with null error code")
-    public void shouldWriteJsonErrorResponseWithNullErrorCode() throws IOException {
-        // Given: A request with a null error code
+    @DisplayName("Should always serialize errorCode when provided")
+    public void shouldAlwaysSerializeErrorCodeWhenProvided() throws IOException {
+        // Given: A request with an error code (errorCode is always populated — never null in the new design)
         final MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/data");
         final MockHttpServletResponse response = new MockHttpServletResponse();
+        final String errorCode = "JFRAME_INTERNAL_ERROR";
 
-        // When: Writing error response with null error code
-        ErrorResponseWriter.write(request, response, Response.Status.INTERNAL_SERVER_ERROR, null, "Unexpected error");
+        // When: Writing error response with a non-null error code
+        ErrorResponseWriter.write(request, response, Response.Status.INTERNAL_SERVER_ERROR, errorCode, "Unexpected error");
 
-        // Then: apiErrorCode is absent from JSON body (NON_NULL serialization)
+        // Then: errorCode is present in JSON body (always populated, never absent)
         final Map<String, Object> body = parseBody(response);
-        assertThat(body.get("apiErrorCode"), is(nullValue()));
+        assertThat(body.get("errorCode"), is(equalTo(errorCode)));
+        assertThat(body.get("errorReason"), is(equalTo("Unexpected error")));
     }
 
     @Test
@@ -84,7 +87,7 @@ public class ErrorResponseWriterTest extends UnitTest {
         final MockHttpServletResponse response = new MockHttpServletResponse();
 
         // When: Writing error response with NOT_FOUND status
-        ErrorResponseWriter.write(request, response, Response.Status.NOT_FOUND, null, "Resource not found");
+        ErrorResponseWriter.write(request, response, Response.Status.NOT_FOUND, "JFRAME_NOT_FOUND", "Resource not found");
 
         // Then: Response HTTP status code matches the provided status
         assertThat(response.getStatus(), is(equalTo(404)));
@@ -95,7 +98,7 @@ public class ErrorResponseWriterTest extends UnitTest {
     @Test
     @DisplayName("Should write JSON error response from ApiError")
     public void shouldWriteJsonErrorResponseFromApiError() throws IOException {
-        // Given: A request and an ApiError carrying status, code, and reason
+        // Given: A request and an ApiError carrying status, errorCode, and errorReason
         final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/items");
         final MockHttpServletResponse response = new MockHttpServletResponse();
         final ApiError apiError = new TestApiError("ITEM_NOT_FOUND", "The requested item does not exist", Response.Status.NOT_FOUND);
@@ -103,11 +106,11 @@ public class ErrorResponseWriterTest extends UnitTest {
         // When: Writing error response from ApiError
         ErrorResponseWriter.write(request, response, apiError);
 
-        // Then: Status, error code, and reason are all extracted from ApiError
+        // Then: Status, errorCode, and errorReason are all extracted from ApiError
         assertThat(response.getStatus(), is(equalTo(404)));
         final Map<String, Object> body = parseBody(response);
-        assertThat(body.get("apiErrorCode"), is(equalTo("ITEM_NOT_FOUND")));
-        assertThat(body.get("apiErrorReason"), is(equalTo("The requested item does not exist")));
+        assertThat(body.get("errorCode"), is(equalTo("ITEM_NOT_FOUND")));
+        assertThat(body.get("errorReason"), is(equalTo("The requested item does not exist")));
     }
 
     @Test
@@ -120,7 +123,7 @@ public class ErrorResponseWriterTest extends UnitTest {
         final MockHttpServletResponse response = new MockHttpServletResponse();
 
         // When: Writing error response
-        ErrorResponseWriter.write(request, response, Response.Status.BAD_REQUEST, null, "Search failed");
+        ErrorResponseWriter.write(request, response, Response.Status.BAD_REQUEST, "JFRAME_BAD_REQUEST", "Search failed");
 
         // Then: Request metadata is populated in the response body
         final Map<String, Object> body = parseBody(response);
@@ -138,7 +141,7 @@ public class ErrorResponseWriterTest extends UnitTest {
         final MockHttpServletResponse response = new MockHttpServletResponse();
 
         // When: Writing error response
-        ErrorResponseWriter.write(request, response, Response.Status.SERVICE_UNAVAILABLE, null, "Service unavailable");
+        ErrorResponseWriter.write(request, response, Response.Status.SERVICE_UNAVAILABLE, "JFRAME_INTERNAL_ERROR", "Service unavailable");
 
         // Then: Query field is absent from JSON body (NON_NULL serialization)
         final Map<String, Object> body = parseBody(response);

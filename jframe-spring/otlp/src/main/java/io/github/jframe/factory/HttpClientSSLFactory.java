@@ -1,6 +1,7 @@
 package io.github.jframe.factory;
 
 import io.github.jframe.exception.HttpException;
+import io.github.jframe.exception.JFrameErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,7 +26,6 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 
 import static io.github.jframe.util.constants.Constants.Protocols.TLS;
-import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static java.security.KeyStore.getDefaultType;
 import static javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm;
 
@@ -89,7 +89,7 @@ public class HttpClientSSLFactory {
 
             return requestFactory;
         } catch (final Exception exception) {
-            throw new HttpException("Could not create HTTP client with TLS strategy", exception, INTERNAL_SERVER_ERROR);
+            throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, exception);
         }
     }
 
@@ -107,7 +107,7 @@ public class HttpClientSSLFactory {
 
             return sslContext;
         } catch (final Exception exception) {
-            throw new HttpException("Could not create trust-all SSL context", exception, INTERNAL_SERVER_ERROR);
+            throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, exception);
         }
     }
 
@@ -128,7 +128,7 @@ public class HttpClientSSLFactory {
             sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
             return sslContext;
         } catch (final Exception exception) {
-            throw new HttpException("Could not create SSL context", exception, INTERNAL_SERVER_ERROR);
+            throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, exception);
         }
     }
 

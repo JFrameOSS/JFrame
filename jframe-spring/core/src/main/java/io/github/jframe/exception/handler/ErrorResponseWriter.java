@@ -26,11 +26,11 @@ public class ErrorResponseWriter {
     /**
      * Writes a JSON error response to the given {@link HttpServletResponse}.
      *
-     * @param request   the HTTP request
-     * @param response  the HTTP response to write to
-     * @param status    the HTTP status
-     * @param errorCode the application error code (nullable)
-     * @param message   the error message (nullable)
+     * @param request     the HTTP request
+     * @param response    the HTTP response to write to
+     * @param status      the HTTP status
+     * @param errorCode   the application error code (nullable)
+     * @param errorReason the error reason (nullable)
      * @throws IOException if writing to the response fails
      */
     public static void write(
@@ -38,14 +38,12 @@ public class ErrorResponseWriter {
         final HttpServletResponse response,
         final Response.Status status,
         final String errorCode,
-        final String message) throws IOException {
+        final String errorReason) throws IOException {
 
         final ErrorResponseResource resource = new ErrorResponseResource(null);
         resource.setStatusCode(status.getStatusCode());
-        resource.setStatusMessage(status.getReasonPhrase());
-        resource.setErrorMessage(message);
-        resource.setApiErrorCode(errorCode);
-        resource.setApiErrorReason(message);
+        resource.setErrorCode(errorCode);
+        resource.setErrorReason(errorReason);
         resource.setUri(request.getRequestURI());
         resource.setMethod(request.getMethod());
         resource.setQuery(request.getQueryString());

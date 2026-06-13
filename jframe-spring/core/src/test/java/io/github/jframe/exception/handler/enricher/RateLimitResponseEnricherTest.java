@@ -41,7 +41,7 @@ public class RateLimitResponseEnricherTest extends UnitTest {
         final int limit = 100;
         final int remaining = 0;
         final OffsetDateTime resetDate = OffsetDateTime.now().plusMinutes(5);
-        final RateLimitExceededException exception = new RateLimitExceededException("Rate limit exceeded", limit, remaining, resetDate);
+        final RateLimitExceededException exception = new RateLimitExceededException(limit, remaining, resetDate);
         final WebRequest request = mock(WebRequest.class);
 
         final RateLimitResponseEnricher enricher = new RateLimitResponseEnricher();
@@ -103,7 +103,7 @@ public class RateLimitResponseEnricherTest extends UnitTest {
         final int limit = 100;
         final int remaining = 0;
         final OffsetDateTime resetDate = OffsetDateTime.now().plusMinutes(5);
-        final RateLimitExceededException exception = new RateLimitExceededException("Rate limit exceeded", limit, remaining, resetDate);
+        final RateLimitExceededException exception = new RateLimitExceededException(limit, remaining, resetDate);
         final WebRequest request = mock(WebRequest.class);
 
         final RateLimitResponseEnricher enricher = new RateLimitResponseEnricher();
@@ -112,7 +112,6 @@ public class RateLimitResponseEnricherTest extends UnitTest {
         enricher.doEnrich(resource, exception, request, HttpStatus.TOO_MANY_REQUESTS);
 
         // Then: No exception is thrown and resource is unchanged (no rate limit fields on ErrorResponseResource)
-        assertThat(resource.getErrorMessage(), is(nullValue()));
     }
 
     @Test
@@ -129,6 +128,5 @@ public class RateLimitResponseEnricherTest extends UnitTest {
         enricher.doEnrich(resource, exception, request, HttpStatus.INTERNAL_SERVER_ERROR);
 
         // Then: No exception is thrown and resource is unchanged
-        assertThat(resource.getErrorMessage(), is(nullValue()));
     }
 }

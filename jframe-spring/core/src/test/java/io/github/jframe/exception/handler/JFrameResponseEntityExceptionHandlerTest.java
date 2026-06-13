@@ -12,6 +12,7 @@ import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;
 import io.github.support.UnitTest;
+import io.github.support.fixtures.TestApiError;
 
 import java.time.OffsetDateTime;
 import jakarta.ws.rs.core.Response;
@@ -71,23 +72,16 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         exceptionHandler = new JFrameResponseEntityExceptionHandler(errorResponseEntityBuilder);
 
         mockErrorResponse = new ErrorResponseResource();
-        mockErrorResponse.setErrorMessage("Test error");
-
         mockMethodArgumentNotValidResponse = new MethodArgumentNotValidResponseResource();
-        mockMethodArgumentNotValidResponse.setErrorMessage("Test validation error");
-
         mockValidationErrorResponse = new ValidationErrorResponseResource();
-        mockValidationErrorResponse.setErrorMessage("Test validation error");
-
         mockRateLimitErrorResponse = new RateLimitErrorResponseResource();
-        mockRateLimitErrorResponse.setErrorMessage("Rate limit exceeded");
     }
 
     @Test
     @DisplayName("Should handle HttpException with correct status code")
     public void shouldHandleHttpException() {
-        // Given: An HttpException with BAD_REQUEST status
-        final HttpException exception = new BadRequestException("Invalid input");
+        // Given: An HttpException with BAD_REQUEST status (no-arg constructor — String constructors removed)
+        final HttpException exception = new BadRequestException();
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.BAD_REQUEST), eq(webRequest)))
             .thenReturn(mockErrorResponse);
 
@@ -104,8 +98,10 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
     @Test
     @DisplayName("Should handle HttpException with custom status code")
     public void shouldHandleHttpExceptionWithCustomStatus() {
-        // Given: An HttpException with NOT_FOUND status
-        final HttpException exception = new HttpException(Response.Status.NOT_FOUND);
+        // Given: An HttpException created via ApiError (status-only constructors removed)
+        final HttpException exception = new HttpException(
+            new TestApiError("JFRAME_NOT_FOUND", "Resource not found", Response.Status.NOT_FOUND)
+        );
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.NOT_FOUND), eq(webRequest)))
             .thenReturn(mockErrorResponse);
 
@@ -241,7 +237,7 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
     @Test
     @DisplayName("Should return correct headers in all responses")
     public void shouldReturnEmptyHeaders() {
-        // Given: An HttpException
+        // Given: An HttpException (no-arg constructor)
         final HttpException httpException = new BadRequestException();
         when(errorResponseEntityBuilder.buildErrorResponseBody(any(), any(), eq(webRequest)))
             .thenReturn(mockErrorResponse);
@@ -256,11 +252,11 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
     @Test
     @DisplayName("Should handle RateLimitExceededException with TOO_MANY_REQUESTS status and rate limit headers")
     public void shouldHandleRateLimitExceededException() {
-        // Given: A RateLimitExceededException with rate limit details
+        // Given: A RateLimitExceededException with rate limit details (String-message constructor removed)
         final int limit = 100;
         final int remaining = 0;
         final OffsetDateTime resetDate = OffsetDateTime.now().plusMinutes(5);
-        final RateLimitExceededException exception = new RateLimitExceededException("Rate limit exceeded", limit, remaining, resetDate);
+        final RateLimitExceededException exception = new RateLimitExceededException(limit, remaining, resetDate);
 
         // Configure mock to return a response with rate limit details (simulating enricher behavior)
         mockRateLimitErrorResponse.setLimit(limit);

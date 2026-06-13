@@ -9,7 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -19,9 +18,10 @@ import static org.hamcrest.Matchers.nullValue;
  *
  * <p>Verifies the RateLimitExceededException functionality including:
  * <ul>
- * <li>Constructor variations (rate limit details, message, cause, message+cause)</li>
+ * <li>Constructor variations (rate limit details, cause + rate limit details)</li>
  * <li>HTTP status is always TOO_MANY_REQUESTS (429)</li>
  * <li>Rate limit metadata (limit, remaining, resetDate) is correctly stored</li>
+ * <li>Error code and reason are set from JFrameErrorCode.RATE_LIMITED</li>
  * </ul>
  */
 @DisplayName("Exception Hierarchy - Rate Limit Exceeded Exception")
@@ -49,43 +49,6 @@ public class RateLimitExceededExceptionTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should create exception with message and rate limit details")
-    public void shouldCreateExceptionWithMessageAndRateLimitDetails() {
-        // Given: An error message and rate limit details
-        final String message = "Rate limit exceeded for API key";
-
-        // When: Creating exception with message and rate limit details
-        final RateLimitExceededException exception = new RateLimitExceededException(message, LIMIT, REMAINING, RESET_DATE);
-
-        // Then: Exception is created with TOO_MANY_REQUESTS status, message and rate limit details
-        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.TOO_MANY_REQUESTS)));
-        assertThat(exception.getMessage(), is(equalTo(message)));
-        assertThat(exception.getLimit(), is(equalTo(LIMIT)));
-        assertThat(exception.getRemaining(), is(equalTo(REMAINING)));
-        assertThat(exception.getResetDate(), is(equalTo(RESET_DATE)));
-        assertThat(exception.getCause(), is(nullValue()));
-    }
-
-    @Test
-    @DisplayName("Should create exception with message, cause and rate limit details")
-    public void shouldCreateExceptionWithMessageCauseAndRateLimitDetails() {
-        // Given: An error message, a root cause and rate limit details
-        final String message = "Rate limit exceeded";
-        final Throwable cause = new IllegalStateException("Too many requests");
-
-        // When: Creating exception with message, cause and rate limit details
-        final RateLimitExceededException exception = new RateLimitExceededException(message, cause, LIMIT, REMAINING, RESET_DATE);
-
-        // Then: Exception is created with TOO_MANY_REQUESTS status, message, cause and rate limit details
-        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.TOO_MANY_REQUESTS)));
-        assertThat(exception.getMessage(), is(equalTo(message)));
-        assertThat(exception.getCause(), is(equalTo(cause)));
-        assertThat(exception.getLimit(), is(equalTo(LIMIT)));
-        assertThat(exception.getRemaining(), is(equalTo(REMAINING)));
-        assertThat(exception.getResetDate(), is(equalTo(RESET_DATE)));
-    }
-
-    @Test
     @DisplayName("Should create exception with cause and rate limit details")
     public void shouldCreateExceptionWithCauseAndRateLimitDetails() {
         // Given: A root cause exception and rate limit details
@@ -94,10 +57,11 @@ public class RateLimitExceededExceptionTest extends UnitTest {
         // When: Creating exception with cause and rate limit details
         final RateLimitExceededException exception = new RateLimitExceededException(cause, LIMIT, REMAINING, RESET_DATE);
 
-        // Then: Exception is created with TOO_MANY_REQUESTS status, cause and rate limit details
+        // Then: Exception is created with TOO_MANY_REQUESTS status, cause, error code and rate limit details
         assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.TOO_MANY_REQUESTS)));
         assertThat(exception.getCause(), is(equalTo(cause)));
-        assertThat(exception.getMessage(), containsString("Too many requests"));
+        assertThat(exception.getErrorCode(), is(equalTo("JFRAME_RATE_LIMITED")));
+        assertThat(exception.getErrorReason(), is(equalTo("Rate limit exceeded")));
         assertThat(exception.getLimit(), is(equalTo(LIMIT)));
         assertThat(exception.getRemaining(), is(equalTo(REMAINING)));
         assertThat(exception.getResetDate(), is(equalTo(RESET_DATE)));

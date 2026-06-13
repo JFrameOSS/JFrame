@@ -1,44 +1,42 @@
 # Exception Handling Simplification Migration Guide
 
-This guide covers migrating JFrame-based applications (Spring Boot and Quarkus) after the exception handling simplification in version 2.0.0.
+This guide covers migrating JFrame-based applications (Spring Boot and Quarkus) after two rounds of exception handling simplification. Both rounds introduced breaking changes — this guide reflects the **final API state**.
 
 ## What changed
 
-The exception hierarchy was simplified to eliminate redundant classes and clarify the contract between error codes and HTTP status codes.
+### Round 1 — Hierarchy simplification
 
-**Breaking changes:**
+1. `ApiError` gained required method `getHttpStatus()`
+2. `ApiException` deleted — merged into `HttpException`
+3. `ApiErrorResponseResource` deleted — merged into `ErrorResponseResource`
+4. Three exception classes deleted: `DataNotFoundException`, `InternalServerErrorException`, `UnauthorizedRequestException`
+5. `ApiErrorResponseEnricher` deleted — use `ErrorCodeResponseEnricher`
+6. `ApiExceptionMapper` deleted (Quarkus) — `HttpExceptionMapper` handles all `HttpException` subclasses
 
-1. [`ApiError` gained required method `getHttpStatus()`](#step-1-update-apierror-implementations)
-2. [`ApiException` deleted — use `HttpException` instead](#step-2-replace-apiexception-with-httpexception)
-3. [`ApiErrorResponseResource` deleted](#step-3-update-error-response-type-references)
-4. [Three exception classes deleted](#step-4-replace-deleted-exception-classes)
-5. [`ApiErrorResponseEnricher` deleted](#step-5-remove-apierrorresponseenricher-references)
-6. [`ApiExceptionMapper` deleted (Quarkus only)](#step-6-remove-apiexceptionmapper-references-quarkus-only)
-7. [`ObjectMappers.fromJson()` no longer wraps `JacksonException`](#step-7-update-objectmappers-catch-blocks)
+### Round 2 — API strictness
 
-**New additions:**
-
-- `ErrorResponseWriter` utility for security filters (Spring only)
-- `HttpExceptionMapper` handles all `HttpException` subclasses (Quarkus)
+7. [`HttpException` now only accepts `ApiError`](#step-5-update-httpexception-direct-usage) — all status-only constructors removed
+8. [Subclasses (`BadRequestException`, `ResourceNotFoundException`, `RateLimitExceededException`) lost string message constructors](#step-4-update-exception-subclass-usage) — no-arg and Throwable constructors only
+9. [`ErrorResponseResource` fields changed](#step-6-update-error-response-consumers) — `statusMessage`, `errorMessage`, `apiErrorCode`, `apiErrorReason` deleted; `errorCode`, `errorReason`, `cause` added
+10. [New `JFrameErrorCode` enum](#step-9-jframeerrorcode-defaults) — 6 framework defaults, used by all built-in exceptions
+11. [`ErrorCodeResponseEnricher` replaces `ErrorMessageResponseEnricher` and `ApiErrorResponseEnricher`](#step-7-update-custom-enrichers)
 
 **What did NOT change:**
 
 - Validation exception behavior or API
-- Global error response format — same JSON structure
 - `ResourceNotFoundException` and `BadRequestException` semantics
 - Auto-configuration behavior
+- `ErrorResponseWriter` signatures (Spring Boot)
 
 ---
 
 ## Step 1: Update `ApiError` implementations
 
-All `ApiError` interface implementations (typically enums) must add a `Response.Status` field and implement the new `getHttpStatus()` method.
+All `ApiError` implementations must add a `Response.Status` field and implement `getHttpStatus()`.
 
 ### Before
 
 ```java
-import java.io.Serializable;
-
 public enum MyErrors implements ApiError {
     USER_NOT_FOUND("USER_001", "User not found"),
     INVALID_TOKEN("AUTH_001", "Invalid or expired token"),
@@ -53,14 +51,10 @@ public enum MyErrors implements ApiError {
     }
 
     @Override
-    public String getErrorCode() {
-        return errorCode;
-    }
+    public String getErrorCode() { return errorCode; }
 
     @Override
-    public String getReason() {
-        return reason;
-    }
+    public String getReason() { return reason; }
 }
 ```
 
@@ -68,7 +62,6 @@ public enum MyErrors implements ApiError {
 
 ```java
 import jakarta.ws.rs.core.Response;
-import java.io.Serializable;
 
 public enum MyErrors implements ApiError {
     USER_NOT_FOUND("USER_001", "User not found", Response.Status.NOT_FOUND),
@@ -86,35 +79,21 @@ public enum MyErrors implements ApiError {
     }
 
     @Override
-    public String getErrorCode() {
-        return errorCode;
-    }
+    public String getErrorCode() { return errorCode; }
 
     @Override
-    public String getReason() {
-        return reason;
-    }
+    public String getReason() { return reason; }
 
     @Override
-    public Response.Status getHttpStatus() {
-        return httpStatus;
-    }
+    public Response.Status getHttpStatus() { return httpStatus; }
 }
 ```
 
-**Steps:**
-
-1. Add `Response.Status` field to enum (typically named `httpStatus`)
-2. Import `jakarta.ws.rs.core.Response`
-3. Update enum constructor to accept `Response.Status` parameter
-4. Implement `getHttpStatus()` method returning the status field
-5. Update all enum constant declarations with the appropriate HTTP status
-
 **Common status mappings:**
-- Not found errors → `Response.Status.NOT_FOUND` (404)
-- Authorization errors → `Response.Status.UNAUTHORIZED` (401)
+- Not found → `Response.Status.NOT_FOUND` (404)
+- Auth errors → `Response.Status.UNAUTHORIZED` (401)
 - Permission errors → `Response.Status.FORBIDDEN` (403)
-- Validation/client errors → `Response.Status.BAD_REQUEST` (400)
+- Client errors → `Response.Status.BAD_REQUEST` (400)
 - Server errors → `Response.Status.INTERNAL_SERVER_ERROR` (500)
 - Rate limiting → `Response.Status.TOO_MANY_REQUESTS` (429)
 
@@ -122,150 +101,35 @@ public enum MyErrors implements ApiError {
 
 ## Step 2: Replace `ApiException` with `HttpException`
 
-`ApiException` was deleted. Use `HttpException` instead, which now accepts `ApiError` directly.
+`ApiException` was deleted. Use `HttpException` with an `ApiError`.
 
 ### Before
 
 ```java
 import io.github.jframe.exception.core.ApiException;
-import static com.example.MyErrors.USER_NOT_FOUND;
 
-// Throw with ApiError
-throw new ApiException(USER_NOT_FOUND);
-
-// Or specify status separately
+throw new ApiException(MyErrors.USER_NOT_FOUND);
 throw new ApiException(HttpStatus.NOT_FOUND, "Not found");
 ```
 
 ### After
 
 ```java
-import io.github.jframe.exception.core.HttpException;
-import jakarta.ws.rs.core.Response;
-import static com.example.MyErrors.USER_NOT_FOUND;
+import io.github.jframe.exception.HttpException;
 
-// Throw with ApiError — status comes from apiError.getHttpStatus()
-throw new HttpException(USER_NOT_FOUND);
-
-// With cause chain
-throw new HttpException(USER_NOT_FOUND, cause);
-
-// Or specify status directly
-throw new HttpException(Response.Status.NOT_FOUND, "Not found");
+throw new HttpException(MyErrors.USER_NOT_FOUND);
+throw new HttpException(MyErrors.USER_NOT_FOUND, cause); // with cause chain
 ```
 
-**Constructor signatures:**
-- `new HttpException(ApiError apiError)` — status from `apiError.getHttpStatus()`
-- `new HttpException(ApiError apiError, Throwable cause)` — with cause chain
-- `new HttpException(Response.Status status, String message)` — direct status without error code
+**HttpException constructors (final):**
+- `new HttpException(ApiError)` — status from `apiError.getHttpStatus()`
+- `new HttpException(ApiError, Throwable)` — with cause
 
-**In service classes:**
-
-```java
-@Service
-@RequiredArgsConstructor
-public class UserService {
-    private final UserRepository userRepository;
-
-    public User findById(final Long id) {
-        // Before: throw new ApiException(USER_NOT_FOUND);
-        // After:
-        return userRepository.findById(id)
-            .orElseThrow(() -> new HttpException(USER_NOT_FOUND));
-    }
-
-    public void createUser(final CreateUserRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            // Before: throw new ApiException(USER_ALREADY_EXISTS);
-            // After:
-            throw new HttpException(USER_ALREADY_EXISTS);
-        }
-        // ...
-    }
-}
-```
+> No status-only constructors exist. Every `HttpException` must carry an `ApiError`.
 
 ---
 
-## Step 3: Update error response type references
-
-`ApiErrorResponseResource` was deleted. Update all type references to use `ErrorResponseResource` instead.
-
-### Before
-
-```java
-import io.github.jframe.exception.ApiErrorResponseResource;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-
-@RestController
-public class UserController {
-    
-    @GetMapping("/users/{id}")
-    @ApiResponse(
-        responseCode = "404",
-        description = "User not found",
-        content = @Content(schema = @Schema(implementation = ApiErrorResponseResource.class))
-    )
-    public ResponseEntity<UserResponse> getUser(@PathVariable final Long id) {
-        // ...
-    }
-
-    // Check response type in code
-    public ResponseEntity<?> handleCustomResponse() {
-        if (/* something */ instanceof ApiErrorResponseResource) {
-            // ...
-        }
-        return ResponseEntity.ok().build();
-    }
-}
-```
-
-### After
-
-```java
-import io.github.jframe.exception.ErrorResponseResource;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-
-@RestController
-public class UserController {
-    
-    @GetMapping("/users/{id}")
-    @ApiResponse(
-        responseCode = "404",
-        description = "User not found",
-        content = @Content(schema = @Schema(implementation = ErrorResponseResource.class))
-    )
-    public ResponseEntity<UserResponse> getUser(@PathVariable final Long id) {
-        // ...
-    }
-
-    // Check response type in code
-    public ResponseEntity<?> handleCustomResponse() {
-        if (/* something */ instanceof ErrorResponseResource) {
-            // ...
-        }
-        return ResponseEntity.ok().build();
-    }
-}
-```
-
-**Changes:**
-- Replace `ApiErrorResponseResource` import with `ErrorResponseResource`
-- Replace `ApiErrorResponseResource` class references with `ErrorResponseResource`
-- If you extended `ApiErrorResponseResource`, extend `ErrorResponseResource` instead
-
-**Response JSON format unchanged:**
-- `ErrorResponseResource` always includes `apiErrorCode` and `apiErrorReason` when an error has a code
-- For generic HTTP errors without an `ApiError`, only `message` and `statusCode` are present
-- No changes needed to frontend/client parsing
-
----
-
-## Step 4: Replace deleted exception classes
-
-Three exception classes were removed. Use the indicated replacements.
+## Step 3: Replace deleted exception classes
 
 ### `DataNotFoundException` → `ResourceNotFoundException`
 
@@ -276,91 +140,181 @@ throw new DataNotFoundException(WIDGET_NOT_FOUND);
 
 // After
 import io.github.jframe.exception.core.ResourceNotFoundException;
-throw new ResourceNotFoundException(WIDGET_NOT_FOUND);
+throw new ResourceNotFoundException();                    // uses JFRAME_NOT_FOUND defaults
+throw new HttpException(MyErrors.WIDGET_NOT_FOUND);      // custom error code
 ```
-
-> Note: `ResourceNotFoundException` extends `HttpException` — all behavior is identical.
 
 ### `InternalServerErrorException` → let exceptions propagate
 
 ```java
 // Before
-import io.github.jframe.exception.core.InternalServerErrorException;
+throw new InternalServerErrorException("Operation failed", e);
 
-try {
-    riskyOperation();
-} catch (Exception e) {
-    throw new InternalServerErrorException("Operation failed", e);
-}
+// After — let it propagate; global handler maps to JFRAME_INTERNAL_ERROR (500)
+throw e;
 
-// After — let the exception propagate (caught by global handler as 500)
-try {
-    riskyOperation();
-} catch (RuntimeException e) {
-    // Log if needed
-    throw e;  // Global handler catches this as 500 Internal Server Error
-}
+// Or wrap with a cause for explicit framework handling
+throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, e);
 ```
 
-> The global exception handler catches all unhandled exceptions and returns a 500 response. No explicit `InternalServerErrorException` needed.
-
-### `UnauthorizedRequestException` → use `HttpException` directly
+### `UnauthorizedRequestException` → `HttpException` with custom `ApiError`
 
 ```java
 // Before
-import io.github.jframe.exception.core.UnauthorizedRequestException;
 throw new UnauthorizedRequestException("Missing token");
 
-// After
-import io.github.jframe.exception.core.HttpException;
-import jakarta.ws.rs.core.Response;
-
-// Option 1: Use existing ApiError enum value
-throw new HttpException(INVALID_TOKEN);
-
-// Option 2: Use HttpException directly
-throw new HttpException(Response.Status.UNAUTHORIZED, "Missing token");
-
-// Option 3: Define ApiError enum value for this scenario
+// After — define an ApiError for the specific scenario
 public enum AuthErrors implements ApiError {
     MISSING_TOKEN("AUTH_002", "Missing authentication token", Response.Status.UNAUTHORIZED);
     // ...
 }
 throw new HttpException(AuthErrors.MISSING_TOKEN);
+throw new HttpException(AuthErrors.MISSING_TOKEN, cause);
 ```
 
 ---
 
-## Step 5: Remove `ApiErrorResponseEnricher` references
+## Step 4: Update exception subclass usage
 
-The `ApiErrorResponseEnricher` class no longer exists. Error codes and reasons are now set via the base enricher pipeline.
+`BadRequestException`, `ResourceNotFoundException`, and `RateLimitExceededException` no longer accept string messages. Use no-arg or Throwable constructors only.
+
+### Before
+
+```java
+throw new BadRequestException("Invalid input");
+throw new ResourceNotFoundException("User not found");
+throw new RateLimitExceededException("Rate limited", 100, 0, resetDate);
+```
+
+### After
+
+```java
+// BadRequestException
+throw new BadRequestException();
+throw new BadRequestException(cause);
+
+// ResourceNotFoundException
+throw new ResourceNotFoundException();
+throw new ResourceNotFoundException(cause);
+
+// RateLimitExceededException — note: cause is first parameter
+throw new RateLimitExceededException(100, 0, resetDate);
+throw new RateLimitExceededException(cause, 100, 0, resetDate);
+```
+
+**Need a custom message?** Define an app-level `ApiError` enum and use `HttpException` directly:
+
+```java
+public enum MyErrors implements ApiError {
+    INVALID_USER_INPUT("APP_400", "The submitted data is invalid", Response.Status.BAD_REQUEST);
+    // ...
+}
+throw new HttpException(MyErrors.INVALID_USER_INPUT);
+```
+
+---
+
+## Step 5: Update `HttpException` direct usage
+
+Status-only constructors were removed. Every throw must supply an `ApiError`.
+
+### Before
+
+```java
+// Status-only — no longer exists
+throw new HttpException(Response.Status.CONFLICT);
+throw new HttpException("Conflict occurred", Response.Status.CONFLICT);
+```
+
+### After
+
+```java
+// Option 1: app-level ApiError (preferred)
+throw new HttpException(MyErrors.CONFLICT);
+
+// Option 2: framework default for quick one-offs
+throw new HttpException(JFrameErrorCode.BAD_REQUEST);
+throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, cause);
+```
+
+See [Step 9](#step-9-jframeerrorcode-defaults) for all `JFrameErrorCode` values.
+
+---
+
+## Step 6: Update error response consumers
+
+`ErrorResponseResource` field names changed. Update any client code, contract tests, or documentation that parses error JSON.
+
+### Before
+
+```json
+{
+  "statusCode": 404,
+  "statusMessage": "Not Found",
+  "errorMessage": "User not found",
+  "apiErrorCode": "USER_001",
+  "apiErrorReason": "User not found"
+}
+```
+
+### After
+
+```json
+{
+  "statusCode": 404,
+  "errorCode": "USER_001",
+  "errorReason": "User not found",
+  "cause": null
+}
+```
+
+**Field mapping:**
+
+| Old field | New field | Notes |
+|-----------|-----------|-------|
+| `apiErrorCode` | `errorCode` | Renamed |
+| `apiErrorReason` | `errorReason` | Renamed |
+| `statusMessage` | — | Deleted |
+| `errorMessage` | — | Deleted |
+| — | `cause` | New — nullable String, wraps exception message |
+
+`cause` is only present when the `HttpException` was constructed with a `Throwable` cause. It exposes `cause.getMessage()` — never a stack trace.
+
+Fields `method`, `uri`, `query`, `contentType`, `txId`, `traceId`, `spanId` are unchanged.
+
+---
+
+## Step 7: Update custom enrichers
+
+`ErrorMessageResponseEnricher` and `ApiErrorResponseEnricher` were both deleted and replaced by `ErrorCodeResponseEnricher` (auto-registered). If you extended or referenced either, update as follows.
 
 ### Spring Boot
-
-If you had a custom enricher extending `ApiErrorResponseEnricher`:
 
 ```java
 // Before
 import io.github.jframe.spring.exception.enricher.ApiErrorResponseEnricher;
 
 @Component
-public class MyCustomEnricher extends ApiErrorResponseEnricher {
+public class MyEnricher extends ApiErrorResponseEnricher {
     @Override
-    public void enrich(final ErrorResponseResource response, final Exception exception) {
-        super.enrich(response, exception);
-        // Custom enrichment
+    public void doEnrich(ErrorResponseResource resource, Throwable throwable,
+                         WebRequest request, HttpStatus httpStatus) {
+        super.doEnrich(resource, throwable, request, httpStatus);
+        resource.setErrorMessage("extra context");   // no longer exists
+        resource.setApiErrorCode("APP_001");          // no longer exists
     }
 }
 
-// After — extend the base enricher instead
-import io.github.jframe.spring.exception.enricher.ErrorResponseEnricher;
+// After — implement ErrorResponseEnricher directly
+import io.github.jframe.exception.handler.enricher.ErrorResponseEnricher;
 
 @Component
-public class MyCustomEnricher extends ErrorResponseEnricher {
+public class MyEnricher implements ErrorResponseEnricher {
     @Override
-    public void enrich(final ErrorResponseResource response, final Exception exception) {
-        super.enrich(response, exception);
-        // Custom enrichment
+    public void doEnrich(ErrorResponseResource resource, Throwable throwable,
+                         WebRequest request, HttpStatus httpStatus) {
+        resource.setErrorReason("extra context");    // use setErrorReason()
+        resource.setErrorCode("APP_001");            // use setErrorCode()
     }
 }
 ```
@@ -372,140 +326,54 @@ public class MyCustomEnricher extends ErrorResponseEnricher {
 import io.github.jframe.quarkus.exception.enricher.ApiErrorResponseEnricher;
 
 @Singleton
-public class MyCustomEnricher extends ApiErrorResponseEnricher {
-    @Override
-    public void enrich(final ErrorResponseResource response, final Exception exception) {
-        super.enrich(response, exception);
-    }
-}
+public class MyEnricher extends ApiErrorResponseEnricher { ... }
 
 // After
-import io.github.jframe.quarkus.exception.enricher.ErrorResponseEnricher;
+import io.github.jframe.exception.enricher.ErrorResponseEnricher;
 
-@Singleton
-public class MyCustomEnricher extends ErrorResponseEnricher {
+@ApplicationScoped
+public class MyEnricher implements ErrorResponseEnricher {
     @Override
-    public void enrich(final ErrorResponseResource response, final Exception exception) {
-        super.enrich(response, exception);
+    public void doEnrich(ErrorResponseResource resource, Throwable throwable,
+                         ContainerRequestContext requestContext, int statusCode) {
+        resource.setErrorCode("APP_001");
+        resource.setErrorReason("extra context");
     }
 }
 ```
 
-**Action:** If you have a custom enricher, rename the parent class to `ErrorResponseEnricher`. The base implementation now handles all error code/reason setting.
+**Removed setters:** `setStatusMessage()`, `setErrorMessage()`, `setApiErrorCode()`, `setApiErrorReason()`
+
+**Replacement setters:** `setErrorCode()`, `setErrorReason()`, `setCause()`
 
 ---
 
-## Step 6: Remove `ApiExceptionMapper` references (Quarkus only)
+## Step 8: Update `ErrorResponseWriter` usage (Spring Boot only)
 
-`ApiExceptionMapper` was deleted. `HttpExceptionMapper` now handles all `HttpException` subclasses including those with error codes.
-
-### Before
+Signatures are unchanged. The output JSON now uses `errorCode`/`errorReason` instead of the old field names.
 
 ```java
-// Quarkus project
-import io.github.jframe.quarkus.exception.mapper.ApiExceptionMapper;
-import io.github.jframe.quarkus.exception.mapper.HttpExceptionMapper;
-
-// Both were registered automatically
-```
-
-### After
-
-```java
-// Quarkus project
-import io.github.jframe.quarkus.exception.mapper.HttpExceptionMapper;
-
-// Only HttpExceptionMapper exists — handles all HttpException subclasses
-```
-
-**Action (Quarkus):**
-- Remove any `ApiExceptionMapper` import statements
-- Remove any bean references to `ApiExceptionMapper`
-- `HttpExceptionMapper` is auto-registered and handles `HttpException` with or without error codes
-
-**Action (Spring):**
-- No changes needed — Spring only has `HttpExceptionHandler` which handles both
-
----
-
-## Step 7: Update `ObjectMappers` catch blocks
-
-`ObjectMappers.fromJson()` no longer wraps checked exceptions. `JacksonException` now propagates directly as a `RuntimeException`.
-
-### Before
-
-```java
-import io.github.jframe.exception.core.InternalServerErrorException;
-import io.github.jframe.util.mapper.ObjectMappers;
-
-try {
-    final MyObject obj = ObjectMappers.fromJson(jsonString, MyObject.class);
-} catch (InternalServerErrorException e) {
-    // Handle JSON parse error
-    log.error("Parse error", e);
-}
-```
-
-### After
-
-```java
-import com.fasterxml.jackson.databind.exc.JacksonException;
-import io.github.jframe.util.mapper.ObjectMappers;
-
-try {
-    final MyObject obj = ObjectMappers.fromJson(jsonString, MyObject.class);
-} catch (JacksonException e) {
-    // Handle JSON parse error
-    log.error("Parse error", e);
-}
-```
-
-**Background:**
-- Jackson 3.x changed `JacksonException` to be a `RuntimeException`
-- `ObjectMappers.fromJson()` no longer catches and wraps this exception
-- If you caught `InternalServerErrorException` from `fromJson()`, catch `JacksonException` instead
-- Other uses of `ObjectMappers` are unaffected
-
----
-
-## Step 8: Use `ErrorResponseWriter` in security filters (Spring Boot only)
-
-Spring Boot includes a new utility for writing JSON error responses in security filters without direct exception propagation.
-
-### Usage
-
-```java
-import io.github.jframe.spring.exception.ErrorResponseWriter;
+import io.github.jframe.exception.handler.ErrorResponseWriter;
 import jakarta.ws.rs.core.Response;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(
-            final HttpServletRequest request,
-            final HttpServletResponse response,
-            final FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
 
-        final String token = extractToken(request);
-
-        if (token == null || !isValid(token)) {
-            // Option 1: Use ApiError enum
+        if (!isValid(extractToken(request))) {
+            // Option 1: ApiError enum — preferred
             ErrorResponseWriter.write(request, response, MyErrors.INVALID_TOKEN);
             return;
         }
 
-        // Option 2: Use status + message directly
-        if (isExpired(token)) {
-            ErrorResponseWriter.write(
-                request, 
-                response, 
-                Response.Status.UNAUTHORIZED, 
-                "AUTH_002", 
-                "Token expired"
-            );
+        if (isExpired(extractToken(request))) {
+            // Option 2: explicit values
+            ErrorResponseWriter.write(request, response,
+                Response.Status.UNAUTHORIZED, "AUTH_002", "Token expired");
             return;
         }
 
@@ -515,29 +383,93 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 ```
 
 **Signatures:**
-- `ErrorResponseWriter.write(request, response, ApiError apiError)` — uses error code + reason + status from enum
-- `ErrorResponseWriter.write(request, response, Response.Status status, String errorCode, String reason)` — explicit values
-- Response is automatically set to JSON and response status
+- `ErrorResponseWriter.write(request, response, ApiError)` — status, code, reason from enum
+- `ErrorResponseWriter.write(request, response, Response.Status, String errorCode, String errorReason)` — explicit values
 
-**Benefits:**
-- Avoid throwing exceptions in filter chains
-- Consistent error response format (uses enricher pipeline)
-- No try-catch needed for authentication logic
+---
+
+## Step 9: `JFrameErrorCode` defaults
+
+All built-in exceptions now use `JFrameErrorCode` as their `ApiError`. These codes appear in the `errorCode` field of every error response produced by a framework exception.
+
+| Exception | `errorCode` | `errorReason` | HTTP Status |
+|-----------|-------------|---------------|-------------|
+| `BadRequestException` | `JFRAME_BAD_REQUEST` | Bad request | 400 |
+| `ResourceNotFoundException` | `JFRAME_NOT_FOUND` | Resource not found | 404 |
+| `RateLimitExceededException` | `JFRAME_RATE_LIMITED` | Rate limit exceeded | 429 |
+| `ValidationException` / constraint violation | `JFRAME_VALIDATION_ERROR` | Validation failed | 400 |
+| Unhandled `Throwable` | `JFRAME_INTERNAL_ERROR` | Internal server error | 500 |
+| Generic HTTP errors | `JFRAME_HTTP_ERROR` | HTTP error | varies |
+
+Use `JFrameErrorCode` in application code when you need a quick one-off throw without defining a custom `ApiError`:
+
+```java
+import io.github.jframe.exception.JFrameErrorCode;
+
+throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, cause);
+throw new HttpException(JFrameErrorCode.BAD_REQUEST);
+```
+
+---
+
+## Step 10: Quarkus-specific mapper changes
+
+```java
+// Before — both were registered
+import io.github.jframe.quarkus.exception.mapper.ApiExceptionMapper;
+import io.github.jframe.quarkus.exception.mapper.HttpExceptionMapper;
+
+// After — only HttpExceptionMapper exists
+import io.github.jframe.quarkus.exception.mapper.HttpExceptionMapper;
+// Auto-registered; handles all HttpException subclasses
+```
+
+Remove any bean references to `ApiExceptionMapper`. No Spring changes needed — `HttpExceptionHandler` handled both cases already.
+
+---
+
+## Step 11: Update `ObjectMappers` catch blocks
+
+`ObjectMappers.fromJson()` no longer wraps exceptions. `JacksonException` propagates directly.
+
+### Before
+
+```java
+import io.github.jframe.exception.core.InternalServerErrorException;
+
+try {
+    final MyObject obj = ObjectMappers.fromJson(jsonString, MyObject.class);
+} catch (InternalServerErrorException e) {
+    log.error("Parse error", e);
+}
+```
+
+### After
+
+```java
+import com.fasterxml.jackson.databind.exc.JacksonException;
+
+try {
+    final MyObject obj = ObjectMappers.fromJson(jsonString, MyObject.class);
+} catch (JacksonException e) {
+    log.error("Parse error", e);
+}
+```
 
 ---
 
 ## Verify
 
 ```bash
-# Rebuild and run tests
 ./gradlew clean build test
 
-# Check for compilation errors related to:
-# - io.github.jframe.exception.core.ApiException imports
-# - io.github.jframe.exception.ApiErrorResponseResource type references
-# - Catch blocks for InternalServerErrorException
-# - ApiError implementations missing getHttpStatus()
-# - DataNotFoundException, InternalServerErrorException, UnauthorizedRequestException usage
+# Compilation errors to look for:
+# - ApiException, DataNotFoundException, InternalServerErrorException, UnauthorizedRequestException imports
+# - ApiErrorResponseResource type references
+# - HttpException(Response.Status, ...) or HttpException(String, Response.Status) calls
+# - BadRequestException("...") / ResourceNotFoundException("...") calls
+# - setErrorMessage(), setStatusMessage(), setApiErrorCode(), setApiErrorReason() calls
+# - JSON consumers reading statusMessage, errorMessage, apiErrorCode, apiErrorReason
 ```
 
 ---
@@ -547,37 +479,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 ### ApiError enum updates
 - [ ] All `ApiError` implementations have `Response.Status httpStatus` field
 - [ ] All `ApiError` implementations implement `getHttpStatus()`
-- [ ] All enum constants include appropriate `Response.Status` in constructor
+- [ ] All enum constants include appropriate `Response.Status`
 - [ ] Imported `jakarta.ws.rs.core.Response`
 
 ### Exception replacements
-- [ ] Replaced `ApiException` → `HttpException`
-- [ ] Replaced `DataNotFoundException` → `ResourceNotFoundException` (or use `HttpException` with `NOT_FOUND`)
-- [ ] Replaced `UnauthorizedRequestException` → `HttpException(Response.Status.UNAUTHORIZED, ...)`
-- [ ] Removed `InternalServerErrorException` usage — let exceptions propagate
-- [ ] Verified `HttpException` constructors accept `ApiError` or `Response.Status`
+- [ ] `ApiException` → `HttpException(ApiError)`
+- [ ] `DataNotFoundException` → `ResourceNotFoundException()` or `HttpException(MyErrors.X)`
+- [ ] `UnauthorizedRequestException` → `HttpException(MyErrors.X)` with custom `ApiError`
+- [ ] `InternalServerErrorException` → let propagate, or `HttpException(JFrameErrorCode.INTERNAL_ERROR, cause)`
+- [ ] All `HttpException(Response.Status, ...)` throws updated to use `ApiError`
 
-### Type references
-- [ ] Replaced `ApiErrorResponseResource` → `ErrorResponseResource`
-- [ ] Updated OpenAPI `@ApiResponse` annotations
-- [ ] Updated any instanceof checks
-- [ ] Updated custom enricher parent class → `ErrorResponseEnricher`
+### Subclass constructor updates
+- [ ] `BadRequestException("...")` → `BadRequestException()` or custom `ApiError`
+- [ ] `ResourceNotFoundException("...")` → `ResourceNotFoundException()` or custom `ApiError`
+- [ ] `RateLimitExceededException("...", limit, remaining, reset)` → `RateLimitExceededException(limit, remaining, reset)`
 
-### Exception mapper references
-- [ ] (Quarkus only) Removed `ApiExceptionMapper` imports
-- [ ] (Spring only) No changes needed — `HttpExceptionHandler` handles all cases
+### Error response field changes
+- [ ] JSON consumers updated: `apiErrorCode` → `errorCode`, `apiErrorReason` → `errorReason`
+- [ ] `statusMessage` and `errorMessage` references removed from consumers
+- [ ] `cause` field handling added where needed (nullable String)
+- [ ] OpenAPI `@ApiResponse` annotations updated to reference `ErrorResponseResource`
+
+### Enricher updates
+- [ ] `ApiErrorResponseEnricher` / `ErrorMessageResponseEnricher` references removed
+- [ ] Custom enrichers implement `ErrorResponseEnricher` directly
+- [ ] `setErrorMessage()` / `setStatusMessage()` / `setApiErrorCode()` / `setApiErrorReason()` calls replaced
+
+### Quarkus
+- [ ] `ApiExceptionMapper` imports and bean references removed
+- [ ] `HttpExceptionMapper` handles all `HttpException` variants
 
 ### ObjectMappers
-- [ ] Updated catch blocks for `fromJson()` — catch `JacksonException` instead of `InternalServerErrorException`
-
-### Security filters (Spring Boot)
-- [ ] (Spring Boot only) Updated authentication filters to use `ErrorResponseWriter` where appropriate
-- [ ] No more exception propagation in filter chains
+- [ ] `fromJson()` catch blocks updated: `InternalServerErrorException` → `JacksonException`
 
 ### Verification
 - [ ] Full build passes: `./gradlew clean build test`
-- [ ] HTTP error responses include correct status codes and error codes
-- [ ] Validation exceptions still work as expected
-- [ ] Authentication/authorization errors use correct status codes (401, 403)
-- [ ] JSON error responses match expected format
-- [ ] (Quarkus) Exception mappers correctly handle all `HttpException` variants
+- [ ] HTTP error responses include `errorCode` and `errorReason` fields
+- [ ] `cause` field present when exception wraps a throwable, absent otherwise
+- [ ] Validation exceptions still produce `JFRAME_VALIDATION_ERROR` responses
+- [ ] Rate limit responses include `X-RateLimit-*` headers
+- [ ] Auth/permission errors use correct status codes (401, 403)

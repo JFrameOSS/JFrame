@@ -44,7 +44,7 @@ public class ExceptionMappersTest extends UnitTest {
     public void shouldMapHttpExceptionToCorrectJaxRsStatus() {
         // Given: A Quarkus HttpExceptionMapper and a BAD_REQUEST HttpException
         final HttpExceptionMapper mapper = new HttpExceptionMapper();
-        final HttpException exception = new BadRequestException("Invalid input");
+        final HttpException exception = new BadRequestException();
 
         // When: Mapping the exception to a response
         final Response response = mapper.toResponse(exception);
@@ -59,7 +59,7 @@ public class ExceptionMappersTest extends UnitTest {
     public void shouldMapHttpExceptionResponseBodyAsJson() {
         // Given: A Quarkus HttpExceptionMapper and an HttpException
         final HttpExceptionMapper mapper = new HttpExceptionMapper();
-        final HttpException exception = new BadRequestException("Bad input");
+        final HttpException exception = new BadRequestException();
 
         // When: Mapping the exception
         final Response response = mapper.toResponse(exception);

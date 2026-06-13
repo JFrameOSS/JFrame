@@ -35,7 +35,7 @@ public class ResourceLoaderUtil {
             final Resource resource = getResource(path);
             final File file = resource.getFile();
             if (!file.exists()) {
-                throw new ResourceNotFoundException("Resource does not exist: " + file.getAbsolutePath());
+                throw new ResourceNotFoundException();
             }
             return file;
         } catch (final IOException exception) {
@@ -72,7 +72,7 @@ public class ResourceLoaderUtil {
         final Resource resource = resourceLoader.getResource(classPath);
 
         if (!resource.exists()) {
-            throw new ResourceNotFoundException("Resource does not exist: " + classPath);
+            throw new ResourceNotFoundException();
         }
         return resource;
     }

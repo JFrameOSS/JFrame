@@ -1,10 +1,9 @@
 package io.github.jframe.exception.core;
 
 import io.github.jframe.exception.HttpException;
+import io.github.jframe.exception.JFrameErrorCode;
 
 import java.io.Serial;
-
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
 /**
  * A Resource Not Found (404) exception.
@@ -16,21 +15,11 @@ public class ResourceNotFoundException extends HttpException {
 
     /** Constructs a new {@code ResourceNotFoundException}. */
     public ResourceNotFoundException() {
-        super(NOT_FOUND);
-    }
-
-    /** Constructs a new {@code ResourceNotFoundException} with the supplied message. */
-    public ResourceNotFoundException(final String message) {
-        super(message, NOT_FOUND);
-    }
-
-    /** Constructs a new {@code ResourceNotFoundException} with the supplied message and cause. */
-    public ResourceNotFoundException(final String message, final Throwable cause) {
-        super(message, cause, NOT_FOUND);
+        super(JFrameErrorCode.NOT_FOUND);
     }
 
     /** Constructs a new {@code ResourceNotFoundException} with the supplied cause. */
     public ResourceNotFoundException(final Throwable cause) {
-        super(cause, NOT_FOUND);
+        super(JFrameErrorCode.NOT_FOUND, cause);
     }
 }

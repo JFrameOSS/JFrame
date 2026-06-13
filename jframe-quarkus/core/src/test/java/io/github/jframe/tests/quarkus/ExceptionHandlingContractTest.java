@@ -77,9 +77,9 @@ class ExceptionHandlingContractTest {
     private Response mapScenarioToResponse(final ExceptionScenario scenario) {
         return switch (scenario.exceptionType()) {
             case "BadRequestException" ->
-                httpExceptionMapper.toResponse(new BadRequestException(scenario.message()));
+                httpExceptionMapper.toResponse(new BadRequestException());
             case "ResourceNotFoundException" ->
-                httpExceptionMapper.toResponse(new ResourceNotFoundException(scenario.message()));
+                httpExceptionMapper.toResponse(new ResourceNotFoundException());
             case "RateLimitExceededException" ->
                 rateLimitMapper.toResponse(new RateLimitExceededException(100, 0, OffsetDateTime.now().plusHours(1)));
             default ->

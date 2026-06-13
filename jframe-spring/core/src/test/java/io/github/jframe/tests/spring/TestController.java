@@ -26,13 +26,13 @@ public class TestController {
     /** Throws {@link BadRequestException} — expected HTTP 400. */
     @GetMapping("/bad-request")
     public void badRequest() {
-        throw new BadRequestException("Bad request test");
+        throw new BadRequestException();
     }
 
     /** Throws {@link ResourceNotFoundException} — expected HTTP 404. */
     @GetMapping("/not-found")
     public void notFound() {
-        throw new ResourceNotFoundException("Resource not found test");
+        throw new ResourceNotFoundException();
     }
 
     /**

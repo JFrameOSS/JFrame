@@ -56,8 +56,8 @@
  * <pre>
  * {
  * "statusCode": 400,
- * "statusMessage": "Bad Request",
- * "errorMessage": "Validation failed",
+ * "errorCode": "JFRAME_BAD_REQUEST",
+ * "errorReason": "Bad request",
  * "method": "POST",
  * "uri": "/api/users",
  * "query": null,
@@ -77,11 +77,11 @@
  * <pre>
  * // Using specific HTTP exception types from .core package
  * if (user == null) {
- * throw new ResourceNotFoundException("User not found with id: " + userId);
+ * throw new ResourceNotFoundException();
  * }
  *
  * if (invalidInput) {
- * throw new BadRequestException("Invalid request format");
+ * throw new BadRequestException();
  * }
  * </pre>
  *

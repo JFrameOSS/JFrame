@@ -8,7 +8,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -18,8 +17,9 @@ import static org.hamcrest.Matchers.nullValue;
  *
  * <p>Verifies the BadRequestException functionality including:
  * <ul>
- * <li>Constructor variations (no args, message, cause, message+cause)</li>
+ * <li>Constructor variations (no args, cause)</li>
  * <li>HTTP status is always BAD_REQUEST (400)</li>
+ * <li>Error code and reason are set from JFrameErrorCode.BAD_REQUEST</li>
  * </ul>
  */
 @DisplayName("Exception Hierarchy - Bad Request Exception")
@@ -33,41 +33,12 @@ public class BadRequestExceptionTest extends UnitTest {
         // When: Creating exception with no arguments
         final BadRequestException exception = new BadRequestException();
 
-        // Then: Exception is created with BAD_REQUEST status and null message and cause
+        // Then: Exception is created with BAD_REQUEST status, structured error code and null cause
         assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
+        assertThat(exception.getErrorCode(), is(equalTo("JFRAME_BAD_REQUEST")));
+        assertThat(exception.getErrorReason(), is(equalTo("Bad request")));
         assertThat(exception.getMessage(), is(nullValue()));
         assertThat(exception.getCause(), is(nullValue()));
-    }
-
-    @Test
-    @DisplayName("Should create exception with message and BAD_REQUEST status")
-    public void shouldCreateExceptionWithMessage() {
-        // Given: An error message
-        final String message = "Invalid request parameter";
-
-        // When: Creating exception with message
-        final BadRequestException exception = new BadRequestException(message);
-
-        // Then: Exception is created with BAD_REQUEST status, message and null cause
-        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
-        assertThat(exception.getMessage(), is(equalTo(message)));
-        assertThat(exception.getCause(), is(nullValue()));
-    }
-
-    @Test
-    @DisplayName("Should create exception with message and cause")
-    public void shouldCreateExceptionWithMessageAndCause() {
-        // Given: An error message and a root cause
-        final String message = "Invalid request parameter";
-        final Throwable cause = new IllegalArgumentException("Parameter validation failed");
-
-        // When: Creating exception with message and cause
-        final BadRequestException exception = new BadRequestException(message, cause);
-
-        // Then: Exception is created with BAD_REQUEST status, message and cause
-        assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
-        assertThat(exception.getMessage(), is(equalTo(message)));
-        assertThat(exception.getCause(), is(equalTo(cause)));
     }
 
     @Test
@@ -79,9 +50,10 @@ public class BadRequestExceptionTest extends UnitTest {
         // When: Creating exception with cause only
         final BadRequestException exception = new BadRequestException(cause);
 
-        // Then: Exception is created with BAD_REQUEST status, cause and message derived from cause
+        // Then: Exception is created with BAD_REQUEST status, structured error code and the cause
         assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
+        assertThat(exception.getErrorCode(), is(equalTo("JFRAME_BAD_REQUEST")));
+        assertThat(exception.getErrorReason(), is(equalTo("Bad request")));
         assertThat(exception.getCause(), is(equalTo(cause)));
-        assertThat(exception.getMessage(), containsString("Parameter validation failed"));
     }
 }

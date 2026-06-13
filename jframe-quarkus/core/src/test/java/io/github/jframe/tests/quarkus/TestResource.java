@@ -32,14 +32,14 @@ public class TestResource {
     @GET
     @Path("/bad-request")
     public void badRequest() {
-        throw new BadRequestException("Bad request test");
+        throw new BadRequestException();
     }
 
     /** Throws {@link ResourceNotFoundException} — expected HTTP 404. */
     @GET
     @Path("/not-found")
     public void notFound() {
-        throw new ResourceNotFoundException("Resource not found test");
+        throw new ResourceNotFoundException();
     }
 
     /**

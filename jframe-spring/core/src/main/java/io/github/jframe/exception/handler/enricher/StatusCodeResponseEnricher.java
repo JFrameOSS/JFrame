@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
 
 /**
- * This enricher copies the http status value and text onto the error response resource.
+ * This enricher copies the http status value onto the error response resource.
  */
 @Component
 public class StatusCodeResponseEnricher implements ErrorResponseEnricher {
@@ -24,6 +24,5 @@ public class StatusCodeResponseEnricher implements ErrorResponseEnricher {
         final WebRequest request,
         final HttpStatus httpStatus) {
         errorResponseResource.setStatusCode(httpStatus.value());
-        errorResponseResource.setStatusMessage(httpStatus.getReasonPhrase());
     }
 }
