@@ -1,9 +1,8 @@
 package io.github.jframe.exception.factory;
 
-import io.github.jframe.exception.ApiException;
+import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
-import io.github.jframe.exception.resource.ApiErrorResponseResource;
 import io.github.jframe.exception.resource.ConstraintViolationResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
@@ -11,10 +10,10 @@ import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.github.jframe.validation.ValidationResult;
 import io.github.support.UnitTest;
 import io.github.support.fixtures.TestApiError;
-import io.github.support.fixtures.TestApiException;
 
 import java.time.OffsetDateTime;
 import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,11 +29,11 @@ import static org.hamcrest.Matchers.notNullValue;
  *
  * <p>Verifies that the factory correctly maps exception types to response resource types including:
  * <ul>
- * <li>ApiException → ApiErrorResponseResource</li>
+ * <li>HttpException with errorCode via ApiError → base ErrorResponseResource</li>
  * <li>ValidationException → ValidationErrorResponseResource</li>
  * <li>RateLimitExceededException → RateLimitErrorResponseResource</li>
  * <li>ConstraintViolationException → ConstraintViolationResponseResource</li>
- * <li>Cause chain traversal for JFrameException wrapped in RuntimeException</li>
+ * <li>Cause chain traversal for ValidationException wrapped in RuntimeException</li>
  * <li>Unknown exception → base ErrorResponseResource</li>
  * </ul>
  */
@@ -49,17 +48,18 @@ public class DefaultErrorResponseFactoryTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should create ApiErrorResponseResource for ApiException")
-    public void shouldCreateApiErrorResponseResourceForApiException() {
-        // Given: An ApiException
-        final ApiException exception = new TestApiException(new TestApiError("ERR001", "Test error"));
+    @DisplayName("Should create base ErrorResponseResource for HttpException with errorCode")
+    public void shouldCreateBaseErrorResponseResourceForHttpExceptionWithErrorCode() {
+        // Given: An HttpException created via ApiError constructor (errorCode flows through normal path)
+        final HttpException exception = new HttpException(new TestApiError("ERR_001", "test", Response.Status.BAD_REQUEST));
 
         // When: Creating error response resource
         final ErrorResponseResource resource = factory.create(exception);
 
-        // Then: Resource is ApiErrorResponseResource
+        // Then: Resource is base ErrorResponseResource
         assertThat(resource, is(notNullValue()));
-        assertThat(resource, is(instanceOf(ApiErrorResponseResource.class)));
+        assertThat(resource.getClass(), is(ErrorResponseResource.class));
+        assertThat(resource.getThrowable(), is(notNullValue()));
     }
 
     @Test
@@ -121,21 +121,6 @@ public class DefaultErrorResponseFactoryTest extends UnitTest {
         // Then: Resource is base ErrorResponseResource (not a subclass)
         assertThat(resource, is(notNullValue()));
         assertThat(resource.getClass(), is(ErrorResponseResource.class));
-    }
-
-    @Test
-    @DisplayName("Should traverse cause chain and find ApiException wrapped in RuntimeException")
-    public void shouldTraverseCauseChainAndFindApiExceptionWrappedInRuntimeException() {
-        // Given: An ApiException wrapped inside a RuntimeException
-        final ApiException apiException = new TestApiException(new TestApiError("WRAPPED", "Wrapped error"), "api error message");
-        final RuntimeException wrappedException = new RuntimeException("Outer exception", apiException);
-
-        // When: Creating error response resource
-        final ErrorResponseResource resource = factory.create(wrappedException);
-
-        // Then: Resource is ApiErrorResponseResource (cause chain was traversed)
-        assertThat(resource, is(notNullValue()));
-        assertThat(resource, is(instanceOf(ApiErrorResponseResource.class)));
     }
 
     @Test

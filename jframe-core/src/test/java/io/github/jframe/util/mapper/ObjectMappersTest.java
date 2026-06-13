@@ -1,7 +1,7 @@
 package io.github.jframe.util.mapper;
 
-import io.github.jframe.exception.core.InternalServerErrorException;
 import io.github.support.UnitTest;
+import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 
 import java.time.LocalDateTime;
@@ -176,7 +176,7 @@ class ObjectMappersTest extends UnitTest {
         final String invalidJson = "{invalid json}";
 
         // When/Then: Deserializing invalid JSON throws AssertionError with descriptive message
-        assertThrows(InternalServerErrorException.class, () -> ObjectMappers.fromJson(invalidJson, TestData.class));
+        assertThrows(JacksonException.class, () -> ObjectMappers.fromJson(invalidJson, TestData.class));
     }
 
     @Test
@@ -221,7 +221,7 @@ class ObjectMappersTest extends UnitTest {
         final TypeReference<List<TestData>> typeRef = new TypeReference<>() {};
 
         // When/Then: Deserializing invalid JSON with TypeReference throws AssertionError
-        assertThrows(InternalServerErrorException.class, () -> ObjectMappers.fromJson(invalidJson, typeRef));
+        assertThrows(JacksonException.class, () -> ObjectMappers.fromJson(invalidJson, typeRef));
     }
 
     @Test

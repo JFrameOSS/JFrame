@@ -51,7 +51,7 @@ public class ErrorResponseEntityBuilder {
         final HttpStatus status,
         final WebRequest request) {
         final ErrorResponseResource resource = exceptionResponseFactory.create(throwable);
-        getResponseEnrichers().forEach(enricher -> enricher.enrich(resource, request, status));
+        errorResponseEnrichers.forEach(enricher -> enricher.enrich(resource, request, status));
         return (T) resource;
     }
 

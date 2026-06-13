@@ -8,13 +8,12 @@ All extend `AbstractExceptionMapper<T>` (`@Provider @ApplicationScoped`).
 
 | Mapper | Exception | Status |
 |--------|-----------|--------|
-| `ApiExceptionMapper` | `ApiException` | 400 |
 | `HttpExceptionMapper` | `HttpException` | From `exception.getHttpStatus()` |
 | `RateLimitExceededExceptionMapper` | `RateLimitExceededException` | 429 + X-RateLimit-* headers |
 | `ValidationExceptionMapper` | `ValidationException` | 400 |
 | `ThrowableMapper` | `Throwable` (catch-all) | 500 (generic message) |
 
-**Response enrichment:** `ErrorResponseEntityBuilder` creates base response via `DefaultErrorResponseFactory`, then applies 8 `ErrorResponseEnricher` beans: StatusCode, ErrorMessage, RequestInfo, TransactionId, ApiError, RateLimit, ConstraintViolation, ValidationError.
+**Response enrichment:** `ErrorResponseEntityBuilder` creates base response via `DefaultErrorResponseFactory`, then applies 7 `ErrorResponseEnricher` beans: StatusCode, ErrorCode, RequestInfo, TransactionId, RateLimit, ConstraintViolation, ValidationError.
 
 ## JAX-RS Filters
 

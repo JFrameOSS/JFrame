@@ -1,11 +1,9 @@
 package io.github.jframe.exception.handler;
 
-import io.github.jframe.exception.ApiException;
 import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.exception.factory.ErrorResponseEntityBuilder;
-import io.github.jframe.exception.resource.ApiErrorResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
@@ -81,7 +79,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         return ResponseEntity
             .status(status)
             .contentType(APPLICATION_JSON)
-            .body(buildErrorResponseBody(exception, status, request));
+            .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, status, request));
     }
 
     /**
@@ -122,36 +120,8 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
             .status(TOO_MANY_REQUESTS)
             .headers(headers)
             .contentType(APPLICATION_JSON)
-            .body(buildErrorResponseBody(exception, TOO_MANY_REQUESTS, request));
+            .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, TOO_MANY_REQUESTS, request));
     }
-
-    /**
-     * Handles {@code ApiException} instances.
-     *
-     * <p>The response status is: 400 Bad Request.
-     *
-     * @param exception the exception
-     * @param request   the current request
-     * @return a response entity reflecting the current exception
-     */
-    @ResponseBody
-    @ResponseStatus(BAD_REQUEST)
-    @ExceptionHandler(ApiException.class)
-    @ApiResponse(
-        responseCode = "400 (API)",
-        description = "API Exception",
-        content = @Content(
-            mediaType = "application/json",
-            schema = @Schema(implementation = ApiErrorResponseResource.class)
-        )
-    )
-    public ResponseEntity<ApiErrorResponseResource> handleApiException(final ApiException exception, final WebRequest request) {
-        return ResponseEntity
-            .status(BAD_REQUEST)
-            .contentType(APPLICATION_JSON)
-            .body(buildErrorResponseBody(exception, BAD_REQUEST, request));
-    }
-
 
     /**
      * Handles {@code ValidationException} instances.
@@ -178,7 +148,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         return ResponseEntity
             .status(BAD_REQUEST)
             .contentType(APPLICATION_JSON)
-            .body(buildErrorResponseBody(exception, BAD_REQUEST, request));
+            .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, BAD_REQUEST, request));
     }
 
     /**
@@ -203,7 +173,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         return ResponseEntity
             .status(UNAUTHORIZED)
             .contentType(APPLICATION_JSON)
-            .body(buildErrorResponseBody(exception, UNAUTHORIZED, request));
+            .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, UNAUTHORIZED, request));
     }
 
     /**
@@ -229,7 +199,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         return ResponseEntity
             .status(FORBIDDEN)
             .contentType(APPLICATION_JSON)
-            .body(buildErrorResponseBody(exception, FORBIDDEN, request));
+            .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, FORBIDDEN, request));
     }
 
     /**
@@ -254,10 +224,8 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         return ResponseEntity
             .status(INTERNAL_SERVER_ERROR)
             .contentType(APPLICATION_JSON)
-            .body(buildErrorResponseBody(throwable, INTERNAL_SERVER_ERROR, request));
+            .body(errorResponseEntityBuilder.buildErrorResponseBody(throwable, INTERNAL_SERVER_ERROR, request));
     }
-
-    // =========================== OVERRIDES ===========================
 
     /**
      * Handles {@code MethodArgumentNotValidException} instances.
@@ -283,7 +251,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         return ResponseEntity
             .status(BAD_REQUEST)
             .contentType(APPLICATION_JSON)
-            .body(buildErrorResponseBody(exception, BAD_REQUEST, request));
+            .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, BAD_REQUEST, request));
     }
 
     /**
@@ -310,23 +278,6 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         return ResponseEntity
             .status(NOT_FOUND)
             .contentType(APPLICATION_JSON)
-            .body(buildErrorResponseBody(exception, NOT_FOUND, request));
-    }
-
-    // =========================== PRIVATE METHODS ===========================
-
-    /**
-     * Builds the error response body based on the provided throwable, status, and request. And adds the details to the OTLP Tracing.
-     *
-     * @param throwable the exception to build the error response for
-     * @param status    the HTTP status to use in the response
-     * @param request   the current web request
-     * @return an {@link ErrorResponseResource} containing the error details
-     */
-    private <T extends ErrorResponseResource> T buildErrorResponseBody(
-        final Throwable throwable,
-        final HttpStatus status,
-        final WebRequest request) {
-        return errorResponseEntityBuilder.buildErrorResponseBody(throwable, status, request);
+            .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, NOT_FOUND, request));
     }
 }

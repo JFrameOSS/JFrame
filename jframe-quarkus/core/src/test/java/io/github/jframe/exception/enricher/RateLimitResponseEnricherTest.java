@@ -47,7 +47,7 @@ public class RateLimitResponseEnricherTest extends UnitTest {
         final int limit = 100;
         final int remaining = 0;
         final OffsetDateTime resetDate = OffsetDateTime.now().plusMinutes(5);
-        final RateLimitExceededException exception = new RateLimitExceededException("Rate limit exceeded", limit, remaining, resetDate);
+        final RateLimitExceededException exception = new RateLimitExceededException(limit, remaining, resetDate);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         // When: Enriching the response
@@ -107,7 +107,7 @@ public class RateLimitResponseEnricherTest extends UnitTest {
         enricher.doEnrich(resource, exception, requestContext, 429);
 
         // Then: Base resource is unchanged (no rate limit fields)
-        assertThat(resource.getErrorMessage(), is(nullValue()));
+        assertThat(resource.getErrorCode(), is(nullValue()));
     }
 
     @Test

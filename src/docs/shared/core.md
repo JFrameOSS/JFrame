@@ -6,34 +6,77 @@ Framework-agnostic infrastructure shared by Spring and Quarkus adapter modules. 
 
 ```
 RuntimeException
-└── JFrameException
-    ├── HttpException(HttpStatusCode, message)
+└── JFrameException (base)
+    ├── HttpException (+ Response.Status, + errorCode, + errorReason)
     │   ├── BadRequestException           (400)
-    │   ├── UnauthorizedRequestException  (401)
     │   ├── ResourceNotFoundException     (404)
-    │   ├── DataNotFoundException         (404, with ApiError)
-    │   ├── InternalServerErrorException  (500)
-    │   └── RateLimitExceededException    (429, with limit/remaining/reset)
-    ├── ApiException(ApiError)
-    └── ValidationException(ValidationResult)
+    │   ├── RateLimitExceededException    (429, + limit/remaining/resetDate)
+    │   └── SearchCriteriumException      (400, in datasource pkg)
+    └── ValidationException (+ ValidationResult)
 ```
 
 ### ApiError interface
 
-Define application-specific error codes:
+Three methods every error code must provide:
+
+```java
+public interface ApiError {
+    String getErrorCode();   // e.g. "USER_001"
+    String getReason();      // e.g. "User not found"
+    Response.Status getHttpStatus();
+}
+```
+
+Define application-specific error codes by implementing `ApiError`:
 
 ```java
 public enum UserErrors implements ApiError {
-    USER_NOT_FOUND("USER_001", "User does not exist"),
-    USER_DISABLED("USER_002", "User account is disabled");
+    USER_NOT_FOUND("USER_001", "User does not exist", Response.Status.NOT_FOUND),
+    USER_DISABLED("USER_002", "User account is disabled", Response.Status.FORBIDDEN);
 
     private final String errorCode;
     private final String reason;
+    private final Response.Status httpStatus;
     // constructor + getters
 }
 
 // Throw it
-throw new ApiException(UserErrors.USER_DISABLED);
+throw new HttpException(UserErrors.USER_NOT_FOUND);
+throw new HttpException(UserErrors.USER_NOT_FOUND, cause);
+```
+
+### JFrameErrorCode enum
+
+Built-in `ApiError` constants for common cases:
+
+```java
+public enum JFrameErrorCode implements ApiError {
+    BAD_REQUEST("JFRAME_BAD_REQUEST", "Bad request", Response.Status.BAD_REQUEST),
+    NOT_FOUND("JFRAME_NOT_FOUND", "Resource not found", Response.Status.NOT_FOUND),
+    RATE_LIMITED("JFRAME_RATE_LIMITED", "Rate limit exceeded", Response.Status.TOO_MANY_REQUESTS),
+    VALIDATION_ERROR("JFRAME_VALIDATION_ERROR", "Validation failed", Response.Status.BAD_REQUEST),
+    INTERNAL_ERROR("JFRAME_INTERNAL_ERROR", "Internal server error", Response.Status.INTERNAL_SERVER_ERROR),
+    HTTP_ERROR("JFRAME_HTTP_ERROR", "HTTP error", Response.Status.BAD_REQUEST);
+}
+```
+
+### HttpException constructors
+
+```java
+new HttpException(ApiError apiError)
+new HttpException(ApiError apiError, Throwable cause)
+```
+
+Subclass constructors are no-arg or cause-only — the error code and HTTP status are fixed per class:
+
+```java
+new BadRequestException()
+new BadRequestException(Throwable cause)
+
+new ResourceNotFoundException()
+new ResourceNotFoundException(Throwable cause)
+
+new RateLimitExceededException(int limit, int remaining, ZonedDateTime resetDate)
 ```
 
 ### HttpStatusCode enum
@@ -46,6 +89,24 @@ HttpStatusCode.NOT_FOUND.getReason();      // "Not Found"
 HttpStatusCode.NOT_FOUND.is4xxClientError(); // true
 HttpStatusCode.valueOf(429);               // TOO_MANY_REQUESTS
 ```
+
+### ErrorResponseResource fields
+
+The structured error response DTO returned by both Spring and Quarkus exception handlers:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `method` | String | HTTP method (e.g. `GET`) |
+| `uri` | String | Request path |
+| `query` | String | Query string, or `null` |
+| `contentType` | String | Request content type |
+| `statusCode` | int | HTTP status code |
+| `errorCode` | String | Error code from `ApiError.getErrorCode()` |
+| `errorReason` | String | Human-readable reason from `ApiError.getReason()` |
+| `cause` | String | Wrapped exception message, or `null` when no cause |
+| `txId` | String | Transaction ID |
+| `traceId` | String | OpenTelemetry trace ID |
+| `spanId` | String | OpenTelemetry span ID |
 
 ## Validation API
 

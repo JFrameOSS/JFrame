@@ -1,12 +1,9 @@
 package io.github.jframe.exception.factory;
 
-
-import io.github.jframe.exception.ApiException;
 import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.JFrameException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
-import io.github.jframe.exception.resource.ApiErrorResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
@@ -20,8 +17,8 @@ import static java.util.Objects.nonNull;
 /**
  * Default type of {@link ExceptionResponseFactory}.
  *
- * <p>The default type creates an {@link ApiErrorResponseResource} if the exception is an
- * {@link ApiException} and a {@link ErrorResponseResource} in all other cases.
+ * <p>The default type creates a {@link ErrorResponseResource} for known exception types, and falls
+ * back to a plain {@link ErrorResponseResource} for all other cases.
  */
 @Component
 public class DefaultExceptionResponseFactory implements ExceptionResponseFactory {
@@ -33,8 +30,9 @@ public class DefaultExceptionResponseFactory implements ExceptionResponseFactory
      * used to determine the response factory. If there is no cause, or if it doesn't contain a {@link JFrameException}, the throwable
      * itself is used.
      *
-     * <p>As an example, assume throwable is some factory of {@link HttpException}, caused by an {@link
-     * ApiException}. In such a case, we want the error information to be derived from the {@link ApiException}.
+     * <p>As an example, assume throwable is some type of {@link HttpException}, caused by a
+     * {@link ValidationException}. In such a case, we want the error information to be derived from
+     * the {@link ValidationException}.
      *
      * @param throwable the throwable
      * @return the error resource
@@ -56,14 +54,13 @@ public class DefaultExceptionResponseFactory implements ExceptionResponseFactory
     }
 
     /**
-     * Create an instance of the correct factory of error resource for the given throwable.
+     * Create an instance of the correct type of error resource for the given throwable.
      *
      * @param throwable the throwable
      * @return the error resource
      */
     private static ErrorResponseResource getErrorResponseResource(final Throwable throwable) {
         return switch (throwable) {
-            case final ApiException apiException -> new ApiErrorResponseResource(apiException);
             case final MethodArgumentNotValidException methodArgumentNotValidException -> new MethodArgumentNotValidResponseResource(
                 methodArgumentNotValidException
             );
@@ -76,35 +73,19 @@ public class DefaultExceptionResponseFactory implements ExceptionResponseFactory
     }
 
     /**
-     * Returns the first {@link JFrameException} encountered in the chain of exception causes, or the original throwable if no
-     * {@link JFrameException} can be found.
+     * Returns the first {@link JFrameException} in the cause chain, or the original throwable if none found.
      *
-     * @param throwable the Throwable to examine, must not be <code>null</code>
+     * @param throwable the Throwable to examine, must not be {@code null}
      * @return a JFrameException, or throwable
      */
     private static Throwable getCausingJFrameException(final Throwable throwable) {
-        Throwable cause = getCause(throwable.getCause());
-        if (cause == null) {
-            cause = throwable;
+        Throwable current = throwable.getCause();
+        while (current != null) {
+            if (current instanceof JFrameException) {
+                return current;
+            }
+            current = current.getCause();
         }
-        return cause;
-    }
-
-    /**
-     * Recursive method to find the cause of a Throwable, if that is a {@link JFrameException}.
-     *
-     * @param throwable the throwable
-     * @return throwable, or null
-     */
-    private static Throwable getCause(final Throwable throwable) {
-        final Throwable cause;
-        if (throwable == null) {
-            cause = null;
-        } else if (throwable instanceof JFrameException) {
-            cause = throwable;
-        } else {
-            cause = getCause(throwable.getCause());
-        }
-        return cause;
+        return throwable;
     }
 }

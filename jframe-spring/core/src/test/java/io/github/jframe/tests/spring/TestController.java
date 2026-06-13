@@ -1,11 +1,8 @@
 package io.github.jframe.tests.spring;
 
 import io.github.jframe.exception.core.BadRequestException;
-import io.github.jframe.exception.core.DataNotFoundException;
-import io.github.jframe.exception.core.InternalServerErrorException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ResourceNotFoundException;
-import io.github.jframe.exception.core.UnauthorizedRequestException;
 import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.validation.ValidationResult;
 
@@ -29,31 +26,13 @@ public class TestController {
     /** Throws {@link BadRequestException} — expected HTTP 400. */
     @GetMapping("/bad-request")
     public void badRequest() {
-        throw new BadRequestException("Bad request test");
+        throw new BadRequestException();
     }
 
     /** Throws {@link ResourceNotFoundException} — expected HTTP 404. */
     @GetMapping("/not-found")
     public void notFound() {
-        throw new ResourceNotFoundException("Resource not found test");
-    }
-
-    /** Throws {@link DataNotFoundException} — expected HTTP 404. */
-    @GetMapping("/data-not-found")
-    public void dataNotFound() {
-        throw new DataNotFoundException("Data not found test");
-    }
-
-    /** Throws {@link UnauthorizedRequestException} — expected HTTP 401. */
-    @GetMapping("/unauthorized")
-    public void unauthorized() {
-        throw new UnauthorizedRequestException("Unauthorized test");
-    }
-
-    /** Throws {@link InternalServerErrorException} — expected HTTP 500. */
-    @GetMapping("/internal-error")
-    public void internalError() {
-        throw new InternalServerErrorException("Internal error test");
+        throw new ResourceNotFoundException();
     }
 
     /**

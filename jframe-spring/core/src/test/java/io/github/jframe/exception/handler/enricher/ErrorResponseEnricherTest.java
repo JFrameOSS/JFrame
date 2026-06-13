@@ -73,7 +73,7 @@ public class ErrorResponseEnricherTest extends UnitTest {
     public void shouldBeFunctionalInterface() {
         // Given: A lambda implementation of ErrorResponseEnricher
         final ErrorResponseEnricher enricher = (resource, throwable, request, httpStatus) -> {
-            resource.setErrorMessage("Enriched");
+            resource.setErrorReason("Enriched");
         };
 
         final ErrorResponseResource resource = new ErrorResponseResource();
@@ -83,7 +83,7 @@ public class ErrorResponseEnricherTest extends UnitTest {
         enricher.doEnrich(resource, new RuntimeException(), request, HttpStatus.INTERNAL_SERVER_ERROR);
 
         // Then: Enricher is functional and works
-        assertThat(resource.getErrorMessage(), is(equalTo("Enriched")));
+        assertThat(resource.getErrorReason(), is(equalTo("Enriched")));
     }
 
     @Test

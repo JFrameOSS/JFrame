@@ -4,10 +4,9 @@ import io.github.jframe.exception.resource.ErrorResponseResource;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Response;
 
 /**
- * Enricher that sets the HTTP status code and reason phrase on the response resource.
+ * Enricher that sets the HTTP status code on the response resource.
  */
 @ApplicationScoped
 public class StatusCodeResponseEnricher implements ErrorResponseEnricher {
@@ -20,9 +19,5 @@ public class StatusCodeResponseEnricher implements ErrorResponseEnricher {
         final int statusCode) {
 
         resource.setStatusCode(statusCode);
-        final Response.Status status = Response.Status.fromStatusCode(statusCode);
-        if (status != null) {
-            resource.setStatusMessage(status.getReasonPhrase());
-        }
     }
 }

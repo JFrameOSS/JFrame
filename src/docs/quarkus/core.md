@@ -70,32 +70,51 @@ JAX-RS `@Provider` exception mappers convert JFrame exceptions to structured JSO
 
 ### Handled exceptions
 
-| Exception | HTTP Status | Response type |
-|-----------|-------------|---------------|
-| `BadRequestException` | 400 | `ErrorResponseResource` |
-| `UnauthorizedRequestException` | 401 | `ErrorResponseResource` |
-| `ResourceNotFoundException` | 404 | `ErrorResponseResource` |
-| `ApiException` | 400 | `ApiErrorResponseResource` (with error code + reason) |
-| `ValidationException` | 400 | `ValidationErrorResponseResource` (with field errors) |
-| `RateLimitExceededException` | 429 | `RateLimitErrorResponseResource` (with limit headers) |
-| `Throwable` (catch-all) | 500 | `ErrorResponseResource` |
+4 `@Provider` exception mappers handle the full exception hierarchy:
+
+| Mapper | Exception | HTTP Status |
+|--------|-----------|-------------|
+| `HttpExceptionMapper` | `HttpException` (+ subclasses) | Dynamic |
+| `ValidationExceptionMapper` | `ValidationException` | 400 |
+| `RateLimitExceptionMapper` | `RateLimitExceededException` | 429 |
+| `ThrowableMapper` | `Throwable` (catch-all) | 500 |
 
 ### Error response format
 
 ```json
 {
   "statusCode": 404,
-  "statusText": "Not Found",
-  "errorMessage": "User not found",
+  "errorCode": "USER_001",
+  "errorReason": "User not found",
+  "cause": null,
   "method": "GET",
   "uri": "/api/users/42",
-  "transactionId": "a1b2c3d4-..."
+  "query": null,
+  "contentType": "application/json",
+  "txId": "abc-123",
+  "traceId": "...",
+  "spanId": "..."
 }
 ```
 
-### Error response enrichers
+### Built-in enrichers
 
-9 enricher components customize error responses. Create your own:
+7 enrichers run on every error response (plus `TracingEnricher` from `quarkus-otlp`):
+
+| Enricher | Adds |
+|----------|------|
+| `StatusCodeEnricher` | `statusCode` |
+| `ErrorCodeEnricher` | `errorCode`, `errorReason` |
+| `RequestInfoEnricher` | `method`, `uri`, `query`, `contentType` |
+| `TransactionIdEnricher` | `txId` |
+| `ValidationEnricher` | field error details (ValidationException) |
+| `ConstraintViolationEnricher` | field error details (Bean Validation) |
+| `RateLimitEnricher` | limit headers (RateLimitExceededException) |
+| `TracingEnricher` *(quarkus-otlp)* | `traceId`, `spanId` |
+
+### Custom error enricher
+
+Add fields to every error response:
 
 ```java
 @ApplicationScoped
@@ -166,7 +185,7 @@ The interceptor generates a single UUID used for both `RequestId` and `Transacti
 
 | Status | Description | Schema |
 |--------|-------------|--------|
-| 400 | Bad Request | `ApiErrorResponseResource` |
+| 400 | Bad Request | `ErrorResponseResource` |
 | 429 | Too Many Requests | `RateLimitErrorResponseResource` |
 | 500 | Internal Server Error | `ErrorResponseResource` |
 

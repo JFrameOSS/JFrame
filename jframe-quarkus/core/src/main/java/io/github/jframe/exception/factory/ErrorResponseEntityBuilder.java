@@ -2,7 +2,6 @@ package io.github.jframe.exception.factory;
 
 import io.github.jframe.exception.enricher.ErrorResponseEnricher;
 import io.github.jframe.exception.resource.ErrorResponseResource;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -20,7 +19,6 @@ import jakarta.ws.rs.container.ContainerRequestContext;
  * (e.g., {@code jframe-quarkus-otlp}) are automatically included when present on the classpath.
  * When no enrichers are registered, the enrichment step is skipped gracefully.
  */
-@Slf4j
 @ApplicationScoped
 public class ErrorResponseEntityBuilder {
 

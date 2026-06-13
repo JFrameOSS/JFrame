@@ -121,7 +121,8 @@ When tracing is enabled, `TracingResponseEnricher` adds `traceId` and `spanId` t
 ```json
 {
   "statusCode": 500,
-  "errorMessage": "Internal error",
+  "errorCode": "JFRAME_INTERNAL_ERROR",
+  "errorReason": "Internal server error",
   "traceId": "abc123...",
   "spanId": "def456..."
 }

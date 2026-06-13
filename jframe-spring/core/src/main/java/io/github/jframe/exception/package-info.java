@@ -16,9 +16,8 @@
  * The framework defines a three-tier exception hierarchy:
  * <pre>
  * JFrameException (base)
- * ├── HttpException (HTTP status-aware)
+ * ├── HttpException (HTTP status-aware, optional ApiError with errorCode + errorReason)
  * │ └── [Specific HTTP exceptions in .core package]
- * ├── ApiException (custom error codes)
  * └── ValidationException (field-level validation errors)
  * </pre>
  *
@@ -33,16 +32,11 @@
  * <ul>
  * <li>Associates exceptions with HTTP status codes</li>
  * <li>Carries an {@link org.springframework.http.HttpStatus} field</li>
- * <li>Used for standard HTTP error responses (400, 401, 404, 500, etc.)</li>
+ * <li>Used for standard HTTP error responses (400, 404, 429, etc.)</li>
  * <li>Concrete implementations in {@link io.github.jframe.exception.core} package</li>
- * </ul>
- *
- * <h3>API Exceptions: {@link io.github.jframe.exception.ApiException}</h3>
- * <ul>
- * <li>Carries custom {@link io.github.jframe.exception.ApiError} with error code and reason</li>
- * <li>Used for business logic errors requiring specific error codes</li>
- * <li>Applications typically implement {@code ApiError} as an enum</li>
- * <li>Example: {@code PAYMENT_FAILED}, {@code INSUFFICIENT_FUNDS}, {@code DUPLICATE_ORDER}</li>
+ * <li>Accepts an {@link io.github.jframe.exception.ApiError} in its constructor — carries errorCode + errorReason for business logic
+ * errors</li>
+ * <li>Example: {@code throw new HttpException(OrderErrors.PAYMENT_FAILED)}</li>
  * </ul>
  *
  * <h2>Exception Handling Flow</h2>
@@ -62,8 +56,8 @@
  * <pre>
  * {
  * "statusCode": 400,
- * "statusMessage": "Bad Request",
- * "errorMessage": "Validation failed",
+ * "errorCode": "JFRAME_BAD_REQUEST",
+ * "errorReason": "Bad request",
  * "method": "POST",
  * "uri": "/api/users",
  * "query": null,
@@ -83,15 +77,11 @@
  * <pre>
  * // Using specific HTTP exception types from .core package
  * if (user == null) {
- * throw new ResourceNotFoundException("User not found with id: " + userId);
- * }
- *
- * if (!isAuthorized) {
- * throw new UnauthorizedRequestException("Invalid credentials");
+ * throw new ResourceNotFoundException();
  * }
  *
  * if (invalidInput) {
- * throw new BadRequestException("Invalid request format");
+ * throw new BadRequestException();
  * }
  * </pre>
  *
@@ -106,28 +96,29 @@
  * }
  * </pre>
  *
- * <h3>Throwing API Exceptions with Custom Error Codes</h3>
+ * <h3>Throwing HttpException with Custom Error Codes</h3>
  * <pre>
  * // Define your API errors (typically as enum)
  * public enum OrderError implements ApiError {
- * INSUFFICIENT_INVENTORY("ORD-001", "Insufficient inventory"),
- * PAYMENT_FAILED("ORD-002", "Payment processing failed");
+ * INSUFFICIENT_INVENTORY("ORD-001", "Insufficient inventory", Response.Status.BAD_REQUEST),
+ * PAYMENT_FAILED("ORD-002", "Payment processing failed", Response.Status.PAYMENT_REQUIRED);
  *
  * private final String code;
  * private final String reason;
+ * private final Response.Status httpStatus;
  *
- * // implement getErrorCode() and getReason()
+ * // implement getErrorCode(), getReason(), and getHttpStatus()
  * }
  *
  * // Throw with custom error code
  * if (inventory &lt; quantity) {
- * throw new ApiException(OrderError.INSUFFICIENT_INVENTORY, "Only " + inventory + " items available");
+ * throw new HttpException(OrderError.INSUFFICIENT_INVENTORY);
  * }
  * </pre>
  *
  * <h2>Customization Points</h2>
  * <ul>
- * <li><strong>Custom Exceptions</strong> - Extend {@code HttpException}, {@code ApiException}, or {@code JFrameException}</li>
+ * <li><strong>Custom Exceptions</strong> - Extend {@code HttpException} or {@code JFrameException}</li>
  * <li><strong>Custom Enrichers</strong> - Implement {@link io.github.jframe.exception.handler.enricher.ErrorResponseEnricher}
  * to add custom fields to error responses</li>
  * <li><strong>Custom Response Types</strong> - Extend {@link io.github.jframe.exception.resource.ErrorResponseResource}

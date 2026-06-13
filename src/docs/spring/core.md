@@ -84,14 +84,10 @@ The `@ConditionalOnMissingBean` on the default ensures your bean takes precedenc
 
 | Exception | HTTP Status | Response type |
 |-----------|-------------|---------------|
-| `BadRequestException` | 400 | `ErrorResponseResource` |
-| `UnauthorizedRequestException` | 401 | `ErrorResponseResource` |
-| `ResourceNotFoundException` | 404 | `ErrorResponseResource` |
-| `ApiException` | 400 | `ApiErrorResponseResource` (with error code + reason) |
+| `HttpException` (Dynamic) | Dynamic | `ErrorResponseResource` (error code + reason from `ApiError`) |
 | `ValidationException` | 400 | `ValidationErrorResponseResource` (with field errors) |
 | `RateLimitExceededException` | 429 | `RateLimitErrorResponseResource` (with limit headers) |
 | `MethodArgumentNotValidException` | 400 | Validation errors from `@Valid` |
-| `AccessDeniedException` | 403 | `ErrorResponseResource` |
 | `Throwable` (catch-all) | 500 | `ErrorResponseResource` |
 
 ### Error response format
@@ -99,16 +95,33 @@ The `@ConditionalOnMissingBean` on the default ensures your bean takes precedenc
 ```json
 {
   "statusCode": 404,
-  "statusText": "Not Found",
-  "errorMessage": "User not found",
+  "errorCode": "USER_001",
+  "errorReason": "User not found",
+  "cause": null,
   "method": "GET",
   "uri": "/api/users/42",
-  "transactionId": "a1b2c3d4-...",
+  "query": null,
+  "contentType": "application/json",
+  "txId": "abc-123",
   "traceId": "...",
-  "spanId": "...",
-  "timestamp": "2026-03-18T10:00:00Z"
+  "spanId": "..."
 }
 ```
+
+### Built-in enrichers
+
+8 enrichers run on every error response (plus `TracingResponseEnricher` from `spring-otlp`):
+
+| Enricher | Adds |
+|----------|------|
+| `StatusCodeEnricher` | `statusCode` |
+| `ErrorCodeEnricher` | `errorCode`, `errorReason` |
+| `RequestInfoEnricher` | `method`, `uri`, `query`, `contentType` |
+| `TransactionIdEnricher` | `txId` |
+| `ValidationEnricher` | field error details (ValidationException) |
+| `MethodArgumentNotValidEnricher` | field error details (@Valid failures) |
+| `RateLimitEnricher` | limit headers (RateLimitExceededException) |
+| `TracingResponseEnricher` *(spring-otlp)* | `traceId`, `spanId` |
 
 ### Custom error enricher
 
@@ -128,12 +141,13 @@ public class TenantEnricher implements ErrorResponseEnricher {
 ### Throwing exceptions
 
 ```java
-// Simple HTTP exceptions
-throw new ResourceNotFoundException("User not found");
-throw new BadRequestException("Invalid input");
+// Simple HTTP exceptions (no-arg or cause-only)
+throw new BadRequestException();
+throw new ResourceNotFoundException();
 
 // API errors with error codes
-throw new ApiException(MyApiErrors.USER_DISABLED);
+throw new HttpException(MyErrors.USER_NOT_FOUND);
+throw new HttpException(MyErrors.USER_NOT_FOUND, cause);
 
 // Validation errors
 Validator<CreateUserRequest> validator = (obj, result) -> {

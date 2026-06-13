@@ -10,13 +10,12 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A Validation exception.
+ * A Validation exception wrapping a {@link ValidationResult}.
  *
  * @see ValidationResult
  */
 public class ValidationException extends JFrameException {
 
-    /** The serial version UID. */
     @Serial
     private static final long serialVersionUID = 7243575134936095351L;
 
@@ -28,44 +27,28 @@ public class ValidationException extends JFrameException {
         this.validationResult = new ValidationResult();
     }
 
-    /**
-     * Constructs a new {@link ValidationException} with the supplied {@link ValidationResult}.
-     *
-     * @param validationResult the validation result, not null
-     */
+    /** Constructs a new {@link ValidationException} with the supplied {@link ValidationResult}. */
     public ValidationException(final ValidationResult validationResult) {
         super();
         requireNonNull(validationResult);
         this.validationResult = validationResult;
     }
 
-    /**
-     * Constructs a new {@link ValidationException} with the supplied {@link ValidationError}.
-     *
-     * @param validationError the validation error, not null
-     */
+    /** Constructs a new {@link ValidationException} with the supplied {@link ValidationError}. */
     public ValidationException(final ValidationError validationError) {
         this();
         requireNonNull(validationError);
         validationResult.addError(validationError);
     }
 
-    /**
-     * Constructs a new {@link ValidationException} with the supplied {@link ValidationError}s.
-     *
-     * @param validationErrors the validation errors, not null
-     */
+    /** Constructs a new {@link ValidationException} with the supplied {@link ValidationError}s. */
     public ValidationException(final List<ValidationError> validationErrors) {
         this();
         requireNonNull(validationErrors);
         validationResult.addAllErrors(validationErrors);
     }
 
-    /**
-     * Returns the validation result containing the validation errors.
-     *
-     * @return the validation result containing the validation errors
-     */
+    /** Returns the validation result containing the validation errors. */
     public ValidationResult getValidationResult() {
         return validationResult;
     }

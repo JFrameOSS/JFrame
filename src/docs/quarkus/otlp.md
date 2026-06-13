@@ -71,7 +71,8 @@ Quarkus OTEL extension auto-extracts inbound `traceparent` headers.
 ```json
 {
   "statusCode": 500,
-  "errorMessage": "Internal error",
+  "errorCode": "JFRAME_INTERNAL_ERROR",
+  "errorReason": "Internal server error",
   "traceId": "abc123...",
   "spanId": "def456..."
 }

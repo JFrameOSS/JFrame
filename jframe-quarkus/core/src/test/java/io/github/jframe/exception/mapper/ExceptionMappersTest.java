@@ -1,6 +1,5 @@
 package io.github.jframe.exception.mapper;
 
-import io.github.jframe.exception.ApiException;
 import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.core.BadRequestException;
 import io.github.jframe.exception.core.RateLimitExceededException;
@@ -9,7 +8,6 @@ import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;
 import io.github.support.UnitTest;
 import io.github.support.fixtures.TestApiError;
-import io.github.support.fixtures.TestApiException;
 
 import java.time.OffsetDateTime;
 import jakarta.ws.rs.core.Response;
@@ -28,7 +26,7 @@ import static org.hamcrest.Matchers.notNullValue;
  * <p>Verifies the exception mapper functionality including:
  * <ul>
  * <li>HttpException mapping with correct JAX-RS status codes</li>
- * <li>ApiException mapping with BAD_REQUEST status</li>
+ * <li>HttpException with errorCode via ApiError constructor mapping to dynamic status</li>
  * <li>ValidationException mapping with BAD_REQUEST status</li>
  * <li>RateLimitExceededException mapping with TOO_MANY_REQUESTS status and headers</li>
  * <li>Fallback Throwable mapping with INTERNAL_SERVER_ERROR status</li>
@@ -46,7 +44,7 @@ public class ExceptionMappersTest extends UnitTest {
     public void shouldMapHttpExceptionToCorrectJaxRsStatus() {
         // Given: A Quarkus HttpExceptionMapper and a BAD_REQUEST HttpException
         final HttpExceptionMapper mapper = new HttpExceptionMapper();
-        final HttpException exception = new BadRequestException("Invalid input");
+        final HttpException exception = new BadRequestException();
 
         // When: Mapping the exception to a response
         final Response response = mapper.toResponse(exception);
@@ -61,7 +59,7 @@ public class ExceptionMappersTest extends UnitTest {
     public void shouldMapHttpExceptionResponseBodyAsJson() {
         // Given: A Quarkus HttpExceptionMapper and an HttpException
         final HttpExceptionMapper mapper = new HttpExceptionMapper();
-        final HttpException exception = new BadRequestException("Bad input");
+        final HttpException exception = new BadRequestException();
 
         // When: Mapping the exception
         final Response response = mapper.toResponse(exception);
@@ -85,35 +83,21 @@ public class ExceptionMappersTest extends UnitTest {
     }
 
     // -------------------------------------------------------------------------
-    // ApiExceptionMapper
+    // HttpExceptionMapper — ApiError constructor
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("Should map ApiException to BAD_REQUEST status")
-    public void shouldMapApiExceptionToBadRequestStatus() {
-        // Given: A Quarkus ApiExceptionMapper and an ApiException
-        final ApiExceptionMapper mapper = new ApiExceptionMapper();
-        final ApiException exception = new TestApiException(new TestApiError("ERR001", "Test error"));
+    @DisplayName("Should map HttpException with errorCode via ApiError constructor to dynamic status")
+    public void shouldMapHttpExceptionWithErrorCodeToDynamicStatus() {
+        // Given: An HttpException constructed from an ApiError with CONFLICT status
+        final HttpExceptionMapper mapper = new HttpExceptionMapper();
+        final HttpException exception = new HttpException(new TestApiError("ERR_001", "test", Response.Status.CONFLICT));
 
         // When: Mapping the exception
         final Response response = mapper.toResponse(exception);
 
-        // Then: Response has 400 BAD_REQUEST status
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getStatus(), is(equalTo(Response.Status.BAD_REQUEST.getStatusCode())));
-    }
-
-    @Test
-    @DisplayName("Should map ApiException response body as non-null entity")
-    public void shouldMapApiExceptionResponseBodyAsNonNullEntity() {
-        // Given: A Quarkus ApiExceptionMapper and an ApiException with error details
-        final ApiExceptionMapper mapper = new ApiExceptionMapper();
-        final ApiException exception = new TestApiException(new TestApiError("API_ERR", "API error occurred"));
-
-        // When: Mapping the exception
-        final Response response = mapper.toResponse(exception);
-
-        // Then: Response entity is not null
+        // Then: Response has 409 CONFLICT status with non-null body
+        assertThat(response.getStatus(), is(equalTo(Response.Status.CONFLICT.getStatusCode())));
         assertThat(response.getEntity(), is(notNullValue()));
     }
 

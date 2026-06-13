@@ -3,10 +3,10 @@ package io.github.jframe.exception.enricher;
 import io.github.jframe.exception.assembler.ConstraintViolationResourceAssembler;
 import io.github.jframe.exception.resource.ConstraintViolationResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Set;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -18,19 +18,10 @@ import jakarta.ws.rs.container.ContainerRequestContext;
  * and the throwable is a {@link ConstraintViolationException} with a non-empty violations set.
  */
 @ApplicationScoped
+@RequiredArgsConstructor
 public class ConstraintViolationResponseEnricher implements ErrorResponseEnricher {
 
     private final ConstraintViolationResourceAssembler assembler;
-
-    /**
-     * Constructs a new {@code ConstraintViolationResponseEnricher}.
-     *
-     * @param assembler the assembler to convert constraint violations
-     */
-    @Inject
-    public ConstraintViolationResponseEnricher(final ConstraintViolationResourceAssembler assembler) {
-        this.assembler = assembler;
-    }
 
     @Override
     public void doEnrich(

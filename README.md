@@ -55,9 +55,9 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:0.10.0-SNAPSHOT")
-    implementation("io.github.jframeoss:jframe-spring-jpa:0.10.0-SNAPSHOT")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:0.10.0-SNAPSHOT")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.2.0")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.2.0")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.2.0")  // optional
 }
 ```
 
@@ -65,9 +65,9 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:0.10.0-SNAPSHOT")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:0.10.0-SNAPSHOT")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:0.10.0-SNAPSHOT")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.2.0")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.2.0")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.2.0")  // optional
 }
 ```
 
@@ -79,14 +79,14 @@ dependencies {
 <dependency>
     <groupId>io.github.jframeoss</groupId>
     <artifactId>jframe-spring-core</artifactId>
-    <version>0.10.0-SNAPSHOT</version>
+    <version>1.2.0</version>
 </dependency>
 
 <!-- Quarkus -->
 <dependency>
     <groupId>io.github.jframeoss</groupId>
     <artifactId>jframe-quarkus-core</artifactId>
-    <version>0.10.0-SNAPSHOT</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -144,6 +144,7 @@ All four properties are **required**. See the [Configuration Reference](./src/do
 ### Migration Guides
 
 - [Spring Boot 1.0.0 Migration](./src/docs/migration/spring-migration-1.0.0.md) — `jframe-starter-*` → `jframe-spring-*`
+- [Exception Handling Simplification](./src/docs/migration/exception-handling-simplification.md) — Unified `HttpException` + `ApiError`, homogeneous `errorCode`/`errorReason` on all responses
 - [ECS Naming Convention Migration](./src/docs/migration/ecs-naming-convention-migration.md) — `KibanaLogField*` → `EcsField*`
 
 ## 🏗️ Project Structure
