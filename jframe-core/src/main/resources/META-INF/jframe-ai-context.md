@@ -7,20 +7,15 @@
 ```
 RuntimeException
   └─ JFrameException (base)
-      ├─ HttpException (+ Response.Status from jakarta.ws.rs)
+      ├─ HttpException (+ Response.Status, + errorCode, + errorReason, + ApiError constructor)
       │   ├─ BadRequestException (400)
-      │   ├─ DataNotFoundException (404)
       │   ├─ ResourceNotFoundException (404)
-      │   ├─ UnauthorizedRequestException (401)
-      │   ├─ InternalServerErrorException (500)
       │   └─ RateLimitExceededException (429, + limit/remaining/resetDate)
-      ├─ ApiException (+ ApiError interface with errorCode/reason)
       └─ ValidationException (+ ValidationResult with List<ValidationError>)
 ```
 
 **Error Response Resources** — DTOs for JSON error responses:
-- `ErrorResponseResource` — base: method, uri, query, statusCode, statusMessage, errorMessage, txId, traceId, spanId
-- `ApiErrorResponseResource` — adds apiErrorCode, apiErrorReason
+- `ErrorResponseResource` — base: method, uri, query, statusCode, statusMessage, errorMessage, txId, traceId, spanId; also carries `apiErrorCode` + `apiErrorReason` when thrown via `HttpException(ApiError)`
 - `ValidationErrorResponseResource` — adds List<ValidationErrorResource> (code + field)
 - `ConstraintViolationResponseResource` — for Jakarta Bean Validation
 - `RateLimitErrorResponseResource` — adds limit, remaining, resetDate

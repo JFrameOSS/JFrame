@@ -5,10 +5,10 @@ import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.github.jframe.validation.ValidationError;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
 /**
@@ -18,19 +18,10 @@ import jakarta.ws.rs.container.ContainerRequestContext;
  * and the throwable is a {@link ValidationException} with a non-empty errors list.
  */
 @ApplicationScoped
+@RequiredArgsConstructor
 public class ValidationErrorResponseEnricher implements ErrorResponseEnricher {
 
     private final ValidationErrorResourceAssembler assembler;
-
-    /**
-     * Constructs a new {@code ValidationErrorResponseEnricher}.
-     *
-     * @param assembler the assembler to convert validation errors
-     */
-    @Inject
-    public ValidationErrorResponseEnricher(final ValidationErrorResourceAssembler assembler) {
-        this.assembler = assembler;
-    }
 
     @Override
     public void doEnrich(

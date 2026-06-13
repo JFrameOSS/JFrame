@@ -132,21 +132,21 @@ public class ErrorResponseEntityBuilderTest extends UnitTest {
     @Test
     @DisplayName("Should preserve resource type through enrichment")
     public void shouldPreserveResourceTypeThroughEnrichment() {
-        // Given: A factory that returns an ApiErrorResponseResource subtype
+        // Given: A factory that returns a RateLimitErrorResponseResource subtype
         final Throwable throwable = new RuntimeException("Test error");
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
-        final io.github.jframe.exception.resource.ApiErrorResponseResource apiResource =
-            new io.github.jframe.exception.resource.ApiErrorResponseResource();
+        final io.github.jframe.exception.resource.RateLimitErrorResponseResource rateLimitResource =
+            new io.github.jframe.exception.resource.RateLimitErrorResponseResource();
 
-        when(factory.create(throwable)).thenReturn(apiResource);
+        when(factory.create(throwable)).thenReturn(rateLimitResource);
 
         final ErrorResponseEntityBuilder builder = new ErrorResponseEntityBuilder(factory, List.of());
 
         // When: Building the error response body
         final ErrorResponseResource result = builder.buildErrorResponseBody(throwable, requestContext, 400);
 
-        // Then: Returned resource is still the ApiErrorResponseResource
-        assertThat(result, is(instanceOf(io.github.jframe.exception.resource.ApiErrorResponseResource.class)));
+        // Then: Returned resource is still the RateLimitErrorResponseResource
+        assertThat(result, is(instanceOf(io.github.jframe.exception.resource.RateLimitErrorResponseResource.class)));
     }
 
     @Test

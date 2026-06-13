@@ -1,9 +1,7 @@
 package io.github.jframe.exception.factory;
 
-import io.github.jframe.exception.ApiException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
-import io.github.jframe.exception.resource.ApiErrorResponseResource;
 import io.github.jframe.exception.resource.ConstraintViolationResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
@@ -16,6 +14,8 @@ import jakarta.validation.ConstraintViolationException;
  * Factory that creates the appropriate {@link ErrorResponseResource} subtype based on the exception type.
  *
  * <p>Traverses the cause chain to find a known JFrame exception type.
+ * Known types: {@link ValidationException}, {@link RateLimitExceededException},
+ * {@link jakarta.validation.ConstraintViolationException}.
  */
 @ApplicationScoped
 public class DefaultErrorResponseFactory implements ExceptionResponseFactory {
@@ -37,7 +37,6 @@ public class DefaultErrorResponseFactory implements ExceptionResponseFactory {
 
     private static ErrorResponseResource getErrorResponseResource(final Throwable resolved, final Throwable original) {
         return switch (resolved) {
-            case final ApiException e -> new ApiErrorResponseResource(e);
             case final ValidationException e -> new ValidationErrorResponseResource(e);
             case final RateLimitExceededException e -> new RateLimitErrorResponseResource(e);
             case final ConstraintViolationException e -> new ConstraintViolationResponseResource(e);
@@ -48,8 +47,7 @@ public class DefaultErrorResponseFactory implements ExceptionResponseFactory {
     private static Throwable resolve(final Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
-            if (current instanceof ApiException
-                || current instanceof ValidationException
+            if (current instanceof ValidationException
                 || current instanceof RateLimitExceededException
                 || current instanceof ConstraintViolationException) {
                 return current;

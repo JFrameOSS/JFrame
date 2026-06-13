@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.WebRequest;
@@ -40,19 +39,10 @@ public class MethodArgumentNotValidResponseEnricher implements ErrorResponseEnri
         final HttpStatus httpStatus) {
         if (throwable instanceof final MethodArgumentNotValidException validationException
             && errorResponseResource instanceof final MethodArgumentNotValidResponseResource resource) {
-            final List<ObjectError> errors = getErrors(validationException);
+            final List<ObjectError> errors = validationException.getBindingResult().getAllErrors();
             if (!errors.isEmpty()) {
                 resource.setErrors(objectErrorResourceAssembler.convert(errors));
             }
         }
-    }
-
-    private static List<ObjectError> getErrors(
-        final MethodArgumentNotValidException methodArgumentNotValidException) {
-        return getErrors(methodArgumentNotValidException.getBindingResult());
-    }
-
-    private static List<ObjectError> getErrors(final BindingResult validationResult) {
-        return validationResult.getAllErrors();
     }
 }

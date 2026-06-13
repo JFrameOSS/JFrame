@@ -1,11 +1,8 @@
 package io.github.jframe.tests.quarkus;
 
 import io.github.jframe.exception.core.BadRequestException;
-import io.github.jframe.exception.core.DataNotFoundException;
-import io.github.jframe.exception.core.InternalServerErrorException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ResourceNotFoundException;
-import io.github.jframe.exception.core.UnauthorizedRequestException;
 import io.github.jframe.exception.mapper.HttpExceptionMapper;
 import io.github.jframe.exception.mapper.RateLimitExceededExceptionMapper;
 import io.github.jframe.tests.contract.ContractFixtures;
@@ -83,12 +80,6 @@ class ExceptionHandlingContractTest {
                 httpExceptionMapper.toResponse(new BadRequestException(scenario.message()));
             case "ResourceNotFoundException" ->
                 httpExceptionMapper.toResponse(new ResourceNotFoundException(scenario.message()));
-            case "DataNotFoundException" ->
-                httpExceptionMapper.toResponse(new DataNotFoundException(scenario.message()));
-            case "UnauthorizedRequestException" ->
-                httpExceptionMapper.toResponse(new UnauthorizedRequestException(scenario.message()));
-            case "InternalServerErrorException" ->
-                httpExceptionMapper.toResponse(new InternalServerErrorException(scenario.message()));
             case "RateLimitExceededException" ->
                 rateLimitMapper.toResponse(new RateLimitExceededException(100, 0, OffsetDateTime.now().plusHours(1)));
             default ->

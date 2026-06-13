@@ -1,7 +1,6 @@
 package io.github.jframe.util.mapper;
 
 
-import io.github.jframe.exception.core.InternalServerErrorException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.JacksonException;
@@ -67,11 +66,7 @@ public class ObjectMappers {
      * @return the deserialized object
      */
     public static <T> T fromJson(final String json, final Class<T> targetClass) {
-        try {
-            return MAPPER.readValue(json, targetClass);
-        } catch (final JacksonException exception) {
-            throw new InternalServerErrorException("Failed to deserialize JSON to class " + targetClass.getSimpleName(), exception);
-        }
+        return MAPPER.readValue(json, targetClass);
     }
 
     /**
@@ -83,10 +78,6 @@ public class ObjectMappers {
      * @return the deserialized object
      */
     public static <T> T fromJson(final String json, final TypeReference<T> typeRef) {
-        try {
-            return MAPPER.readValue(json, typeRef);
-        } catch (final JacksonException exception) {
-            throw new InternalServerErrorException("Failed to deserialize JSON to reference " + typeRef.getType(), exception);
-        }
+        return MAPPER.readValue(json, typeRef);
     }
 }

@@ -6,7 +6,6 @@ import io.github.jframe.exception.resource.ValidationErrorResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.github.jframe.util.converter.ModelConverter;
 import io.github.jframe.validation.ValidationError;
-import io.github.jframe.validation.ValidationResult;
 
 import java.util.List;
 
@@ -27,7 +26,6 @@ public class ValidationErrorResponseEnricher implements ErrorResponseEnricher {
 
     /** Constructor with a {@code validationErrorResourceAssembler}. */
     public ValidationErrorResponseEnricher(final ModelConverter<ValidationError, ValidationErrorResource> resourceAssembler) {
-        super();
         this.validationErrorResourceAssembler = requireNonNull(resourceAssembler);
     }
 
@@ -45,18 +43,10 @@ public class ValidationErrorResponseEnricher implements ErrorResponseEnricher {
         final HttpStatus httpStatus) {
         if (throwable instanceof final ValidationException validationException
             && errorResponseResource instanceof final ValidationErrorResponseResource resource) {
-            final List<ValidationError> errors = getErrors(validationException);
+            final List<ValidationError> errors = validationException.getValidationResult().getErrors();
             if (isNotEmpty(errors)) {
                 resource.setErrors(validationErrorResourceAssembler.convert(errors));
             }
         }
-    }
-
-    private static List<ValidationError> getErrors(final ValidationException validationException) {
-        return getErrors(validationException.getValidationResult());
-    }
-
-    private static List<ValidationError> getErrors(final ValidationResult validationResult) {
-        return validationResult.getErrors();
     }
 }

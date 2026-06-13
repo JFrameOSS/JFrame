@@ -7,11 +7,10 @@ import java.io.Serial;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
 /**
- * A resource not found exception.
+ * A Resource Not Found (404) exception.
  */
 public class ResourceNotFoundException extends HttpException {
 
-    /** The serial version UID. */
     @Serial
     private static final long serialVersionUID = 7464957757015625481L;
 
@@ -20,30 +19,17 @@ public class ResourceNotFoundException extends HttpException {
         super(NOT_FOUND);
     }
 
-    /**
-     * Constructs a new {@code ResourceNotFoundException} with the supplied message.
-     *
-     * @param message The message to set.
-     */
+    /** Constructs a new {@code ResourceNotFoundException} with the supplied message. */
     public ResourceNotFoundException(final String message) {
         super(message, NOT_FOUND);
     }
 
-    /**
-     * Constructs a new {@code ResourceNotFoundException} with the supplied message and {@link Throwable}.
-     *
-     * @param message The message to set.
-     * @param cause   The cause.
-     */
+    /** Constructs a new {@code ResourceNotFoundException} with the supplied message and cause. */
     public ResourceNotFoundException(final String message, final Throwable cause) {
         super(message, cause, NOT_FOUND);
     }
 
-    /**
-     * Constructs a new {@code ResourceNotFoundException} with the supplied {@link Throwable}.
-     *
-     * @param cause The cause.
-     */
+    /** Constructs a new {@code ResourceNotFoundException} with the supplied cause. */
     public ResourceNotFoundException(final Throwable cause) {
         super(cause, NOT_FOUND);
     }

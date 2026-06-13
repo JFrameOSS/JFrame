@@ -6,16 +6,12 @@ Framework-agnostic infrastructure shared by Spring and Quarkus adapter modules. 
 
 ```
 RuntimeException
-└── JFrameException
-    ├── HttpException(HttpStatusCode, message)
+└── JFrameException (base)
+    ├── HttpException (+ Response.Status, + errorCode, + errorReason, + ApiError constructor)
     │   ├── BadRequestException           (400)
-    │   ├── UnauthorizedRequestException  (401)
     │   ├── ResourceNotFoundException     (404)
-    │   ├── DataNotFoundException         (404, with ApiError)
-    │   ├── InternalServerErrorException  (500)
-    │   └── RateLimitExceededException    (429, with limit/remaining/reset)
-    ├── ApiException(ApiError)
-    └── ValidationException(ValidationResult)
+    │   └── RateLimitExceededException    (429, + limit/remaining/resetDate)
+    └── ValidationException (+ ValidationResult)
 ```
 
 ### ApiError interface
@@ -24,16 +20,17 @@ Define application-specific error codes:
 
 ```java
 public enum UserErrors implements ApiError {
-    USER_NOT_FOUND("USER_001", "User does not exist"),
-    USER_DISABLED("USER_002", "User account is disabled");
+    USER_NOT_FOUND("USER_001", "User does not exist", Response.Status.NOT_FOUND),
+    USER_DISABLED("USER_002", "User account is disabled", Response.Status.FORBIDDEN);
 
     private final String errorCode;
     private final String reason;
-    // constructor + getters
+    private final Response.Status httpStatus;
+    // constructor + getters (including getHttpStatus())
 }
 
 // Throw it
-throw new ApiException(UserErrors.USER_DISABLED);
+throw new HttpException(UserErrors.USER_DISABLED);
 ```
 
 ### HttpStatusCode enum

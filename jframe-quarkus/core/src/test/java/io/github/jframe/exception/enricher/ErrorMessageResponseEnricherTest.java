@@ -1,13 +1,13 @@
 package io.github.jframe.exception.enricher;
 
+import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.JFrameException;
 import io.github.jframe.exception.core.BadRequestException;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.support.UnitTest;
-import io.github.support.fixtures.TestApiError;
-import io.github.support.fixtures.TestApiException;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,17 +55,17 @@ public class ErrorMessageResponseEnricherTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should set error message from ApiException message")
-    public void shouldSetErrorMessageFromApiExceptionMessage() {
-        // Given: An error response resource and an ApiException with a message
+    @DisplayName("Should set error message from HttpException message")
+    public void shouldSetErrorMessageFromHttpExceptionMessage() {
+        // Given: An error response resource and an HttpException with a message
         final ErrorResponseResource resource = new ErrorResponseResource();
-        final TestApiException exception = new TestApiException(new TestApiError("CODE", "reason"), "Api error occurred");
+        final HttpException exception = new HttpException("Api error occurred", Response.Status.BAD_REQUEST);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         // When: Enriching the response
         enricher.doEnrich(resource, exception, requestContext, 400);
 
-        // Then: Error message is set from the ApiException
+        // Then: Error message is set from the HttpException
         assertThat(resource.getErrorMessage(), is(equalTo("Api error occurred")));
     }
 

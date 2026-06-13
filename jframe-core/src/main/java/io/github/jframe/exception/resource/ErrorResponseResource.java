@@ -25,10 +25,11 @@ public class ErrorResponseResource {
     private int statusCode;
     private String statusMessage;
     private String errorMessage;
+    private String apiErrorCode;
+    private String apiErrorReason;
     private String txId;
     private String traceId;
     private String spanId;
-
 
     /** The throwable this resource was created for. */
     @JsonIgnore
@@ -39,11 +40,7 @@ public class ErrorResponseResource {
         this(null);
     }
 
-    /**
-     * Construct an error resource with a throwable.
-     *
-     * @param throwable the throwable
-     */
+    /** Construct an error resource with the given throwable. */
     public ErrorResponseResource(final Throwable throwable) {
         this.throwable = throwable;
     }

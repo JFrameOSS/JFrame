@@ -84,10 +84,9 @@ The `@ConditionalOnMissingBean` on the default ensures your bean takes precedenc
 
 | Exception | HTTP Status | Response type |
 |-----------|-------------|---------------|
+| `HttpException` (+ subclasses) | Dynamic | `ErrorResponseResource` (with error code + reason) |
 | `BadRequestException` | 400 | `ErrorResponseResource` |
-| `UnauthorizedRequestException` | 401 | `ErrorResponseResource` |
 | `ResourceNotFoundException` | 404 | `ErrorResponseResource` |
-| `ApiException` | 400 | `ApiErrorResponseResource` (with error code + reason) |
 | `ValidationException` | 400 | `ValidationErrorResponseResource` (with field errors) |
 | `RateLimitExceededException` | 429 | `RateLimitErrorResponseResource` (with limit headers) |
 | `MethodArgumentNotValidException` | 400 | Validation errors from `@Valid` |
@@ -133,7 +132,7 @@ throw new ResourceNotFoundException("User not found");
 throw new BadRequestException("Invalid input");
 
 // API errors with error codes
-throw new ApiException(MyApiErrors.USER_DISABLED);
+throw new HttpException(MyApiErrors.USER_DISABLED);
 
 // Validation errors
 Validator<CreateUserRequest> validator = (obj, result) -> {

@@ -9,29 +9,21 @@ import java.time.OffsetDateTime;
 import static jakarta.ws.rs.core.Response.Status.TOO_MANY_REQUESTS;
 
 /**
- * Exception thrown when a rate limit has been exceeded.
+ * Exception thrown when a rate limit has been exceeded (429 Too Many Requests).
  *
- * <p>Contains rate limit metadata that can be used to populate standard rate limit headers:
- * <ul>
- * <li>{@code X-RateLimit-Limit} - Maximum requests allowed</li>
- * <li>{@code X-RateLimit-Remaining} - Requests remaining in current window</li>
- * <li>{@code X-RateLimit-Reset} - When the rate limit resets</li>
- * </ul>
+ * <p>Carries rate limit metadata for populating standard response headers:
+ * {@code X-RateLimit-Limit}, {@code X-RateLimit-Remaining}, {@code X-RateLimit-Reset}.
  */
 @Getter
 public class RateLimitExceededException extends HttpException {
 
-    /** The serial version UID. */
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** Maximum number of requests allowed in the current window. */
     private final int limit;
 
-    /** Number of requests remaining in the current window. */
     private final int remaining;
 
-    /** The time when the rate limit resets. */
     private final OffsetDateTime resetDate;
 
     /** Constructs a new {@code RateLimitExceededException} with rate limit details. */
@@ -42,7 +34,7 @@ public class RateLimitExceededException extends HttpException {
         this.resetDate = resetDate;
     }
 
-    /** Constructs a new {@code RateLimitExceededException} with the supplied message and rate limit details. */
+    /** Constructs a new {@code RateLimitExceededException} with message and rate limit details. */
     public RateLimitExceededException(final String message,
                                       final int limit,
                                       final int remaining,
@@ -53,10 +45,7 @@ public class RateLimitExceededException extends HttpException {
         this.resetDate = resetDate;
     }
 
-    /**
-     * Constructs a new {@code RateLimitExceededException} with the supplied message, {@link Throwable}
-     * and rate limit details.
-     */
+    /** Constructs a new {@code RateLimitExceededException} with message, cause and rate limit details. */
     public RateLimitExceededException(final String message,
                                       final Throwable cause,
                                       final int limit,
@@ -68,7 +57,7 @@ public class RateLimitExceededException extends HttpException {
         this.resetDate = resetDate;
     }
 
-    /** Constructs a new {@code RateLimitExceededException} with the supplied {@link Throwable} and rate limit details. */
+    /** Constructs a new {@code RateLimitExceededException} with cause and rate limit details. */
     public RateLimitExceededException(final Throwable cause,
                                       final int limit,
                                       final int remaining,

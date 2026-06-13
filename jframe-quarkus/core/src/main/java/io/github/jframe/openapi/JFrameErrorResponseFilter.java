@@ -1,6 +1,5 @@
 package io.github.jframe.openapi;
 
-import io.github.jframe.exception.resource.ApiErrorResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
@@ -59,7 +58,7 @@ public class JFrameErrorResponseFilter implements OASFilter {
 
     private static void addStandardErrorResponses(final Operation operation) {
         final APIResponses responses = ensureResponses(operation);
-        addIfAbsent(responses, STATUS_400, "Bad Request", ApiErrorResponseResource.class.getSimpleName());
+        addIfAbsent(responses, STATUS_400, "Bad Request", ErrorResponseResource.class.getSimpleName());
         addIfAbsent(responses, STATUS_429, "Too Many Requests", RateLimitErrorResponseResource.class.getSimpleName());
         addIfAbsent(responses, STATUS_500, "Internal Server Error", ErrorResponseResource.class.getSimpleName());
     }

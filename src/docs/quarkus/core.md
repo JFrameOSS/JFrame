@@ -72,10 +72,9 @@ JAX-RS `@Provider` exception mappers convert JFrame exceptions to structured JSO
 
 | Exception | HTTP Status | Response type |
 |-----------|-------------|---------------|
+| `HttpException` (+ subclasses) | Dynamic | `ErrorResponseResource` (with error code + reason) |
 | `BadRequestException` | 400 | `ErrorResponseResource` |
-| `UnauthorizedRequestException` | 401 | `ErrorResponseResource` |
 | `ResourceNotFoundException` | 404 | `ErrorResponseResource` |
-| `ApiException` | 400 | `ApiErrorResponseResource` (with error code + reason) |
 | `ValidationException` | 400 | `ValidationErrorResponseResource` (with field errors) |
 | `RateLimitExceededException` | 429 | `RateLimitErrorResponseResource` (with limit headers) |
 | `Throwable` (catch-all) | 500 | `ErrorResponseResource` |

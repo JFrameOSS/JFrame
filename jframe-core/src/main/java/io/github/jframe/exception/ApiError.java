@@ -1,6 +1,7 @@
 package io.github.jframe.exception;
 
 import java.io.Serializable;
+import jakarta.ws.rs.core.Response;
 
 /**
  * Interface that defines an API error of the application.
@@ -24,4 +25,11 @@ public interface ApiError extends Serializable {
      * @return the reason
      */
     String getReason();
+
+    /**
+     * Get the HTTP status associated with this error.
+     *
+     * @return the HTTP status
+     */
+    Response.Status getHttpStatus();
 }
