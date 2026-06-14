@@ -40,6 +40,11 @@ public class RequestIdFilter extends AbstractGenericFilter {
             response.addHeader(headerName, RequestId.get());
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            RequestId.remove();
+            EcsFields.clear(REQUEST_ID);
+        }
     }
 }

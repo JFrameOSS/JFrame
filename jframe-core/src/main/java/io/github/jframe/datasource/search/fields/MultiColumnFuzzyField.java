@@ -41,6 +41,9 @@ public class MultiColumnFuzzyField extends SearchCriterium {
      * @return list of search terms.
      */
     public List<String> getSearchTerms() {
+        if (value == null) {
+            return List.of();
+        }
         return Arrays.asList(this.value.split("\\s+"));
     }
 }

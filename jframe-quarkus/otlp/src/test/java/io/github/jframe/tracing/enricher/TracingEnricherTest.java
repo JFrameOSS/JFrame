@@ -28,6 +28,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -305,8 +307,8 @@ public class TracingEnricherTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should still call setAttribute for TX_ID and REQUEST_ID when MDC values are null")
-    public void shouldStillCallSetAttributeForTxIdAndRequestIdWhenMdcValuesAreNull() throws Exception {
+    @DisplayName("Should skip setAttribute for TX_ID and REQUEST_ID when MDC values are null")
+    public void shouldSkipSetAttributeForTxIdAndRequestIdWhenMdcValuesAreNull() throws Exception {
         // Given: No TX_ID or REQUEST_ID in MDC (clean MDC, not tagged)
         final ErrorResponseResource resource = new ErrorResponseResource();
         final Throwable throwable = new RuntimeException("test error");
@@ -320,8 +322,8 @@ public class TracingEnricherTest extends UnitTest {
             enricher.doEnrich(resource, throwable, requestContext, STATUS_CODE_VALUE);
         }
 
-        // Then: Span receives TX_ID and REQUEST_ID attributes (with null value per spec)
-        verify(span).setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID));
-        verify(span).setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID));
+        // Then: Span does NOT receive TX_ID or REQUEST_ID attributes (null values would cause NPE in OTel SDK)
+        verify(span, never()).setAttribute(eq(SPAN_HTTP_TRANSACTION_ID.getKey()), any(String.class));
+        verify(span, never()).setAttribute(eq(SPAN_HTTP_REQUEST_ID.getKey()), any(String.class));
     }
 }

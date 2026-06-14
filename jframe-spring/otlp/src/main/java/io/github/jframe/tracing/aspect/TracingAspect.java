@@ -33,7 +33,7 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.USER_NAME;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(
-    name = "otel.sdk.disabled",
+    name = "jframe.otlp.disabled",
     havingValue = "false"
 )
 public class TracingAspect {
@@ -50,10 +50,10 @@ public class TracingAspect {
      * @throws Throwable If an error occurs during method execution.
      */
     @Around(
-        "@within(org.springframework.stereotype.Service) || "
+        "(@within(org.springframework.stereotype.Service) || "
             + "@within(org.springframework.stereotype.Controller) || "
             + "@within(org.springframework.web.bind.annotation.RestController) || "
-            + "@within(io.github.jframe.tracing.aspect.Traced) && "
+            + "@within(io.github.jframe.tracing.aspect.Traced)) && "
             + "!execution(* get*()) && "
             + "!execution(* set*()) && "
             + "!execution(* is*()) && "

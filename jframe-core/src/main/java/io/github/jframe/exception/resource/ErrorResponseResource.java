@@ -1,5 +1,6 @@
 package io.github.jframe.exception.resource;
 
+import io.github.jframe.exception.ApiError;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -47,6 +48,25 @@ public class ErrorResponseResource {
     /** Constructs a new {@code ErrorResponseResource} with the given throwable. */
     public ErrorResponseResource(final Throwable throwable) {
         this.throwable = throwable;
+        this.cause = extractMessage(throwable);
+    }
+
+    private static String extractMessage(final Throwable throwable) {
+        String message = null;
+        if (throwable != null) {
+            try {
+                message = throwable.getMessage();
+            } catch (final Exception ignored) {
+                message = throwable.getClass().getSimpleName();
+            }
+        }
+        return message;
+    }
+
+    /** Sets {@code errorCode} and {@code errorReason} from the given {@link ApiError}. */
+    public void setError(final ApiError apiError) {
+        this.errorCode = apiError.getErrorCode();
+        this.errorReason = apiError.getReason();
     }
 
     @Override

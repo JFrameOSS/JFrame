@@ -39,7 +39,7 @@ import org.springframework.context.annotation.PropertySource;
     value = "classpath:jframe-properties.yml",
     factory = YamlPropertySourceFactory.class
 )
-@ComponentScan(basePackages = "io.github.jframe.*")
+@ComponentScan(basePackages = "io.github.jframe")
 public class CoreAutoConfiguration {
 
     /**

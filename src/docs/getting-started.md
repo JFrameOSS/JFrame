@@ -27,9 +27,9 @@ All modules share `jframe-core` (pulled in transitively). You never need to depe
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:1.0.0")
-    implementation("io.github.jframeoss:jframe-spring-jpa:1.0.0")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:1.0.0")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.3.0")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.3.0")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.3.0")  // optional
 }
 ```
 
@@ -38,9 +38,9 @@ dependencies {
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:1.0.0")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.0.0")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.0.0")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.3.0")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.3.0")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.3.0")  // optional
 }
 ```
 

@@ -59,8 +59,8 @@ jobs:
         uses: requarks/changelog-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fromTag: ${{ steps.tags.outputs.to_tag }}
-          toTag: ${{ steps.tags.outputs.from_tag }}
+          fromTag: ${{ steps.tags.outputs.from_tag }}
+          toTag: ${{ steps.tags.outputs.to_tag }}
           writeToFile: false
 
       - name: Output Changelog

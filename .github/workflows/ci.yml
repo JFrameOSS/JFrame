@@ -24,7 +24,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') == false
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Read Java version
         id: java-version
@@ -78,7 +78,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 

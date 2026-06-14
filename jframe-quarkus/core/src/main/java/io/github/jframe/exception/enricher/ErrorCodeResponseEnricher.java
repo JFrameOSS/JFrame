@@ -10,15 +10,10 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
 /**
- * Enricher that sets the error code, reason, and cause on the response resource.
+ * Enricher that sets errorCode and errorReason based on the exception type.
  *
- * <p>Maps exception types to structured error codes:
- * <ul>
- * <li>{@link HttpException} — uses the ApiError for errorCode/errorReason, cause from wrapped throwable</li>
- * <li>{@link ValidationException} — maps to JFRAME_VALIDATION_ERROR</li>
- * <li>{@link ConstraintViolationException} — maps to JFRAME_VALIDATION_ERROR</li>
- * <li>Unhandled {@link Throwable} — maps to JFRAME_INTERNAL_ERROR, cause is never set</li>
- * </ul>
+ * <p>The {@code cause} field is always set from the throwable message by {@link ErrorResponseResource}.
+ * For {@link HttpException} with a wrapped cause, the cause is overridden with the wrapped exception's message.
  */
 @ApplicationScoped
 public class ErrorCodeResponseEnricher implements ErrorResponseEnricher {
@@ -29,19 +24,16 @@ public class ErrorCodeResponseEnricher implements ErrorResponseEnricher {
         final Throwable throwable,
         final ContainerRequestContext requestContext,
         final int statusCode) {
-
         if (throwable instanceof final HttpException http) {
-            resource.setErrorCode(http.getErrorCode() != null ? http.getErrorCode() : JFrameErrorCode.HTTP_ERROR.getErrorCode());
-            resource.setErrorReason(http.getErrorReason() != null ? http.getErrorReason() : JFrameErrorCode.HTTP_ERROR.getReason());
+            resource.setErrorCode(http.getErrorCode());
+            resource.setErrorReason(http.getErrorReason());
             if (http.getCause() != null) {
                 resource.setCause(http.getCause().getMessage());
             }
         } else if (throwable instanceof ValidationException || throwable instanceof ConstraintViolationException) {
-            resource.setErrorCode(JFrameErrorCode.VALIDATION_ERROR.getErrorCode());
-            resource.setErrorReason(JFrameErrorCode.VALIDATION_ERROR.getReason());
+            resource.setError(JFrameErrorCode.VALIDATION_ERROR);
         } else {
-            resource.setErrorCode(JFrameErrorCode.INTERNAL_ERROR.getErrorCode());
-            resource.setErrorReason(JFrameErrorCode.INTERNAL_ERROR.getReason());
+            resource.setError(JFrameErrorCode.INTERNAL_ERROR);
         }
     }
 }

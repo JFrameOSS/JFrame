@@ -24,7 +24,7 @@ import org.springframework.context.annotation.PropertySource;
 )
 @AutoConfiguration
 @Import(TracingIdResponseFilterConfiguration.class)
-@ComponentScan(basePackages = "io.github.jframe.*")
+@ComponentScan(basePackages = "io.github.jframe")
 @EnableConfigurationProperties(OpenTelemetryProperties.class)
 public class OpenTelemetryAutoConfiguration {
 

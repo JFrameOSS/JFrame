@@ -49,7 +49,7 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 public class TracingInterceptor {
 
     /** Lazily initialised; Mockito {@code @InjectMocks} injects a test double via reflection. */
-    private Tracer tracer;
+    private volatile Tracer tracer;
 
     @Inject
     private OpenTelemetryConfig config;

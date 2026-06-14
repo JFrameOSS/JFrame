@@ -57,14 +57,23 @@ public class TracingEnricher implements ErrorResponseEnricher {
         currentSpan.recordException(throwable);
         currentSpan.setStatus(StatusCode.ERROR);
         currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS));
-        currentSpan.setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), EcsFields.get(TX_ID));
-        currentSpan.setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), EcsFields.get(REQUEST_ID));
+        final String txId = EcsFields.get(TX_ID);
+        if (txId != null && !txId.isBlank()) {
+            currentSpan.setAttribute(SPAN_HTTP_TRANSACTION_ID.getKey(), txId);
+        }
+        final String requestId = EcsFields.get(REQUEST_ID);
+        if (requestId != null && !requestId.isBlank()) {
+            currentSpan.setAttribute(SPAN_HTTP_REQUEST_ID.getKey(), requestId);
+        }
         currentSpan.setAttribute(SPAN_HTTP_URI.getKey(), requestContext.getUriInfo().getRequestUri().getPath());
-        currentSpan.setAttribute(SPAN_HTTP_QUERY.getKey(), requestContext.getUriInfo().getRequestUri().getQuery());
+        final String query = requestContext.getUriInfo().getRequestUri().getQuery();
+        currentSpan.setAttribute(SPAN_HTTP_QUERY.getKey(), query != null ? query : "");
         currentSpan.setAttribute(SPAN_HTTP_METHOD.getKey(), requestContext.getMethod());
         currentSpan.setAttribute(SPAN_HTTP_STATUS_CODE.getKey(), statusCode);
         final jakarta.ws.rs.core.MediaType mediaType = requestContext.getMediaType();
-        currentSpan.setAttribute(SPAN_HTTP_CONTENT_TYPE.getKey(), mediaType.getType() + "/" + mediaType.getSubtype());
+        if (mediaType != null) {
+            currentSpan.setAttribute(SPAN_HTTP_CONTENT_TYPE.getKey(), mediaType.getType() + "/" + mediaType.getSubtype());
+        }
         currentSpan.setAttribute(SPAN_HTTP_CONTENT_LENGTH.getKey(), requestContext.getLength());
     }
 }
