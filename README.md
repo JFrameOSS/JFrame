@@ -55,9 +55,9 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:1.2.0")
-    implementation("io.github.jframeoss:jframe-spring-jpa:1.2.0")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:1.2.0")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.3.0")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.3.0")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.3.0")  // optional
 }
 ```
 
@@ -65,9 +65,9 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:1.2.0")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.2.0")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.2.0")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.3.0")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.3.0")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.3.0")  // optional
 }
 ```
 
@@ -79,14 +79,14 @@ dependencies {
 <dependency>
     <groupId>io.github.jframeoss</groupId>
     <artifactId>jframe-spring-core</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 
 <!-- Quarkus -->
 <dependency>
     <groupId>io.github.jframeoss</groupId>
     <artifactId>jframe-quarkus-core</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
