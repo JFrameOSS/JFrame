@@ -18,8 +18,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -55,16 +57,20 @@ public class TransactionIdFilterTest extends UnitTest {
         final HttpServletRequest request = mock(HttpServletRequest.class);
         final HttpServletResponse response = mock(HttpServletResponse.class);
         final FilterChain filterChain = mock(FilterChain.class);
+        final String[] capturedId = new String[1];
 
         when(request.getHeader(TX_ID_HEADER)).thenReturn(null);
         when(response.containsHeader(TX_ID_HEADER)).thenReturn(false);
+        doAnswer(invocation -> { capturedId[0] = TransactionId.get(); return null; })
+            .when(filterChain).doFilter(request, response);
 
         // When: Filter is executed
         filter.doFilterInternal(request, response, filterChain);
 
-        // Then: Transaction ID is set in ThreadLocal
-        final String transactionId = TransactionId.get();
-        assertThat(transactionId, is(notNullValue()));
+        // Then: Transaction ID was set in ThreadLocal during filter chain
+        assertThat(capturedId[0], is(notNullValue()));
+        // And: ThreadLocal is cleaned up after filter completes
+        assertThat(TransactionId.get(), is(nullValue()));
     }
 
     @Test
@@ -76,16 +82,18 @@ public class TransactionIdFilterTest extends UnitTest {
         final HttpServletRequest request = mock(HttpServletRequest.class);
         final HttpServletResponse response = mock(HttpServletResponse.class);
         final FilterChain filterChain = mock(FilterChain.class);
+        final String[] capturedId = new String[1];
 
         when(request.getHeader(TX_ID_HEADER)).thenReturn(existingTxId.toString());
         when(response.containsHeader(TX_ID_HEADER)).thenReturn(false);
+        doAnswer(invocation -> { capturedId[0] = TransactionId.get(); return null; })
+            .when(filterChain).doFilter(request, response);
 
         // When: Filter is executed
         filter.doFilterInternal(request, response, filterChain);
 
-        // Then: Transaction ID from header is used
-        final String transactionId = TransactionId.get();
-        assertThat(transactionId, is(equalTo(existingTxId.toString())));
+        // Then: Transaction ID from header is used during filter chain
+        assertThat(capturedId[0], is(equalTo(existingTxId.toString())));
     }
 
     @Test
@@ -153,17 +161,19 @@ public class TransactionIdFilterTest extends UnitTest {
         final HttpServletRequest request = mock(HttpServletRequest.class);
         final HttpServletResponse response = mock(HttpServletResponse.class);
         final FilterChain filterChain = mock(FilterChain.class);
+        final String[] capturedId = new String[1];
 
         when(request.getHeader(TX_ID_HEADER)).thenReturn("invalid-uuid-format");
         when(response.containsHeader(TX_ID_HEADER)).thenReturn(false);
+        doAnswer(invocation -> { capturedId[0] = TransactionId.get(); return null; })
+            .when(filterChain).doFilter(request, response);
 
         // When: Filter is executed
         filter.doFilterInternal(request, response, filterChain);
 
-        // Then: A new valid UUID is generated
-        final String transactionId = TransactionId.get();
-        assertThat(transactionId, is(notNullValue()));
-        assertThat(transactionId, is(not(equalTo("invalid-uuid-format"))));
+        // Then: A new valid UUID is generated during filter chain
+        assertThat(capturedId[0], is(notNullValue()));
+        assertThat(capturedId[0], is(not(equalTo("invalid-uuid-format"))));
     }
 
     @Test

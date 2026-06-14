@@ -1,5 +1,7 @@
 package io.github.jframe.exception.mapper;
 
+import lombok.extern.slf4j.Slf4j;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
@@ -12,6 +14,7 @@ import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
  * <p>Always returns HTTP 500 INTERNAL_SERVER_ERROR with a non-null response entity.
  * Extends {@link AbstractExceptionMapper} which provides shared null-check and response-building logic.
  */
+@Slf4j
 @Provider
 @ApplicationScoped
 public class ThrowableMapper extends AbstractExceptionMapper<Throwable> {
@@ -24,6 +27,7 @@ public class ThrowableMapper extends AbstractExceptionMapper<Throwable> {
      */
     @Override
     public Response toResponse(final Throwable throwable) {
+        log.error("Unhandled exception", throwable);
         return buildResponse(throwable, INTERNAL_SERVER_ERROR.getStatusCode());
     }
 }

@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
  * <li>{@link HttpException} — uses ApiError for errorCode/errorReason, cause from wrapped throwable</li>
  * <li>{@link ValidationException} — maps to JFRAME_VALIDATION_ERROR / "Validation failed"</li>
  * <li>{@link ConstraintViolationException} — maps to JFRAME_VALIDATION_ERROR / "Validation failed"</li>
- * <li>Unhandled {@link Throwable} — maps to JFRAME_INTERNAL_ERROR / "Internal server error", cause=null</li>
+ * <li>Unhandled {@link Throwable} — maps to JFRAME_INTERNAL_ERROR / "Internal server error" with exception message as cause</li>
  * </ul>
  */
 @DisplayName("Unit Test - Error Code Response Enricher")
@@ -134,26 +134,26 @@ public class ErrorCodeResponseEnricherTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should set JFRAME_INTERNAL_ERROR code and null cause for unhandled Throwable")
+    @DisplayName("Should set JFRAME_INTERNAL_ERROR code with cause for unhandled Throwable")
     public void shouldSetInternalErrorCodeForUnhandledThrowable() {
         // Given: An unhandled RuntimeException that is not a JFrame or validation exception
-        final ErrorResponseResource resource = new ErrorResponseResource();
-        final RuntimeException exception = new RuntimeException("sensitive internal details");
+        final RuntimeException exception = new RuntimeException("something went wrong");
+        final ErrorResponseResource resource = new ErrorResponseResource(exception);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         // When: Enriching the response
         enricher.doEnrich(resource, exception, requestContext, 500);
 
-        // Then: errorCode is JFRAME_INTERNAL_ERROR, errorReason is generic, cause is null
+        // Then: errorCode is JFRAME_INTERNAL_ERROR with cause set to exception message
         assertThat(resource.getErrorCode(), is(equalTo("JFRAME_INTERNAL_ERROR")));
         assertThat(resource.getErrorReason(), is(equalTo("Internal server error")));
-        assertThat(resource.getCause(), is(nullValue()));
+        assertThat(resource.getCause(), is(equalTo("something went wrong")));
     }
 
     @Test
-    @DisplayName("Should fallback to JFRAME_HTTP_ERROR when HttpException errorCode is null")
-    public void shouldFallbackToHttpErrorWhenErrorCodeIsNull() {
-        // Given: An HttpException from an ApiError that returns null for errorCode
+    @DisplayName("Should pass through null errorCode when HttpException ApiError returns null")
+    public void shouldPassThroughNullErrorCode() {
+        // Given: An HttpException whose ApiError returns null errorCode/errorReason
         final ErrorResponseResource resource = new ErrorResponseResource();
         final HttpException exception = new HttpException(
             new TestApiError(null, null, Response.Status.BAD_REQUEST)
@@ -163,23 +163,23 @@ public class ErrorCodeResponseEnricherTest extends UnitTest {
         // When: Enriching the response
         enricher.doEnrich(resource, exception, requestContext, 400);
 
-        // Then: errorCode falls back to JFRAME_HTTP_ERROR and errorReason to "HTTP error"
-        assertThat(resource.getErrorCode(), is(equalTo("JFRAME_HTTP_ERROR")));
-        assertThat(resource.getErrorReason(), is(equalTo("HTTP error")));
+        // Then: errorCode and errorReason are null (ApiError contract guarantees non-null in practice)
+        assertThat(resource.getErrorCode(), is(nullValue()));
+        assertThat(resource.getErrorReason(), is(nullValue()));
     }
 
     @Test
-    @DisplayName("Should not set cause field for non-JFrame exceptions")
-    public void shouldNotSetCauseForNonJFrameExceptions() {
+    @DisplayName("Should set cause field for non-JFrame exceptions")
+    public void shouldSetCauseForNonJFrameExceptions() {
         // Given: A plain RuntimeException with a message (not an HttpException)
-        final ErrorResponseResource resource = new ErrorResponseResource();
-        final RuntimeException exception = new RuntimeException("should not appear in cause");
+        final RuntimeException exception = new RuntimeException("unexpected error");
+        final ErrorResponseResource resource = new ErrorResponseResource(exception);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
 
         // When: Enriching the response
         enricher.doEnrich(resource, exception, requestContext, 500);
 
-        // Then: cause field is null — non-JFrame exceptions never have their message set as cause
-        assertThat(resource.getCause(), is(nullValue()));
+        // Then: cause field is set to the exception message
+        assertThat(resource.getCause(), is(equalTo("unexpected error")));
     }
 }

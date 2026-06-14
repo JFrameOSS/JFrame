@@ -40,7 +40,12 @@ public class TransactionIdFilter extends AbstractGenericFilter {
             response.addHeader(headerName, TransactionId.get());
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            TransactionId.remove();
+            EcsFields.clear(TX_ID);
+        }
     }
 
     /**

@@ -27,14 +27,7 @@ public class OpenTelemetryConfig {
     private static final String PREFIX = OtlpDefaults.PREFIX;
 
     private final ReentrantLock initLock = new ReentrantLock();
-    private volatile boolean initialized;
-    private boolean disabledValue;
-    private String urlValue;
-    private String timeoutValue;
-    private String exporterValue;
-    private double samplingRateValue;
-    private Set<String> excludedMethodsValue;
-    private String propagatorsValue;
+    private volatile ConfigValues values;
 
     /**
      * CDI proxy constructor — no config reading happens here.
@@ -44,28 +37,27 @@ public class OpenTelemetryConfig {
     }
 
     private void ensureInitialized() {
-        if (!initialized) {
+        if (values == null) {
             initLock.lock();
             try {
-                if (!initialized) {
+                if (values == null) {
                     final org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
-                    disabledValue = config.getOptionalValue(PREFIX + "disabled", Boolean.class)
+                    final boolean disabled = config.getOptionalValue(PREFIX + "disabled", Boolean.class)
                         .orElse(OtlpDefaults.DEFAULT_DISABLED);
-                    urlValue = config.getOptionalValue(PREFIX + "url", String.class)
+                    final String url = config.getOptionalValue(PREFIX + "url", String.class)
                         .orElse(OtlpDefaults.DEFAULT_URL);
-                    timeoutValue = config.getOptionalValue(PREFIX + "timeout", String.class)
+                    final String timeout = config.getOptionalValue(PREFIX + "timeout", String.class)
                         .orElse(OtlpDefaults.DEFAULT_TIMEOUT);
-                    exporterValue = config.getOptionalValue(PREFIX + "exporter", String.class)
+                    final String exporter = config.getOptionalValue(PREFIX + "exporter", String.class)
                         .orElse(OtlpDefaults.DEFAULT_EXPORTER);
-                    samplingRateValue = config.getOptionalValue(PREFIX + "sampling-rate", Double.class)
+                    final double samplingRate = config.getOptionalValue(PREFIX + "sampling-rate", Double.class)
                         .orElse(OtlpDefaults.DEFAULT_SAMPLING_RATE);
-                    propagatorsValue = config.getOptionalValue(PREFIX + "propagators", String.class)
+                    final String propagators = config.getOptionalValue(PREFIX + "propagators", String.class)
                         .orElse(OtlpDefaults.DEFAULT_PROPAGATORS);
-
                     final String excludedStr = config.getOptionalValue(PREFIX + "excluded-methods", String.class)
                         .orElse(OtlpDefaults.DEFAULT_EXCLUDED_METHODS);
-                    excludedMethodsValue = OtlpDefaults.parseCommaSeparated(excludedStr);
-                    initialized = true;
+                    final Set<String> excludedMethods = OtlpDefaults.parseCommaSeparated(excludedStr);
+                    values = new ConfigValues(disabled, url, timeout, exporter, samplingRate, excludedMethods, propagators);
                 }
             } finally {
                 initLock.unlock();
@@ -80,7 +72,7 @@ public class OpenTelemetryConfig {
      */
     public boolean disabled() {
         ensureInitialized();
-        return disabledValue;
+        return values.disabled;
     }
 
     /**
@@ -90,7 +82,7 @@ public class OpenTelemetryConfig {
      */
     public String url() {
         ensureInitialized();
-        return urlValue;
+        return values.url;
     }
 
     /**
@@ -100,7 +92,7 @@ public class OpenTelemetryConfig {
      */
     public String timeout() {
         ensureInitialized();
-        return timeoutValue;
+        return values.timeout;
     }
 
     /**
@@ -110,7 +102,7 @@ public class OpenTelemetryConfig {
      */
     public String exporter() {
         ensureInitialized();
-        return exporterValue;
+        return values.exporter;
     }
 
     /**
@@ -120,7 +112,7 @@ public class OpenTelemetryConfig {
      */
     public double samplingRate() {
         ensureInitialized();
-        return samplingRateValue;
+        return values.samplingRate;
     }
 
     /**
@@ -130,7 +122,7 @@ public class OpenTelemetryConfig {
      */
     public Set<String> excludedMethods() {
         ensureInitialized();
-        return excludedMethodsValue;
+        return values.excludedMethods;
     }
 
     /**
@@ -145,6 +137,35 @@ public class OpenTelemetryConfig {
      */
     public String propagators() {
         ensureInitialized();
-        return propagatorsValue;
+        return values.propagators;
+    }
+
+    private static final class ConfigValues {
+
+        private final boolean disabled;
+        private final String url;
+        private final String timeout;
+        private final String exporter;
+        private final double samplingRate;
+        private final Set<String> excludedMethods;
+        private final String propagators;
+
+        ConfigValues(
+                     final boolean disabled,
+                     final String url,
+                     final String timeout,
+                     final String exporter,
+                     final double samplingRate,
+                     final Set<String> excludedMethods,
+                     final String propagators) {
+
+            this.disabled = disabled;
+            this.url = url;
+            this.timeout = timeout;
+            this.exporter = exporter;
+            this.samplingRate = samplingRate;
+            this.excludedMethods = excludedMethods;
+            this.propagators = propagators;
+        }
     }
 }

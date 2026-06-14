@@ -25,7 +25,7 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.USER_NAME;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(
-    name = "otel.sdk.disabled",
+    name = "jframe.otlp.disabled",
     havingValue = "false"
 )
 public class TracingResponseEnricher implements ErrorResponseEnricher {

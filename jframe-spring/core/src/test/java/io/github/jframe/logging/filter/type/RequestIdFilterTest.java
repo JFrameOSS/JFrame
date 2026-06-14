@@ -15,8 +15,10 @@ import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,15 +53,19 @@ public class RequestIdFilterTest extends UnitTest {
         final HttpServletRequest request = mock(HttpServletRequest.class);
         final HttpServletResponse response = mock(HttpServletResponse.class);
         final FilterChain filterChain = mock(FilterChain.class);
+        final String[] capturedId = new String[1];
 
         when(response.containsHeader(REQ_ID_HEADER)).thenReturn(false);
+        doAnswer(invocation -> { capturedId[0] = RequestId.get(); return null; })
+            .when(filterChain).doFilter(request, response);
 
         // When: Filter is executed
         filter.doFilterInternal(request, response, filterChain);
 
-        // Then: Request ID is set in ThreadLocal
-        final String requestId = RequestId.get();
-        assertThat(requestId, is(notNullValue()));
+        // Then: Request ID was set in ThreadLocal during filter chain
+        assertThat(capturedId[0], is(notNullValue()));
+        // And: ThreadLocal is cleaned up after filter completes
+        assertThat(RequestId.get(), is(nullValue()));
     }
 
     @Test
@@ -121,32 +127,34 @@ public class RequestIdFilterTest extends UnitTest {
     public void shouldGenerateUniqueRequestIdsForDifferentRequests() throws Exception {
         // Given: A request ID filter and two different requests
         final RequestIdFilter filter = new RequestIdFilter(REQ_ID_HEADER);
+        final String[] capturedId1 = new String[1];
+        final String[] capturedId2 = new String[1];
+
         final HttpServletRequest request1 = mock(HttpServletRequest.class);
         final HttpServletResponse response1 = mock(HttpServletResponse.class);
         final FilterChain filterChain1 = mock(FilterChain.class);
 
         when(response1.containsHeader(REQ_ID_HEADER)).thenReturn(false);
+        doAnswer(invocation -> { capturedId1[0] = RequestId.get(); return null; })
+            .when(filterChain1).doFilter(request1, response1);
 
         // When: First filter execution
         filter.doFilterInternal(request1, response1, filterChain1);
-        final String requestId1 = RequestId.get();
-
-        // Clean up and prepare for second request
-        RequestId.remove();
 
         final HttpServletRequest request2 = mock(HttpServletRequest.class);
         final HttpServletResponse response2 = mock(HttpServletResponse.class);
         final FilterChain filterChain2 = mock(FilterChain.class);
 
         when(response2.containsHeader(REQ_ID_HEADER)).thenReturn(false);
+        doAnswer(invocation -> { capturedId2[0] = RequestId.get(); return null; })
+            .when(filterChain2).doFilter(request2, response2);
 
         // When: Second filter execution
         filter.doFilterInternal(request2, response2, filterChain2);
-        final String requestId2 = RequestId.get();
 
         // Then: Request IDs are different
-        assertThat(requestId1, is(notNullValue()));
-        assertThat(requestId2, is(notNullValue()));
-        assertThat(requestId1.equals(requestId2), is(false));
+        assertThat(capturedId1[0], is(notNullValue()));
+        assertThat(capturedId2[0], is(notNullValue()));
+        assertThat(capturedId1[0].equals(capturedId2[0]), is(false));
     }
 }

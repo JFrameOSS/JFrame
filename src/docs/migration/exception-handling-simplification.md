@@ -278,7 +278,7 @@ See [Step 9](#step-9-jframeerrorcode-defaults) for all `JFrameErrorCode` values.
 | `errorMessage` | — | Deleted |
 | — | `cause` | New — nullable String, wraps exception message |
 
-`cause` is only present when the `HttpException` was constructed with a `Throwable` cause. It exposes `cause.getMessage()` — never a stack trace.
+`cause` is always set when a throwable has a message. For `HttpException`, it exposes `cause.getMessage()` from the wrapped cause. For unhandled exceptions, it exposes `throwable.getMessage()`. It never contains a stack trace.
 
 Fields `method`, `uri`, `query`, `contentType`, `txId`, `traceId`, `spanId` are unchanged.
 

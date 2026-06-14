@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.core.Ordered;
@@ -39,6 +40,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 /**
  * This class creates proper HTTP response bodies for exceptions.
  */
+@Slf4j
 @Component
 @RestControllerAdvice
 @RequiredArgsConstructor
@@ -221,6 +223,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         )
     )
     public ResponseEntity<ErrorResponseResource> handleThrowable(final Throwable throwable, final WebRequest request) {
+        log.error(throwable.getMessage(), throwable);
         return ResponseEntity
             .status(INTERNAL_SERVER_ERROR)
             .contentType(APPLICATION_JSON)

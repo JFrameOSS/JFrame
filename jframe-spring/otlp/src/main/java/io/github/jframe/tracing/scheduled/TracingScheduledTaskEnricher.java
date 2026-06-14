@@ -29,7 +29,7 @@ import static io.github.jframe.security.AuthenticationUtil.getAuthenticatedSubje
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(
-    name = "otel.sdk.disabled",
+    name = "jframe.otlp.disabled",
     havingValue = "false"
 )
 public class TracingScheduledTaskEnricher implements ScheduledTaskEnricher {
