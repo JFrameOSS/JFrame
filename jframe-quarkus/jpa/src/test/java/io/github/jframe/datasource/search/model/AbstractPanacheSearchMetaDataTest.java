@@ -1,5 +1,6 @@
 package io.github.jframe.datasource.search.model;
 
+import io.github.jframe.datasource.search.PanacheSearchSpecification;
 import io.github.jframe.datasource.search.SearchOperator;
 import io.github.jframe.datasource.search.SearchType;
 import io.github.jframe.datasource.search.fields.BooleanField;
@@ -16,6 +17,7 @@ import io.github.jframe.datasource.search.fields.NumericRangeField;
 import io.github.jframe.datasource.search.fields.TextField;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
+import io.github.jframe.datasource.search.model.input.SortablePageInput;
 import io.github.support.TestStatus;
 import io.github.support.UnitTest;
 import io.quarkus.panache.common.Sort;
@@ -571,27 +573,29 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     // =========================================================================
 
     @Test
-    @DisplayName("Should return null when sortable column list is null")
-    public void shouldReturnNullWhenSortableColumnListIsNull() {
+    @DisplayName("Should return empty sort when sortable column list is null")
+    public void shouldReturnEmptySortWhenSortableColumnListIsNull() {
         // Given: A null list of sortable columns
 
         // When: Converting to Panache Sort
         final Sort sort = fullMetaData.toSort(null);
 
-        // Then: null is returned (Panache has no Sort.unsorted())
-        assertThat(sort, is(nullValue()));
+        // Then: Sort.empty() is returned (not null)
+        assertThat(sort, is(notNullValue()));
+        assertThat(sort.getColumns(), is(empty()));
     }
 
     @Test
-    @DisplayName("Should return null when sortable column list is empty")
-    public void shouldReturnNullWhenSortableColumnListIsEmpty() {
+    @DisplayName("Should return empty sort when sortable column list is empty")
+    public void shouldReturnEmptySortWhenSortableColumnListIsEmpty() {
         // Given: An empty list of sortable columns
 
         // When: Converting to Panache Sort
         final Sort sort = fullMetaData.toSort(Collections.emptyList());
 
-        // Then: null is returned for empty input
-        assertThat(sort, is(nullValue()));
+        // Then: Sort.empty() is returned (not null)
+        assertThat(sort, is(notNullValue()));
+        assertThat(sort.getColumns(), is(empty()));
     }
 
     @Test
@@ -1068,6 +1072,139 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
         // Then: SearchType is NUMERIC_RANGE
         assertThat(testMetaData.getSearchTypes().get("score"), is(SearchType.NUMERIC_RANGE));
         assertThat(testMetaData.getColumnNames().get("score"), is(List.of("u.score")));
+    }
+
+    // =========================================================================
+    // Section 8: toSort fix — null/empty input should return Sort.empty()
+    // =========================================================================
+
+    @Test
+    @DisplayName("Should return Sort.empty() when sortable column list is null (after fix)")
+    public void shouldReturnSortEmptyWhenSortableColumnListIsNull() {
+        // Given: A null list of sortable columns
+
+        // When: Converting to Panache Sort
+        final Sort sort = fullMetaData.toSort(null);
+
+        // Then: Sort.empty() is returned (not null) — null-safe contract
+        assertThat(sort, is(notNullValue()));
+        assertThat(sort.getColumns(), is(empty()));
+    }
+
+    @Test
+    @DisplayName("Should return Sort.empty() when sortable column list is empty (after fix)")
+    public void shouldReturnSortEmptyWhenSortableColumnListIsEmpty() {
+        // Given: An empty list of sortable columns
+
+        // When: Converting to Panache Sort
+        final Sort sort = fullMetaData.toSort(Collections.emptyList());
+
+        // Then: Sort.empty() is returned (not null) — null-safe contract
+        assertThat(sort, is(notNullValue()));
+        assertThat(sort.getColumns(), is(empty()));
+    }
+
+    // =========================================================================
+    // Section 9: getDefaultPageSize()
+    // =========================================================================
+
+    @Test
+    @DisplayName("Should return 20 as default page size")
+    public void shouldReturn20AsDefaultPageSize() {
+        // Given: A metadata instance with no page size override
+
+        // When: Retrieving the default page size
+        final int pageSize = fullMetaData.getDefaultPageSize();
+
+        // Then: Default page size is 20
+        assertThat(pageSize, is(equalTo(20)));
+    }
+
+    @Test
+    @DisplayName("Should allow subclass to override getDefaultPageSize")
+    public void shouldAllowSubclassToOverrideGetDefaultPageSize() {
+        // Given: A metadata subclass that overrides getDefaultPageSize to 50
+        final AbstractPanacheSearchMetaData customPageSizeMetaData = new AbstractPanacheSearchMetaData() {
+
+            {
+                addField("name", "u.name", SearchType.TEXT, true);
+            }
+
+            public int getDefaultPageSize() {
+                return 50;
+            }
+        };
+
+        // When: Retrieving the default page size
+        final int pageSize = customPageSizeMetaData.getDefaultPageSize();
+
+        // Then: Overridden page size of 50 is returned
+        assertThat(pageSize, is(equalTo(50)));
+    }
+
+    // =========================================================================
+    // Section 10: toSearchSpecification(SortablePageInput)
+    // =========================================================================
+
+    @Test
+    @DisplayName("Should return non-null PanacheSearchSpecification from SortablePageInput with search inputs")
+    public void shouldReturnNonNullPanacheSearchSpecificationFromSortablePageInputWithSearchInputs() {
+        // Given: A SortablePageInput with a search input for the 'name' field
+        final SortablePageInput input = new SortablePageInput();
+        input.addSearchInput(aSearchInput("name", "John"));
+
+        // When: Building a PanacheSearchSpecification from the input
+        final PanacheSearchSpecification<?> spec = fullMetaData.toSearchSpecification(input);
+
+        // Then: A non-null PanacheSearchSpecification is returned
+        assertThat(spec, is(notNullValue()));
+        assertThat(spec, is(instanceOf(PanacheSearchSpecification.class)));
+    }
+
+    @Test
+    @DisplayName("Should return PanacheSearchSpecification when searchInputs is empty")
+    public void shouldReturnPanacheSearchSpecificationWhenSearchInputsIsEmpty() {
+        // Given: A SortablePageInput with no search inputs
+        final SortablePageInput input = new SortablePageInput();
+
+        // When: Building a PanacheSearchSpecification from the input
+        final PanacheSearchSpecification<?> spec = fullMetaData.toSearchSpecification(input);
+
+        // Then: A non-null PanacheSearchSpecification is returned (empty criteria = no filtering)
+        assertThat(spec, is(notNullValue()));
+        assertThat(spec, is(instanceOf(PanacheSearchSpecification.class)));
+    }
+
+    @Test
+    @DisplayName("Should return PanacheSearchSpecification when SortablePageInput has null searchInputs")
+    public void shouldReturnPanacheSearchSpecificationWhenSortablePageInputHasNullSearchInputs() {
+        // Given: A SortablePageInput with null searchInputs
+        final SortablePageInput input = new SortablePageInput(0, 20, null, null);
+
+        // When: Building a PanacheSearchSpecification from the input
+        final PanacheSearchSpecification<?> spec = fullMetaData.toSearchSpecification(input);
+
+        // Then: A non-null specification is returned — null-safe delegation to toSearchCriteria
+        assertThat(spec, is(notNullValue()));
+        assertThat(spec, is(instanceOf(PanacheSearchSpecification.class)));
+    }
+
+    @Test
+    @DisplayName("Should delegate to toSearchCriteria using SortablePageInput searchInputs")
+    public void shouldDelegateToToSearchCriteriaUsingSortablePageInputSearchInputs() {
+        // Given: A SortablePageInput with one known and one unknown field
+        final SortablePageInput input = new SortablePageInput();
+        input.addSearchInput(aSearchInput("name", "John"));
+        input.addSearchInput(aSearchInput("unknownField", "value"));
+
+        // When: Building the spec via toSearchSpecification and via toSearchCriteria directly
+        final PanacheSearchSpecification<?> specViaPageInput = fullMetaData.toSearchSpecification(input);
+        final List<SearchCriterium> criteriaViaDirect = fullMetaData.toSearchCriteria(input.getSearchInputs());
+
+        // Then: toSearchSpecification produces same criteria count as toSearchCriteria
+        assertThat(specViaPageInput, is(notNullValue()));
+        // The spec wraps exactly criteriaViaDirect (1 known field — unknownField filtered out)
+        assertThat(criteriaViaDirect, hasSize(1));
     }
 
 }
