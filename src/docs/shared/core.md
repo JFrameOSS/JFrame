@@ -206,8 +206,10 @@ page.getTotalElements();  // 142
 page.getTotalPages();     // 8
 page.getPageSize();       // 20
 page.getPageNumber();     // 0
-page.getContent();        // List<UserDto>
+page.getContent();        // List<UserDto> — never null, empty list when no results
 ```
+
+> **Null-safety:** `PageResource.content` is always initialized to an empty list. The `iterator()` method is safe to call on any `PageResource` instance, including empty pages.
 
 ## Request context (ThreadLocal)
 
