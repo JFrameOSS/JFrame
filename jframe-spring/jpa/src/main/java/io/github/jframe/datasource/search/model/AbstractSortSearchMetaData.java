@@ -1,18 +1,40 @@
 package io.github.jframe.datasource.search.model;
 
+import io.github.jframe.datasource.search.JpaSearchSpecification;
 import io.github.jframe.datasource.search.SearchType;
-import io.github.jframe.datasource.search.fields.*;
+import io.github.jframe.datasource.search.fields.BooleanField;
+import io.github.jframe.datasource.search.fields.DateField;
+import io.github.jframe.datasource.search.fields.EnumField;
+import io.github.jframe.datasource.search.fields.FuzzyTextField;
+import io.github.jframe.datasource.search.fields.MultiColumnFuzzyField;
+import io.github.jframe.datasource.search.fields.MultiEnumField;
+import io.github.jframe.datasource.search.fields.MultiFuzzyField;
+import io.github.jframe.datasource.search.fields.MultiNumericField;
+import io.github.jframe.datasource.search.fields.MultiTextField;
+import io.github.jframe.datasource.search.fields.NumericField;
+import io.github.jframe.datasource.search.fields.NumericRangeField;
+import io.github.jframe.datasource.search.fields.TextField;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
+import io.github.jframe.datasource.search.model.input.SortablePageInput;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import static java.util.Objects.nonNull;
 
@@ -30,7 +52,13 @@ import static java.util.Objects.nonNull;
  */
 @Slf4j
 @Getter
-@SuppressWarnings("ClassDataAbstractionCoupling")
+@SuppressWarnings(
+    {
+        "ClassDataAbstractionCoupling",
+        "ClassFanOutComplexity",
+        "PMD.ExcessiveImports"
+    }
+)
 public abstract class AbstractSortSearchMetaData {
 
     private final Map<String, SearchType> searchTypes = new ConcurrentHashMap<>();
@@ -43,63 +71,26 @@ public abstract class AbstractSortSearchMetaData {
      * Constructor initializes default search criterium factories for each SearchType.
      */
     protected AbstractSortSearchMetaData() {
-        factories.put(
-            SearchType.NONE,
-            (c, i) -> null
-        );
-        factories.put(
-            SearchType.DATE,
-            (c, i) -> new DateField(c.getFirst(), i.getFromDateValue(), i.getToDateValue())
-        );
-        factories.put(
-            SearchType.NUMERIC,
-            (c, i) -> new NumericField(c.getFirst(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.BOOLEAN,
-            (c, i) -> new BooleanField(c.getFirst(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.ENUM,
-            (c, i) -> new EnumField(c.getFirst(), enumClasses.get(i.getFieldName()), i.getTextValue())
-        );
+        factories.put(SearchType.NONE, (c, i) -> null);
+        factories.put(SearchType.DATE, (c, i) -> new DateField(c.getFirst(), i.getFromDateValue(), i.getToDateValue()));
+        factories.put(SearchType.NUMERIC, (c, i) -> new NumericField(c.getFirst(), i.getTextValue()));
+        factories.put(SearchType.BOOLEAN, (c, i) -> new BooleanField(c.getFirst(), i.getTextValue()));
+        factories.put(SearchType.ENUM, (c, i) -> new EnumField(c.getFirst(), enumClasses.get(i.getFieldName()), i.getTextValue()));
         factories.put(
             SearchType.MULTI_ENUM,
             (c, i) -> new MultiEnumField(c.getFirst(), enumClasses.get(i.getFieldName()), i.getTextValueList())
         );
-        factories.put(
-            SearchType.TEXT,
-            (c, i) -> new TextField(c.getFirst(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.MULTI_TEXT,
-            (c, i) -> new MultiTextField(c.getFirst(), i.getTextValueList())
-        );
-        factories.put(
-            SearchType.FUZZY_TEXT,
-            (c, i) -> new FuzzyTextField(c.getFirst(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.MULTI_FUZZY,
-            (c, i) -> new MultiFuzzyField(c.getFirst(), i.getOperator(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.MULTI_COLUMN_FUZZY,
-            (c, i) -> new MultiColumnFuzzyField(c, i.getTextValue())
-        );
-        factories.put(
-            SearchType.MULTI_NUMERIC,
-            (c, i) -> new MultiNumericField(c.getFirst(), i.getTextValueList())
-        );
+        factories.put(SearchType.TEXT, (c, i) -> new TextField(c.getFirst(), i.getTextValue()));
+        factories.put(SearchType.MULTI_TEXT, (c, i) -> new MultiTextField(c.getFirst(), i.getTextValueList()));
+        factories.put(SearchType.FUZZY_TEXT, (c, i) -> new FuzzyTextField(c.getFirst(), i.getTextValue()));
+        factories.put(SearchType.MULTI_FUZZY, (c, i) -> new MultiFuzzyField(c.getFirst(), i.getOperator(), i.getTextValue()));
+        factories.put(SearchType.MULTI_COLUMN_FUZZY, (c, i) -> new MultiColumnFuzzyField(c, i.getTextValue()));
+        factories.put(SearchType.MULTI_NUMERIC, (c, i) -> new MultiNumericField(c.getFirst(), i.getTextValueList()));
         factories.put(
             SearchType.NUMERIC_RANGE,
             (c, i) -> new NumericRangeField(c.getFirst(), i.getFromNumericValue(), i.getToNumericValue())
         );
     }
-
-    /* -------------------------------------------------
-     *  Search & sorting helpers
-     * ------------------------------------------------- */
 
     /**
      * Convert a list of SearchInput objects into a list of SearchCriterium objects based on the defined metadata.
@@ -132,12 +123,7 @@ public abstract class AbstractSortSearchMetaData {
 
         final List<Sort.Order> orders = sortOrders.stream()
             .filter(o -> sortableFields.contains(o.getName()))
-            .map(
-                o -> new Sort.Order(
-                    Sort.Direction.fromString(o.getDirection()),
-                    columnNames.get(o.getName()).getFirst()
-                )
-            )
+            .map(o -> new Sort.Order(Sort.Direction.fromString(o.getDirection()), columnNames.get(o.getName()).getFirst()))
             .toList();
 
         if (orders.size() != sortOrders.size()) {
@@ -145,6 +131,64 @@ public abstract class AbstractSortSearchMetaData {
         }
 
         return Sort.by(orders);
+    }
+
+    /**
+     * Returns the default page size used when the input page size is not positive.
+     * Subclasses can override to provide a different default.
+     *
+     * @return default page size (20).
+     */
+    protected int getDefaultPageSize() {
+        return 20;
+    }
+
+    /**
+     * Convert a {@link SortablePageInput} to a Spring Data {@link Pageable}.
+     * Uses {@link #getDefaultPageSize()} when input page size is not positive.
+     *
+     * @param input the sortable page input.
+     * @return a configured {@link Pageable}.
+     */
+    public Pageable toPageable(final SortablePageInput input) {
+        final int resolvedPageSize = input.getPageSize() <= 0 ? getDefaultPageSize() : input.getPageSize();
+        return PageRequest.of(input.getPageNumber(), resolvedPageSize, toSort(input.getSortOrder()));
+    }
+
+    /**
+     * Build a {@link JpaSearchSpecification} from the search inputs in a {@link SortablePageInput}.
+     *
+     * @param input the sortable page input.
+     * @param <T>   the entity type.
+     * @return a {@link JpaSearchSpecification} based on the input's search criteria.
+     */
+    public <T> JpaSearchSpecification<T> toSearchSpecification(final SortablePageInput input) {
+        return new JpaSearchSpecification<>(toSearchCriteria(input.getSearchInputs()));
+    }
+
+    /**
+     * Build a scoped {@link Specification} by ANDing the base search specification with an equality
+     * predicate on {@code fieldPath} == {@code scopeValue}. Supports nested paths (e.g. "tenant.id").
+     *
+     * @param input      the sortable page input.
+     * @param fieldPath  dot-separated path to the field (e.g. "organizationId" or "tenant.id").
+     * @param scopeValue the value the field must equal.
+     * @param <T>        the entity type.
+     * @return a composed {@link Specification}.
+     */
+    public <T> Specification<T> toSearchSpecification(
+        final SortablePageInput input,
+        final String fieldPath,
+        final Object scopeValue) {
+        final JpaSearchSpecification<T> base = toSearchSpecification(input);
+        final Specification<T> scope = (root, query, cb) -> {
+            Path<?> path = root;
+            for (final String segment : fieldPath.split("\\.")) {
+                path = path.get(segment);
+            }
+            return cb.equal(path, scopeValue);
+        };
+        return base.and(scope);
     }
 
     /**
@@ -158,10 +202,6 @@ public abstract class AbstractSortSearchMetaData {
             || predicate.getExpressions() == null
             || predicate.getExpressions().isEmpty();
     }
-
-    /* -------------------------------------------------
-     *  Search field registration
-     * ------------------------------------------------- */
 
     /**
      * Register a searchable and/or sortable field with the metadata.
@@ -180,7 +220,7 @@ public abstract class AbstractSortSearchMetaData {
     }
 
     /**
-     * Register a searchable and/or sortable field with the custom search logic.
+     * Register a field with custom search logic (no factory-based search type).
      *
      * @param field    the frontend field name.
      * @param column   the database column name.
@@ -216,11 +256,11 @@ public abstract class AbstractSortSearchMetaData {
     }
 
     /**
-     * Register a searchable and/or sortable enum field with the metadata.
+     * Register a multi-column fuzzy search field with the metadata.
      *
      * @param field      the frontend field name.
      * @param columns    the database column names.
-     * @param searchType the type of search to be performed on this field (must be ENUM or MULTI_ENUM).
+     * @param searchType the type of search to be performed on this field (must be MULTI_COLUMN_FUZZY).
      * @param sortable   whether the field is sortable.
      */
     protected void addField(
@@ -237,10 +277,11 @@ public abstract class AbstractSortSearchMetaData {
     /**
      * Internal method to register a searchable and/or sortable field with the metadata.
      *
-     * @param field      the frontend field name.
-     * @param columns    the database column names.
-     * @param searchType the type of search to be performed on this field.
-     * @param sortable   whether the field is sortable.
+     * @param field          the frontend field name.
+     * @param columns        the database column names.
+     * @param searchType     the type of search to be performed on this field.
+     * @param sortable       whether the field is sortable.
+     * @param isCustomSearch whether this field uses custom search logic (skips factory registration).
      */
     protected void addField(
         final String field,
@@ -258,10 +299,6 @@ public abstract class AbstractSortSearchMetaData {
             sortableFields.add(field);
         }
     }
-
-    /* -------------------------------------------------
-     *  Search criterium creation
-     * ------------------------------------------------- */
 
     /**
      * Create a SearchCriterium based on the SearchInput and defined metadata.

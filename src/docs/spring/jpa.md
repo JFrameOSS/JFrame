@@ -101,7 +101,7 @@ public interface UserRepository extends JpaRepository<User, Long>,
 
 ### 4. Service
 
-The service converts frontend input into a JPA query:
+Use the convenience methods on `AbstractSortSearchMetaData` to build the pageable and specification in one step:
 
 ```java
 @Service
@@ -112,19 +112,8 @@ public class UserService {
     private final UserSearchMetaData userMetaData;
 
     public Page<User> searchUsers(SortablePageInput input) {
-        // 1. Convert sort columns to Spring Sort
-        Sort sort = userMetaData.toSort(input.getSortOrder());
-
-        // 2. Build Pageable
-        Pageable pageable = PageRequest.of(
-            input.getPageNumber(), input.getPageSize(), sort);
-
-        // 3. Convert search inputs to JPA predicates
-        List<SearchCriterium> criteria =
-            userMetaData.toSearchCriteria(input.getSearchInputs());
-        Specification<User> spec = new JpaSearchSpecification<>(criteria);
-
-        // 4. Execute
+        Pageable pageable = userMetaData.toPageable(input);
+        JpaSearchSpecification<User> spec = userMetaData.toSearchSpecification(input);
         return userRepository.findAll(spec, pageable);
     }
 }
@@ -145,6 +134,19 @@ public class UserService extends PagedSearchingService {
     }
 }
 ```
+
+**Scoped queries** — restrict results to a tenant, organization, or parent entity:
+
+```java
+public Page<User> searchUsersInOrganization(SortablePageInput input, Long orgId) {
+    Pageable pageable = userMetaData.toPageable(input);
+    Specification<User> spec =
+        userMetaData.toSearchSpecification(input, "organizations.organization.id", orgId);
+    return userRepository.findAll(spec, pageable);
+}
+```
+
+`toSearchSpecification(input, fieldPath, scopeValue)` ANDs an equality predicate on `fieldPath` with the base search spec. Dot-separated paths (e.g. `"tenant.id"`) are traversed automatically.
 
 ### 5. Response DTO
 
@@ -203,6 +205,34 @@ public class AdminUserController {
         Page<User> page = userService.searchUsers(input);
         return ResponseEntity.ok(userDetailsMapper.toPageResource(page));
     }
+}
+```
+
+---
+
+## Convenience methods on `AbstractSortSearchMetaData`
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `toPageable(SortablePageInput)` | `Pageable` | Builds a `PageRequest` from the input. Falls back to `getDefaultPageSize()` when page size ≤ 0. |
+| `toSearchSpecification(SortablePageInput)` | `JpaSearchSpecification<T>` | Builds a specification from the input's search criteria. |
+| `toSearchSpecification(SortablePageInput, String, Object)` | `Specification<T>` | Same as above, ANDed with an equality predicate on the given field path. Supports nested paths (`"tenant.id"`). |
+| `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. |
+| `toSort(List<SortableColumn>)` | `Sort` | Returns `Sort.unsorted()` for null/empty input. Throws `IllegalArgumentException` for non-sortable fields. |
+| `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. |
+
+### Overriding the default page size
+
+```java
+@Component
+public class UserSearchMetaData extends AbstractSortSearchMetaData {
+
+    @Override
+    protected int getDefaultPageSize() {
+        return 50;  // instead of 20
+    }
+
+    // ... addField() calls
 }
 ```
 

@@ -4,6 +4,7 @@ import io.github.jframe.datasource.search.model.resource.PageResource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Utility class for converting raw Quarkus/Panache page results to
@@ -20,7 +21,7 @@ public final class QuarkusPageAdapter {
     /**
      * Converts raw page data to a {@link PageResource}.
      *
-     * <p>Returns {@code null} when {@code content} is {@code null}.
+     * <p>Returns a {@link PageResource} with empty content when {@code content} is {@code null}.
      *
      * @param <T>           the type of content items
      * @param content       the list of items for the current page, may be {@code null}
@@ -28,16 +29,19 @@ public final class QuarkusPageAdapter {
      * @param totalPages    the total number of pages
      * @param pageSize      the size of each page
      * @param pageNumber    the current page number (0-based)
-     * @return a populated {@link PageResource}, or {@code null} if {@code content} is {@code null}
+     * @return a populated {@link PageResource}; if {@code content} is {@code null}, returns a PageResource with empty content
      */
     public static <T> PageResource<T> toPageResource(final List<T> content,
         final long totalElements,
         final int totalPages,
         final int pageSize,
         final int pageNumber) {
-        if (content == null) {
-            return null;
-        }
-        return new PageResource<>(totalElements, totalPages, pageSize, pageNumber, new ArrayList<>(content));
+        return new PageResource<>(
+            totalElements,
+            totalPages,
+            pageSize,
+            pageNumber,
+            new ArrayList<>(Objects.requireNonNullElse(content, List.of()))
+        );
     }
 }

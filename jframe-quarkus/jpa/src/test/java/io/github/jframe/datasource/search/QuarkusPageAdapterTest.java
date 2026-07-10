@@ -18,7 +18,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -77,15 +76,17 @@ public class QuarkusPageAdapterTest extends UnitTest {
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("Should return null when all inputs are null")
-    public void shouldReturnNullWhenAllInputsAreNull() {
-        // Given: Null inputs for all parameters
+    @DisplayName("Should return PageResource with empty content list when content is null (after fix)")
+    public void shouldReturnPageResourceWithEmptyContentListWhenContentIsNull() {
+        // Given: Null content list
 
-        // When: Converting null inputs to a PageResource
-        final PageResource<String> result = QuarkusPageAdapter.toPageResource(null, 0, 0, 0, 0);
+        // When: Converting null content to a PageResource
+        final PageResource<String> result = QuarkusPageAdapter.toPageResource(null, 0L, 0, 25, 0);
 
-        // Then: Result should be null
-        assertThat(result, is(nullValue()));
+        // Then: PageResource is returned (not null) with empty content list
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getContent(), is(notNullValue()));
+        assertThat(result.getContent(), hasSize(0));
     }
 
     // -------------------------------------------------------------------------

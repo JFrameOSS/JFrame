@@ -109,7 +109,7 @@ public class UserRepository extends PanacheSearchRepository<User> {
 
 ### 4. Service
 
-The service converts frontend input into a paginated query:
+Use the convenience methods on `AbstractPanacheSearchMetaData` to build the specification in one step:
 
 ```java
 @ApplicationScoped
@@ -122,18 +122,11 @@ public class UserService {
     UserSearchMetaData userMetaData;
 
     public PageResource<User> searchUsers(SortablePageInput input) {
-        // 1. Convert search inputs to JPA predicates
-        List<SearchCriterium> criteria =
-            userMetaData.toSearchCriteria(input.getSearchInputs());
-        PanacheSearchSpecification<User> spec =
-            new PanacheSearchSpecification<>(criteria);
-
-        // 2. Convert sort columns to Panache Sort
+        PanacheSearchSpecification<User> spec = userMetaData.toSearchSpecification(input);
         Sort sort = userMetaData.toSort(input.getSortOrder());
-
-        // 3. Execute paginated query
-        return userRepository.searchPage(
-            spec, input.getPageNumber(), input.getPageSize(), sort);
+        int pageSize = input.getPageSize() > 0
+            ? input.getPageSize() : userMetaData.getDefaultPageSize();
+        return userRepository.searchPage(spec, input.getPageNumber(), pageSize, sort);
     }
 }
 ```
@@ -204,6 +197,32 @@ public class AdminUserResource {
             page.getPageNumber()
         );
     }
+}
+```
+
+---
+
+## Convenience methods on `AbstractPanacheSearchMetaData`
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `toSearchSpecification(SortablePageInput)` | `PanacheSearchSpecification<T>` | Builds a specification from the input's search criteria. |
+| `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. |
+| `toSort(List<SortableColumn>)` | `Sort` | Returns `Sort.empty()` for null/empty input. Throws `IllegalArgumentException` for non-sortable fields. |
+| `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. |
+
+### Overriding the default page size
+
+```java
+@ApplicationScoped
+public class UserSearchMetaData extends AbstractPanacheSearchMetaData {
+
+    @Override
+    protected int getDefaultPageSize() {
+        return 50;  // instead of 20
+    }
+
+    // ... addField() calls
 }
 ```
 
@@ -286,3 +305,5 @@ Sort sort = PanacheSortAdapter.toSort(input.getSortOrder());
 ```
 
 This is handled automatically by `AbstractPanacheSearchMetaData.toSort()` — you only need `PanacheSortAdapter` for custom queries outside the search framework.
+
+> **Null-safety:** `toSort()` returns `Sort.empty()` (not `null`) when the input is null or empty.

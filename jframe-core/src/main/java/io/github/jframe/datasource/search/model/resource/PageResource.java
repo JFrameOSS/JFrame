@@ -53,10 +53,10 @@ public class PageResource<T> implements Iterable<T> {
         description = "List of items on the current page",
         requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    private List<T> content;
+    private List<T> content = new ArrayList<>();
 
     /**
-     * Constructor without content.
+     * Constructor without content — initializes content to an empty list.
      */
     public PageResource(final long totalElements, final int totalPages, final int pageSize, final int pageNumber) {
         this.totalElements = totalElements;
@@ -67,8 +67,6 @@ public class PageResource<T> implements Iterable<T> {
 
     /**
      * {@inheritDoc}
-     *
-     * @return an iterator over the content list.
      */
     @NonNull
     @Override
@@ -77,7 +75,7 @@ public class PageResource<T> implements Iterable<T> {
     }
 
     /**
-     * add an item to the content list.
+     * Add an item to the content list.
      *
      * @param element content element.
      */

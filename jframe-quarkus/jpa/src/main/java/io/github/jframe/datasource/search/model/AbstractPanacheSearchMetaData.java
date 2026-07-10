@@ -1,14 +1,32 @@
 package io.github.jframe.datasource.search.model;
 
+import io.github.jframe.datasource.search.PanacheSearchSpecification;
 import io.github.jframe.datasource.search.SearchType;
-import io.github.jframe.datasource.search.fields.*;
+import io.github.jframe.datasource.search.fields.BooleanField;
+import io.github.jframe.datasource.search.fields.DateField;
+import io.github.jframe.datasource.search.fields.EnumField;
+import io.github.jframe.datasource.search.fields.FuzzyTextField;
+import io.github.jframe.datasource.search.fields.MultiColumnFuzzyField;
+import io.github.jframe.datasource.search.fields.MultiEnumField;
+import io.github.jframe.datasource.search.fields.MultiFuzzyField;
+import io.github.jframe.datasource.search.fields.MultiNumericField;
+import io.github.jframe.datasource.search.fields.MultiTextField;
+import io.github.jframe.datasource.search.fields.NumericField;
+import io.github.jframe.datasource.search.fields.NumericRangeField;
+import io.github.jframe.datasource.search.fields.TextField;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
+import io.github.jframe.datasource.search.model.input.SortablePageInput;
 import io.quarkus.panache.common.Sort;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import jakarta.persistence.criteria.Predicate;
 
@@ -30,7 +48,13 @@ import static java.util.Objects.nonNull;
  */
 @Slf4j
 @Getter
-@SuppressWarnings("ClassDataAbstractionCoupling")
+@SuppressWarnings(
+    {
+        "ClassDataAbstractionCoupling",
+        "ClassFanOutComplexity",
+        "PMD.ExcessiveImports"
+    }
+)
 public abstract class AbstractPanacheSearchMetaData {
 
     private static final String DESCENDING = "DESC";
@@ -131,7 +155,7 @@ public abstract class AbstractPanacheSearchMetaData {
      */
     public Sort toSort(final List<SortableColumn> sortOrders) {
         if (CollectionUtils.isEmpty(sortOrders)) {
-            return null;
+            return Sort.empty();
         }
 
         final List<SortableColumn> filtered = sortOrders.stream()
@@ -151,6 +175,26 @@ public abstract class AbstractPanacheSearchMetaData {
         }
 
         return sort;
+    }
+
+    /**
+     * Returns the default page size used when no page size is specified.
+     *
+     * @return default page size (20)
+     */
+    protected int getDefaultPageSize() {
+        return 20;
+    }
+
+    /**
+     * Convenience method to build a {@link PanacheSearchSpecification} from a {@link SortablePageInput}.
+     *
+     * @param <T>   the entity type
+     * @param input the sortable page input containing search inputs
+     * @return a new PanacheSearchSpecification wrapping the derived criteria
+     */
+    public <T> PanacheSearchSpecification<T> toSearchSpecification(final SortablePageInput input) {
+        return new PanacheSearchSpecification<>(toSearchCriteria(input.getSearchInputs()));
     }
 
     /**

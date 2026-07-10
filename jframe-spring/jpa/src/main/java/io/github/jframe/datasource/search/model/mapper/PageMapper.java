@@ -17,7 +17,7 @@ import static java.util.Objects.isNull;
 public abstract class PageMapper<T extends PageableItemResource, S extends PageableItem> {
 
     /**
-     * convert PageableItem to PageableItemResource.
+     * Convert a PageableItem to a PageableItemResource.
      */
     public abstract T toResourceObject(S source);
 
@@ -36,10 +36,7 @@ public abstract class PageMapper<T extends PageableItemResource, S extends Pagea
             source.getNumber()
         );
 
-        source.getContent().forEach(item -> {
-            pageResource.add(toResourceObject(item));
-
-        });
+        source.getContent().forEach(item -> pageResource.add(toResourceObject(item)));
         return pageResource;
     }
 }
