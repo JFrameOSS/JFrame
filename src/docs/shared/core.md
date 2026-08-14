@@ -285,5 +285,5 @@ public class UserConverter extends AbstractModelConverter<UserEntity, UserDto> {
 ```java
 Constants.Headers.TX_ID_HEADER;       // "X-Transaction-Id"
 Constants.Headers.REQ_ID_HEADER;      // "X-Request-Id"
-Constants.Headers.TRACE_ID_HEADER;    // "X-Trace-Id"
+// TRACE_ID_HEADER and SPAN_ID_HEADER were removed — use W3C traceparent header instead
 ```

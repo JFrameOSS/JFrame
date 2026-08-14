@@ -68,7 +68,7 @@ public class RequestDurationFilter implements ContainerRequestFilter, ContainerR
                 EcsFields.tag(TX_DURATION, duration);
                 EcsFields.tag(REQUEST_DURATION, duration);
                 log.debug("Found tag '{}':'{}' [{}].", LOG_TYPE, LogTypeNames.END, closableTag);
-                log.info("Duration '{}' ms.", duration);
+                log.debug("Duration '{}' ms.", duration);
             }
         }
     }

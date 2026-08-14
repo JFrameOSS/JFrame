@@ -7,18 +7,25 @@ import io.smallrye.config.WithDefault;
  * Quarkus SmallRye Config mapping for JFrame HTTP filter configuration.
  *
  * <p>Binds all {@code jframe.logging.filters.*} configuration properties into a single typed
- * interface, providing sensible defaults so that all filters are enabled out-of-the-box.
+ * interface. Most filters are <em>enabled by default</em>; opt-out by setting
+ * {@code jframe.logging.filters.<filter-name>.enabled=false}.
+ *
+ * <p>Filters ON by default: {@code request-duration}, {@code request-response},
+ * {@code user-identity}.
+ *
+ * <p>Filters OFF by default: {@code transaction-id}, {@code request-id},
+ * {@code outbound-correlation}, {@code outbound-logging}.
  *
  * <p>Example {@code application.properties} overrides:
  *
  * <pre>{@code
- * jframe.logging.filters.transaction-id.enabled=false
- * jframe.logging.filters.request-id.enabled=false
+ * jframe.logging.filters.transaction-id.enabled=true
+ * jframe.logging.filters.request-id.enabled=true
  * jframe.logging.filters.request-duration.enabled=false
  * jframe.logging.filters.request-response.enabled=false
- * jframe.logging.filters.outbound-correlation.enabled=false
- * jframe.logging.filters.outbound-logging.enabled=false
- * jframe.logging.filters.tracing-response.enabled=false
+ * jframe.logging.filters.outbound-correlation.enabled=true
+ * jframe.logging.filters.outbound-logging.enabled=true
+ * jframe.logging.filters.user-identity.enabled=false
  * }</pre>
  */
 @ConfigMapping(prefix = "jframe.logging.filters")
@@ -67,11 +74,11 @@ public interface FilterConfig {
     OutboundLoggingConfig outboundLogging();
 
     /**
-     * Configuration for the tracing response filter.
+     * Configuration for the user identity filter.
      *
-     * @return the tracing response filter config
+     * @return the user identity filter config
      */
-    TracingResponseConfig tracingResponse();
+    UserIdentityConfig userIdentity();
 
     /** Configuration for the {@code TransactionIdFilter}. */
     @SuppressWarnings("PMD.ImplicitFunctionalInterface")
@@ -80,9 +87,9 @@ public interface FilterConfig {
         /**
          * Whether the transaction ID filter is enabled.
          *
-         * @return {@code true} (default) to enable the filter
+         * @return {@code false} (default) — opt in to enable the filter
          */
-        @WithDefault("true")
+        @WithDefault("false")
         boolean enabled();
     }
 
@@ -94,9 +101,9 @@ public interface FilterConfig {
         /**
          * Whether the request ID filter is enabled.
          *
-         * @return {@code true} (default) to enable the filter
+         * @return {@code false} (default) — opt in to enable the filter
          */
-        @WithDefault("true")
+        @WithDefault("false")
         boolean enabled();
     }
 
@@ -108,7 +115,7 @@ public interface FilterConfig {
         /**
          * Whether the request duration filter is enabled.
          *
-         * @return {@code true} (default) to enable the filter
+         * @return {@code true} (default) — opt out to disable the filter
          */
         @WithDefault("true")
         boolean enabled();
@@ -122,7 +129,7 @@ public interface FilterConfig {
         /**
          * Whether the request/response log filter is enabled.
          *
-         * @return {@code true} (default) to enable the filter
+         * @return {@code true} (default) — opt out to disable the filter
          */
         @WithDefault("true")
         boolean enabled();
@@ -136,9 +143,9 @@ public interface FilterConfig {
         /**
          * Whether the outbound correlation filter is enabled.
          *
-         * @return {@code true} (default) to enable the filter
+         * @return {@code false} (default) — opt in to enable the filter
          */
-        @WithDefault("true")
+        @WithDefault("false")
         boolean enabled();
     }
 
@@ -150,21 +157,21 @@ public interface FilterConfig {
         /**
          * Whether the outbound logging filter is enabled.
          *
-         * @return {@code true} (default) to enable the filter
+         * @return {@code false} (default) — opt in to enable the filter
          */
-        @WithDefault("true")
+        @WithDefault("false")
         boolean enabled();
     }
 
 
-    /** Configuration for the {@code TracingResponseFilter}. */
+    /** Configuration for the {@code UserIdentityFilter}. */
     @SuppressWarnings("PMD.ImplicitFunctionalInterface")
-    interface TracingResponseConfig {
+    interface UserIdentityConfig {
 
         /**
-         * Whether the tracing response filter is enabled.
+         * Whether the user identity filter is enabled.
          *
-         * @return {@code true} (default) to enable the filter
+         * @return {@code true} (default) — opt out to disable the filter
          */
         @WithDefault("true")
         boolean enabled();

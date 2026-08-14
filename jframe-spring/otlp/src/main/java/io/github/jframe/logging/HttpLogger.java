@@ -141,6 +141,5 @@ public final class HttpLogger {
     private static void appendTraceHeaders(final StringBuilder builder) {
         builder.append('\t').append(TX_ID_HEADER).append(": ").append(EcsFields.get(TX_ID)).append('\n');
         builder.append('\t').append(REQ_ID_HEADER).append(": ").append(EcsFields.get(REQUEST_ID)).append('\n');
-        builder.append('\t').append(TRACE_ID_HEADER).append(": ").append(EcsFields.get(TRACE_ID)).append('\n');
     }
 }

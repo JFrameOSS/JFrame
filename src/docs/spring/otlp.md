@@ -19,7 +19,7 @@ jframe:
       - status
 ```
 
-JFrame maps `jframe.otlp.*` to OpenTelemetry SDK properties (`otel.*`) automatically. The bundled `jframe-properties.yml` configures propagators (B3, Jaeger, W3C TraceContext), exporter settings, and instrumentation flags.
+JFrame maps `jframe.otlp.*` to OpenTelemetry SDK properties (`otel.*`) automatically. The bundled `jframe-properties.yml` configures W3C TraceContext propagation, exporter settings, and instrumentation flags.
 
 ### Auto-instrumentation defaults
 
@@ -128,16 +128,9 @@ When tracing is enabled, `TracingResponseEnricher` adds `traceId` and `spanId` t
 }
 ```
 
-Error spans are also enriched with `error=true`, `error.type`, and `error.message` attributes.
+Consumers of this API can also read the W3C `traceparent` header in response headers, which contains the same trace ID in standard format.
 
-## Response headers
-
-`TracingResponseFilter` adds trace context to HTTP response headers and populates SLF4J MDC for log correlation:
-
-```
-X-Trace-Id: abc123...
-X-Span-Id: def456...
-```
+Error spans also record the exception via OpenTelemetry's `recordException`, along with HTTP attributes (uri, method, status, content-type).
 
 ## SSL/TLS client factory
 

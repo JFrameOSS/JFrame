@@ -149,8 +149,8 @@ public class RequestDurationFilterTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should log duration at info level when voter is enabled and timestamp is present")
-    public void shouldLogDurationAtInfoLevelWhenVoterEnabled() throws Exception {
+    @DisplayName("Should log duration at debug level when voter is enabled and timestamp is present")
+    public void shouldLogDurationAtDebugLevelWhenVoterEnabled() throws Exception {
         // Given: A request duration filter, voter enabled, start timestamp present
         final RequestDurationFilter filter = new RequestDurationFilter(filterVoter, filterConfig);
         final ContainerRequestContext requestContext = mock(ContainerRequestContext.class);
@@ -163,7 +163,7 @@ public class RequestDurationFilterTest extends UnitTest {
         // When: Filter processes the outgoing response (no exception should be thrown)
         filter.filter(requestContext, responseContext);
 
-        // Then: Filter completes normally — timestamp was retrieved for duration computation
+        // Then: Filter completes normally — timestamp was retrieved for duration computation at DEBUG level
         verify(requestContext).getProperty(START_TIMESTAMP);
         assertThat(filter, is(notNullValue()));
     }

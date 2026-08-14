@@ -32,7 +32,8 @@ import static io.github.jframe.logging.filter.FilterRegistrator.register;
  * <h2>Configuration Properties</h2>
  * <p>The filter can be configured using the following properties:
  * <ul>
- * <li>{@code jframe.logging.filters.request-duration.enabled} - Enable/disable the filter (default: true)</li>
+ * <li>{@code jframe.logging.filters.request-duration.enabled} - Enable/disable the filter
+ * (default: true)</li>
  * <li>{@code jframe.logging.filters.request-duration.order} - Filter execution order (default: -17500)</li>
  * </ul>
  *

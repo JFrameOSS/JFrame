@@ -1,6 +1,7 @@
 package io.github.jframe.logging.filter.type;
 
 import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.logging.filter.FilterConfig;
 import io.github.jframe.security.AuthenticationConstants;
 import io.github.support.UnitTest;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -17,6 +18,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static io.github.jframe.logging.ecs.EcsFieldNames.USER_NAME;
 import static io.github.jframe.logging.ecs.EcsFieldNames.USER_ROLES;
@@ -24,6 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,8 +42,10 @@ import static org.mockito.Mockito.when;
  * <li>Unsatisfied CDI instance → MDC populated with {@link AuthenticationConstants#ANONYMOUS}</li>
  * <li>Blank principal name → MDC populated with {@link AuthenticationConstants#INCOMPLETE}</li>
  * <li>Response filter cleans up USER_NAME and USER_ROLES from MDC</li>
+ * <li>Filter is ON by default; can be explicitly disabled via {@link FilterConfig}</li>
  * </ul>
  */
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Quarkus OTLP Logging Filters - User Identity Filter")
 public class UserIdentityFilterTest extends UnitTest {
 
@@ -57,12 +63,20 @@ public class UserIdentityFilterTest extends UnitTest {
     @Mock
     private ContainerResponseContext responseContext;
 
+    @Mock
+    private FilterConfig filterConfig;
+
+    @Mock
+    private FilterConfig.UserIdentityConfig userIdentityConfig;
+
     private UserIdentityFilter filter;
 
     @Override
     @BeforeEach
     public void setUp() {
-        filter = new UserIdentityFilter(securityIdentityInstance);
+        lenient().when(filterConfig.userIdentity()).thenReturn(userIdentityConfig);
+        lenient().when(userIdentityConfig.enabled()).thenReturn(true);
+        filter = new UserIdentityFilter(securityIdentityInstance, filterConfig);
     }
 
     @AfterEach
@@ -96,7 +110,45 @@ public class UserIdentityFilterTest extends UnitTest {
         when(securityIdentity.isAnonymous()).thenReturn(true);
     }
 
+    // ======================== AC0: ENABLEMENT TOGGLE ========================
+
+    @Nested
+    @DisplayName("AC0 - Enablement toggle")
+    class EnablementToggle {
+
+        @Test
+        @DisplayName("Should skip MDC population when filter is disabled")
+        public void shouldSkipMdcPopulationWhenFilterIsDisabled() throws Exception {
+            // Given: Filter is disabled via config
+            when(userIdentityConfig.enabled()).thenReturn(false);
+            final SecurityIdentity identity = anAuthenticatedIdentity("john.doe", Set.of("admin"));
+            givenSatisfiedIdentity(identity);
+
+            // When: The request filter processes the request
+            filter.filter(requestContext);
+
+            // Then: MDC is NOT populated (filter skipped)
+            assertThat(EcsFields.get(USER_NAME), is(nullValue()));
+        }
+
+        @Test
+        @DisplayName("Should populate MDC when filter is explicitly enabled")
+        public void shouldPopulateMdcWhenFilterIsExplicitlyEnabled() throws Exception {
+            // Given: Filter is explicitly enabled via config
+            when(userIdentityConfig.enabled()).thenReturn(true);
+            final SecurityIdentity identity = anAuthenticatedIdentity("john.doe", Set.of("admin"));
+            givenSatisfiedIdentity(identity);
+
+            // When: The request filter processes the request
+            filter.filter(requestContext);
+
+            // Then: MDC is populated
+            assertThat(EcsFields.get(USER_NAME), is(equalTo("john.doe")));
+        }
+    }
+
     // ======================== AC1: AUTHENTICATED USER WITH ROLES ========================
+
 
     @Nested
     @DisplayName("AC1 - Authenticated user with roles")

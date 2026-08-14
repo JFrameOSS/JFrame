@@ -1,0 +1,319 @@
+# HTTP Filters Opt-In Migration Guide
+
+This guide covers changes to HTTP logging filter defaults in JFrame 1.5.0. Three core filters remain enabled by default; others became opt-in. Additionally, the request/response and request-duration logging moved to DEBUG level.
+
+## What Changed
+
+### Three filters enabled by default, request-id disabled by default
+
+**Spring Boot** — filters now:
+- `jframe.logging.filters.request-duration.enabled` — `true` (enabled by default)
+- `jframe.logging.filters.request-response.enabled` — `true` (enabled by default)
+- `jframe.logging.filters.transaction-id.enabled` — `false` (opt-in)
+- `jframe.logging.filters.user-identity.enabled` — `true` (enabled by default)
+- `jframe.logging.filters.request-id.enabled` — `false` (opt-in; must explicitly enable if needed)
+
+**Quarkus** — filters now:
+- `jframe.logging.filters.request-duration.enabled` — `true` (enabled by default)
+- `jframe.logging.filters.request-response.enabled` — `true` (enabled by default)
+- `jframe.logging.filters.transaction-id.enabled` — `false` (opt-in)
+- `jframe.logging.filters.user-identity.enabled` — `true` (enabled by default)
+- `jframe.logging.filters.request-id.enabled` — `false` (opt-in; must explicitly enable if needed)
+- `jframe.logging.filters.outbound-correlation.enabled` — `false` (opt-in)
+- `jframe.logging.filters.outbound-logging.enabled` — `false` (opt-in)
+
+The `.order` (Spring) and `@Priority` (Quarkus) properties for each filter remain unchanged.
+
+### Why the change?
+
+A first revision made all filters opt-in, but that proved too aggressive. The three core filters — request-duration, request-response, and user-identity — provide essential instrumentation and incur minimal overhead in production when DEBUG logging is disabled. Other filters (request-id, transaction-id, outbound-correlation, outbound-logging) are now opt-in because they are less commonly needed.
+
+### DEBUG short-circuit and log level changes
+
+The request/response logging filter and request-duration filter now check whether DEBUG logging is enabled **before** capturing request or response bodies. When DEBUG is disabled, they short-circuit entirely and do no body buffering or logging work — making the on-by-default setting effectively free in production.
+
+**Log output level demotion:**
+- `RequestResponseLogFilter` output moved from INFO to DEBUG
+- `RequestDurationFilter` duration line moved from INFO to DEBUG
+
+To see request/response bodies and duration logs, enable DEBUG on the filter loggers:
+
+```yaml
+# Spring Boot
+logging:
+  level:
+    io.github.jframe.logging.filter.type.RequestResponseLogFilter: DEBUG
+    io.github.jframe.logging.filter.type.RequestDurationFilter: DEBUG
+```
+
+```properties
+# Quarkus
+quarkus.log.category."io.github.jframe.logging.filter.type.RequestResponseLogFilter".level=DEBUG
+quarkus.log.category."io.github.jframe.logging.filter.type.RequestDurationFilter".level=DEBUG
+```
+
+**RequestResponseLogger API note:**  
+`RequestResponseLogger` interface gained a `boolean isDebugEnabled()` method with a default implementation returning `true`. Existing custom implementations remain compatible.
+
+### Rationale for removing custom trace headers
+
+The `TracingResponseFilter` class was **removed entirely** from both Spring and Quarkus. This filter added `x-trace-id` and `x-span-id` response headers.
+
+**Removal rationale:**
+- W3C `traceparent` header is the industry standard for trace propagation; custom headers are non-standard.
+- Error responses include `traceId` and `spanId` fields — consumers already have trace context.
+- OTEL SDK's built-in propagators handle `traceparent` correctly; custom headers were redundant.
+
+**Consequence:** responses no longer carry `x-trace-id` or `x-span-id` headers.
+
+### Removed properties and classes
+
+**Spring:**
+- `jframe.logging.filters.tracing-id.enabled` — REMOVED (the filter no longer exists)
+- `jframe.logging.filters.tracing-id.order` — REMOVED
+- `jframe.otlp.propagators` — REMOVED (dead config, never wired to anything)
+- Class `TracingResponseFilter` — DELETED
+
+**Quarkus:**
+- `jframe.logging.filters.tracing-response.enabled` — REMOVED (the filter no longer exists)
+- Class `TracingResponseFilter` — DELETED
+- NOTE: `jframe.otlp.propagators` property REMAINS on Quarkus (it IS wired) — do not remove it
+
+**Both frameworks:**
+- Constants deleted from `io.github.jframe.util.constants.Constants.Headers`:
+  - `TRACE_ID_HEADER` (was `"X-Trace-Id"`)
+  - `SPAN_ID_HEADER` (was `"X-Span-Id"`)
+- Propagators changed from `[b3, jaeger, tracecontext]` to `[tracecontext, baggage]` (W3C only)
+  - B3 and Jaeger propagation no longer enabled by default
+  - Apps needing them must explicitly configure `otel.propagators` or `quarkus.otel.propagators`
+
+### Log level demotions
+
+Request/response logging and request-duration logging moved from INFO to DEBUG on both frameworks. Enabling the filters alone is not enough to see output — DEBUG must be enabled on relevant loggers:
+
+```yaml
+logging:
+  level:
+    io.github.jframe.logging.filter.type.RequestResponseLogFilter: DEBUG
+    io.github.jframe.logging.filter.type.RequestDurationFilter: DEBUG
+```
+
+---
+
+## Enabling Opt-In Filters
+
+By default, `request-id`, `outbound-correlation` (Quarkus), and `outbound-logging` (Quarkus) are disabled. Enable them if your application needs them.
+
+### Spring Boot
+
+Add to `application.yml`:
+
+```yaml
+jframe:
+  logging:
+    filters:
+      request-id:
+        enabled: true
+```
+
+### Quarkus
+
+Add to `application.properties`:
+
+```properties
+jframe.logging.filters.request-id.enabled=true
+jframe.logging.filters.outbound-correlation.enabled=true
+jframe.logging.filters.outbound-logging.enabled=true
+```
+
+## Viewing Request/Response Bodies and Duration
+
+To see request/response body content and request-duration logs, enable DEBUG level on the filter loggers.
+
+### Spring Boot
+
+```yaml
+logging:
+  level:
+    io.github.jframe.logging.filter.type.RequestResponseLogFilter: DEBUG
+    io.github.jframe.logging.filter.type.RequestDurationFilter: DEBUG
+```
+
+### Quarkus
+
+```properties
+quarkus.log.category."io.github.jframe.logging.filter.type.RequestResponseLogFilter".level=DEBUG
+quarkus.log.category."io.github.jframe.logging.filter.type.RequestDurationFilter".level=DEBUG
+```
+
+---
+
+## Before/After Configuration Reference
+
+### Spring Boot
+
+| Scenario | Before (v1.4) | After (v1.5) |
+|----------|---------------|--------------|
+| **Default out-of-the-box** | All filters enabled (noisy) | Three core filters enabled (request-duration, request-response, user-identity); minimal overhead |
+| **Minimal correlation** | All filters enabled | Default behavior (core filters on, request-id off) |
+| **Request-id needed too** | Manual disable of unwanted filters | Enable `request-id` explicitly |
+| **Request bodies in logs** | `request-response.enabled: true` + INFO level | `request-response.enabled: true` + DEBUG level |
+
+### Quarkus
+
+| Scenario | Before (v1.4) | After (v1.5) |
+|----------|---------------|--------------|
+| **Default out-of-the-box** | All filters enabled (noisy) | Three core filters enabled (request-duration, request-response, user-identity); minimal overhead |
+| **Minimal correlation** | All filters enabled | Default behavior (core filters on, request-id + outbound filters off) |
+| **Outbound calls to other services** | All filters enabled | Enable `outbound-correlation` and `outbound-logging` explicitly |
+| **Request bodies in logs** | `request-response.enabled: true` + INFO level | `request-response.enabled: true` + DEBUG level |
+
+---
+
+## Breaking Changes Summary
+
+| Item | Old | New | Migration |
+|------|-----|-----|-----------|
+| Spring core filters | All enabled by default | request-duration, request-response, user-identity enabled by default; request-id, transaction-id opt-in | Enable `request-id` / `transaction-id` if needed |
+| Quarkus core filters | All enabled by default | request-duration, request-response, user-identity enabled by default; request-id, transaction-id, outbound-correlation, outbound-logging opt-in | Enable filters as needed |
+| `request-response` log level | INFO | DEBUG | Add DEBUG level to logger to see output |
+| `request-duration` log level | INFO | DEBUG | Add DEBUG level to logger to see output |
+| `TracingResponseFilter` | Exists | Removed | Remove config; use W3C `traceparent` header |
+| `x-trace-id` header | Generated | Not generated | Read `traceId` from error response body or `traceparent` header |
+| `x-span-id` header | Generated | Not generated | Read `spanId` from error response body or `traceparent` header |
+| `TRACE_ID_HEADER` constant | `"X-Trace-Id"` | Removed | Use W3C headers instead |
+| `SPAN_ID_HEADER` constant | `"X-Span-Id"` | Removed | Use W3C headers instead |
+| Propagators (Spring) | `[b3, jaeger, tracecontext]` | `[tracecontext, baggage]` | If B3/Jaeger needed: configure `otel.propagators` |
+| Propagators (Quarkus) | `[b3, jaeger, tracecontext]` | `[tracecontext, baggage]` | If B3/Jaeger needed: configure `quarkus.otel.propagators` |
+| Spring `jframe.otlp.propagators` | Existed (unused) | Removed | No change — was dead config |
+| Quarkus `jframe.otlp.propagators` | Existed | Still exists | Keep if using custom propagators; default now `tracecontext,baggage` |
+
+---
+
+## Trace Context Propagation
+
+**Trace propagation still works.** It now uses W3C standard headers exclusively.
+
+### What changed in outbound calls
+
+- Spring `HttpFilter.getRequestInterceptor()` still propagates `x-transaction-id` and `x-request-id` when present in MDC
+- Spring `HttpFilter` now propagates trace context via W3C `traceparent` header (not `x-trace-id`)
+- Quarkus `OutboundCorrelationFilter` still propagates `x-transaction-id` and `x-request-id`
+- Quarkus `OutboundTracingFilter` propagates trace context via W3C `traceparent` header
+
+### Consumers reading trace ID from responses
+
+If your code reads `x-trace-id` or `x-span-id` response headers:
+
+**Old approach:**
+```
+Response headers:
+  X-Trace-Id: abc123...
+  X-Span-Id: def456...
+```
+
+**New approach (pick one):**
+
+1. **Read from response body** (if handling error responses):
+```json
+{
+  "traceId": "abc123...",
+  "spanId": "def456..."
+}
+```
+
+2. **Read from W3C `traceparent` header** (all responses):
+```
+traceparent: 00-abc123...-def456...-01
+```
+Parse format: `{version}-{traceId}-{spanId}-{sampled}`.
+
+3. **Continue using OTEL context** (recommended):
+```java
+// If your app uses OTEL SDK
+io.opentelemetry.api.trace.Span span = Span.current();
+String traceId = span.getSpanContext().getTraceId();
+String spanId = span.getSpanContext().getSpanId();
+```
+
+---
+
+## Migrating B3/Jaeger Propagators
+
+If your observability backend requires B3 or Jaeger header format:
+
+### Spring Boot
+
+Add to `application.yml`:
+
+```yaml
+otel:
+  propagators: [b3, jaeger, tracecontext, baggage]
+```
+
+Then add the propagator libraries to your classpath:
+
+```gradle
+runtimeOnly 'io.opentelemetry:opentelemetry-exporter-jaeger-thrift'
+runtimeOnly 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-api'
+```
+
+### Quarkus
+
+Add to `application.properties`:
+
+```properties
+quarkus.otel.propagators=b3,jaeger,tracecontext,baggage
+```
+
+Then add the dependencies to your `pom.xml` or `build.gradle`.
+
+---
+
+## Version
+
+**Target version:** 1.5.0
+
+---
+
+## Checklist
+
+### Configuration Updates
+- [ ] Spring: Enable `jframe.logging.filters.*.enabled: true` for any filters you need
+- [ ] Quarkus: Enable `jframe.logging.filters.*.enabled=true` for any filters you need
+- [ ] Add DEBUG logging configuration if request/response bodies are needed
+- [ ] Remove any `jframe.logging.filters.tracing-id.*` or `jframe.logging.filters.tracing-response.*` config (no longer exists)
+
+### Code Changes
+- [ ] Remove any direct references to `TRACE_ID_HEADER` or `SPAN_ID_HEADER` constants
+- [ ] Update any monitoring/alerting that reads `x-trace-id` or `x-span-id` response headers to use `traceparent` or response body fields
+
+### Testing
+- [ ] Verify filter toggles work: enable/disable each filter and confirm logs reflect it
+- [ ] Test trace context propagation in outbound calls (should appear in `traceparent` header)
+- [ ] Confirm error responses include `traceId`/`spanId` fields
+- [ ] If using B3/Jaeger, test backward compatibility with configured propagators
+- [ ] Verify DEBUG logging shows request/response bodies when enabled
+
+### Verification
+
+Build and test:
+
+```bash
+./gradlew clean build test
+
+# Check for compilation errors:
+# - TRACE_ID_HEADER or SPAN_ID_HEADER references
+# - TracingResponseFilter imports
+# - jframe.logging.filters.tracing-id or tracing-response property references
+# - Hardcoded "x-trace-id" or "x-span-id" strings
+```
+
+Inspect logs:
+```bash
+# Should NOT appear by default
+grep -i "x-trace-id\|x-span-id" app.log
+# Should appear in outbound calls
+grep -i "traceparent" app.log
+```
+

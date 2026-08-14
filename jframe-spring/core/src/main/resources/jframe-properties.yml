@@ -32,14 +32,11 @@ jframe:
       - password
       - keyPassphrase
     filters:
-      tracing-id:
-        enabled: true
-        order: -1000
       request-id:
-        enabled: true
+        enabled: false
         order: -900
       transaction-id:
-        enabled: true
+        enabled: false
         order: -800
       request-response:
         enabled: true
@@ -75,9 +72,8 @@ otel:
       deployment.environment: ${jframe.application.environment}
 
   propagators:
-    - b3
-    - jaeger
     - tracecontext
+    - baggage
 
   exporter:
     otlp:

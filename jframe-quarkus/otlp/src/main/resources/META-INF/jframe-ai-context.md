@@ -55,7 +55,7 @@ Prefix: `jframe.otlp` (OpenTelemetryConfig, @ApplicationScoped, lazy init with R
 | `exporter` | `otlp` | Exporter type |
 | `sampling-rate` | `1.0` | Trace sampling (0.0–1.0) |
 | `excluded-methods` | `health,actuator,ping,status,info,metrics` | Methods to skip |
-| `propagators` | `tracecontext,baggage` | W3C propagators |
+| `propagators` | `tracecontext,baggage` | W3C propagators (Quarkus only) |
 
 ### Quarkus OTEL Mapping (microprofile-config.properties)
 
@@ -78,13 +78,9 @@ jframe properties are mapped to Quarkus OTEL properties:
 | Messaging | `quarkus.otel.instrument.messaging` | `true` |
 | Vert.x HTTP | `quarkus.otel.instrument.rest` | `true` |
 
-## Response Filter
-
-`TracingResponseFilter` (@Priority 350) — adds `x-trace-id` and `x-span-id` to response headers + MDC. Toggle: `jframe.logging.filters.tracing-response.enabled`.
-
 ## Error Enrichment
 
-`TracingEnricher` — adds trace/span IDs to error responses, records exception on span with HTTP attributes (uri, method, status, content-type).
+`TracingEnricher` — adds trace/span IDs to error responses, records exception on span with HTTP attributes (uri, method, status, content-type). Uses W3C `traceparent` header for trace context propagation.
 
 ## Security
 

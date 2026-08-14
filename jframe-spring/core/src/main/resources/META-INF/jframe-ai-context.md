@@ -38,13 +38,15 @@
 
 All extend `AbstractGenericFilter` (extends `OncePerRequestFilter`). Toggle with `jframe.logging.filters.{name}.enabled`.
 
+The `RequestResponseLogFilter` and `RequestDurationFilter` short-circuit when DEBUG logging is disabled, avoiding body buffering overhead in production. Both output at DEBUG level; enable DEBUG on filter loggers to see output.
+
 | Filter | Default Order | MDC Fields | Purpose |
 |--------|--------------|------------|---------|
-| `RequestDurationFilter` | -17500 | `event.duration`, `transaction.duration` | Measures request duration |
-| `TracingResponseFilter` | -1000 | `trace.id`, `span.id` | Adds trace context to response (from OTLP module) |
-| `RequestResponseLogFilter` | -950 | `event.category`, request/response fields | Logs HTTP request/response |
-| `TransactionIdFilter` | -500 | `transaction.id` | Reads/generates TX-ID from header |
-| `RequestIdFilter` | -400 | `request.id` | Generates unique request ID |
+| `RequestDurationFilter` | -17500 | `event.duration`, `transaction.duration` | Measures request duration (enabled by default) |
+| `RequestResponseLogFilter` | -950 | `event.category`, request/response fields | Logs HTTP request/response (enabled by default) |
+| `TransactionIdFilter` | -500 | `transaction.id` | Reads/generates TX-ID from header (opt-in) |
+| `RequestIdFilter` | -400 | `request.id` | Generates unique request ID (opt-in) |
+| `UserIdentityFilter` | -100 | `user.name` | Captures authenticated user identity (enabled by default) |
 
 ## Global Exception Handling
 

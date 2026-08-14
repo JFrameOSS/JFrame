@@ -30,7 +30,8 @@ import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
  * <h2>Configuration Properties</h2>
  * <p>The filter can be configured using the following properties:
  * <ul>
- * <li>{@code jframe.logging.filters.request-id.enabled} - Enable/disable the filter (default: true)</li>
+ * <li>{@code jframe.logging.filters.request-id.enabled} - Enable/disable the filter (default: false) —
+ * this filter is opt-in and intended as a debugging aid; enable it explicitly when needed</li>
  * <li>{@code jframe.logging.filters.request-id.order} - Filter execution order (default: -400)</li>
  * </ul>
  *
@@ -56,7 +57,7 @@ import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
 @ConditionalOnProperty(
     prefix = RequestIdFilterConfiguration.FILTER_PREFIX,
     name = "enabled",
-    matchIfMissing = true
+    matchIfMissing = false
 )
 public class RequestIdFilterConfiguration {
 
@@ -78,7 +79,7 @@ public class RequestIdFilterConfiguration {
     @ConditionalOnProperty(
         prefix = FILTER_PREFIX,
         name = "enabled",
-        matchIfMissing = true
+        matchIfMissing = false
     )
     public RequestIdFilter requestIdFilter() {
         log.trace("Configuration: header '{}', order '{}'.", REQ_ID_HEADER, filterOrder);
@@ -95,7 +96,7 @@ public class RequestIdFilterConfiguration {
     @ConditionalOnProperty(
         prefix = FILTER_PREFIX,
         name = "enabled",
-        matchIfMissing = true
+        matchIfMissing = false
     )
     public FilterRegistrationBean<RequestIdFilter> requestIdFilterRegistration(final RequestIdFilter filter) {
         return register(filter, filterOrder);

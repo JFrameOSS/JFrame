@@ -61,7 +61,7 @@ public class RequestDurationFilter extends AbstractGenericFilter {
             final String duration = String.format("%.2f", (System.nanoTime() - start) / 1E6);
             EcsFields.tag(TX_DURATION, duration);
             EcsFields.tag(REQUEST_DURATION, duration);
-            log.info("Duration '{}' ms.", duration);
+            log.debug("Duration '{}' ms.", duration);
         }
     }
 

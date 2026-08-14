@@ -32,11 +32,20 @@ JAX-RS container filters log every HTTP request and response with structured MDC
 
 | Priority | Filter | Purpose |
 |----------|--------|---------|
-| 100 | TransactionIdFilter | Reads/generates transaction ID from header, stores in MDC (`transaction.id`) |
-| 200 | RequestIdFilter | Generates UUID per request, stores in MDC (`request.id`) |
-| 300 | RequestDurationFilter | Measures and logs request duration |
-| 350 | TracingResponseFilter | Trace/span ID propagation (requires `quarkus-otlp`) |
-| 400 | RequestResponseLogFilter | Logs full request/response with body masking |
+| 50 | UserIdentityFilter | Captures authenticated user identity (enabled by default) |
+| 100 | TransactionIdFilter | Reads/generates transaction ID from header, stores in MDC (`transaction.id`) (opt-in) |
+| 200 | RequestIdFilter | Generates UUID per request, stores in MDC (`request.id`) (opt-in) |
+| 300 | RequestDurationFilter | Measures and logs request duration (enabled by default) |
+| 400 | RequestResponseLogFilter | Logs full request/response with body masking (enabled by default) |
+
+### Debug logging
+
+The request/response and request-duration filters short-circuit when DEBUG logging is disabled, avoiding any overhead in production. Their log output is written at DEBUG level, so to see request/response bodies or duration logs, enable DEBUG on the filter loggers:
+
+```properties
+quarkus.log.category."io.github.jframe.logging.filter.type.RequestResponseLogFilter".level=DEBUG
+quarkus.log.category."io.github.jframe.logging.filter.type.RequestDurationFilter".level=DEBUG
+```
 
 ### Accessing request context
 

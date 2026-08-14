@@ -3,7 +3,6 @@ package io.github.jframe.autoconfigure;
 import io.github.jframe.autoconfigure.factory.YamlPropertySourceFactory;
 import io.github.jframe.autoconfigure.properties.ApplicationProperties;
 import io.github.jframe.autoconfigure.properties.OpenTelemetryProperties;
-import io.github.jframe.logging.filter.config.TracingIdResponseFilterConfiguration;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 
@@ -12,7 +11,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
 
 /**
@@ -23,7 +21,6 @@ import org.springframework.context.annotation.PropertySource;
     factory = YamlPropertySourceFactory.class
 )
 @AutoConfiguration
-@Import(TracingIdResponseFilterConfiguration.class)
 @ComponentScan(basePackages = "io.github.jframe")
 @EnableConfigurationProperties(OpenTelemetryProperties.class)
 public class OpenTelemetryAutoConfiguration {

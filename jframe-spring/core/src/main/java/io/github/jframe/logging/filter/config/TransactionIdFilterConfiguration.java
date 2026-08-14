@@ -33,7 +33,8 @@ import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
  * <h2>Configuration Properties</h2>
  * <p>The filter can be configured using the following properties:
  * <ul>
- * <li>{@code jframe.logging.filters.transaction-id.enabled} - Enable/disable the filter (default: true)</li>
+ * <li>{@code jframe.logging.filters.transaction-id.enabled} - Enable/disable the filter (default: false) —
+ * this filter is opt-in and intended as a debugging aid; enable it explicitly when needed</li>
  * <li>{@code jframe.logging.filters.transaction-id.order} - Filter execution order (default: -500)</li>
  * </ul>
  *
@@ -59,7 +60,7 @@ import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 @ConditionalOnProperty(
     prefix = TransactionIdFilterConfiguration.FILTER_PREFIX,
     name = "enabled",
-    matchIfMissing = true
+    matchIfMissing = false
 )
 public class TransactionIdFilterConfiguration {
 
@@ -81,7 +82,7 @@ public class TransactionIdFilterConfiguration {
     @ConditionalOnProperty(
         prefix = FILTER_PREFIX,
         name = "enabled",
-        matchIfMissing = true
+        matchIfMissing = false
     )
     public TransactionIdFilter transactionIdFilter() {
         log.trace("Configuration: header '{}', order '{}'.", TX_ID_HEADER, filterOrder);
@@ -98,7 +99,7 @@ public class TransactionIdFilterConfiguration {
     @ConditionalOnProperty(
         prefix = FILTER_PREFIX,
         name = "enabled",
-        matchIfMissing = true
+        matchIfMissing = false
     )
     public FilterRegistrationBean<TransactionIdFilter> transactionIdFilterRegistration(final TransactionIdFilter filter) {
         return register(filter, filterOrder);

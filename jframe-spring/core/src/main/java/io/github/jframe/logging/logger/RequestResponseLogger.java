@@ -13,6 +13,18 @@ import org.springframework.http.HttpRequest;
 public interface RequestResponseLogger {
 
     /**
+     * Returns {@code true} when DEBUG logging is enabled.
+     *
+     * <p>The default implementation returns {@code true} so that existing custom implementations
+     * continue to compile and keep their current (always-capture) behaviour.
+     *
+     * @return {@code true} if DEBUG logging is enabled
+     */
+    default boolean isDebugEnabled() {
+        return true;
+    }
+
+    /**
      * Log the request.
      *
      * @param request The request.

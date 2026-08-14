@@ -24,11 +24,11 @@ JFrame registers a filter chain that logs every HTTP request and response with s
 
 | Priority | Filter | Purpose |
 |----------|--------|---------|
-| -17500 | RequestDurationFilter | Measures and logs request duration |
-| -1000 | TracingResponseFilter | Trace/span ID propagation (requires `spring-otlp`) |
-| -950 | RequestResponseLogFilter | Logs full request/response (method, URI, status, headers, body) |
-| -500 | TransactionIdFilter | Reads/generates transaction ID from header, stores in MDC (`transaction.id`) |
-| -400 | RequestIdFilter | Generates UUID per request, stores in MDC (`request.id`) |
+| -17500 | RequestDurationFilter | Measures and logs request duration (enabled by default) |
+| -950 | RequestResponseLogFilter | Logs full request/response (method, URI, status, headers, body) (enabled by default) |
+| -500 | TransactionIdFilter | Reads/generates transaction ID from header, stores in MDC (`transaction.id`) (opt-in) |
+| -400 | RequestIdFilter | Generates UUID per request, stores in MDC (`request.id`) (opt-in) |
+| -100 | UserIdentityFilter | Captures authenticated user identity (enabled by default) |
 
 ### Accessing request context
 
@@ -38,6 +38,17 @@ All filter orders are configurable via `jframe.logging.filters.<name>.order`.
 // In any thread handling the request
 String requestId = RequestId.get();       // UUID string or null
 String txId = TransactionId.get();        // UUID string or null
+```
+
+### Debug logging
+
+The request/response and request-duration filters short-circuit when DEBUG logging is disabled, avoiding any overhead in production. Their log output is written at DEBUG level, so to see request/response bodies or duration logs, enable DEBUG on the filter loggers:
+
+```yaml
+logging:
+  level:
+    io.github.jframe.logging.filter.type.RequestResponseLogFilter: DEBUG
+    io.github.jframe.logging.filter.type.RequestDurationFilter: DEBUG
 ```
 
 ### Path exclusions

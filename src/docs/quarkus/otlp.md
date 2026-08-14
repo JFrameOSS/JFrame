@@ -78,18 +78,9 @@ Quarkus OTEL extension auto-extracts inbound `traceparent` headers.
 }
 ```
 
+Consumers of this API can also read the W3C `traceparent` header in response headers, which contains the same trace ID in standard format.
+
 Error span attributes: `error=true`, `error.type`, `error.message`, `http.status_code`, `http.method`, `http.uri`.
-
-## Response headers
-
-`TracingResponseFilter` adds trace context to HTTP response headers and populates SLF4J MDC:
-
-```
-X-Trace-Id: abc123...
-X-Span-Id: def456...
-```
-
-MDC fields: `trace.id`, `span.id` — available for log correlation in your logging framework configuration.
 
 ## Auto-instrumentation defaults
 

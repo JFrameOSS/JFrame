@@ -35,30 +35,30 @@ All filters support `enabled` and `order` properties. Defaults shown below.
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `jframe.logging.filters.request-duration.enabled` | `true` | Enable request duration filter |
+| `jframe.logging.filters.request-duration.enabled` | `true` | Measure request duration |
 | `jframe.logging.filters.request-duration.order` | `-17500` | Filter order (earliest) |
-| `jframe.logging.filters.tracing-id.enabled` | `true` | Enable tracing ID filter |
-| `jframe.logging.filters.tracing-id.order` | `-1000` | Filter order |
-| `jframe.logging.filters.request-response.enabled` | `true` | Enable request/response log filter |
+| `jframe.logging.filters.request-response.enabled` | `true` | Log request/response bodies |
 | `jframe.logging.filters.request-response.order` | `-950` | Filter order |
-| `jframe.logging.filters.transaction-id.enabled` | `true` | Enable transaction ID filter |
+| `jframe.logging.filters.transaction-id.enabled` | `false` | Read/generate transaction ID (opt-in) |
 | `jframe.logging.filters.transaction-id.order` | `-500` | Filter order |
-| `jframe.logging.filters.request-id.enabled` | `true` | Enable request ID filter |
+| `jframe.logging.filters.request-id.enabled` | `false` | Enable request ID filter (opt-in) |
 | `jframe.logging.filters.request-id.order` | `-400` | Filter order |
+| `jframe.logging.filters.user-identity.enabled` | `true` | Capture authenticated user |
+| `jframe.logging.filters.user-identity.order` | `-100` | Filter order |
 
 #### Quarkus
 
-Quarkus filters use JAX-RS `@Priority` (lower = earlier). All enabled by default.
+Quarkus filters use JAX-RS `@Priority` (lower = earlier). Three enabled by default, rest opt-in.
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `jframe.logging.filters.transaction-id.enabled` | `true` | Priority 100 |
-| `jframe.logging.filters.request-id.enabled` | `true` | Priority 200 |
-| `jframe.logging.filters.request-duration.enabled` | `true` | Priority 300 |
-| `jframe.logging.filters.request-response.enabled` | `true` | Priority 400 |
-| `jframe.logging.filters.outbound-correlation.enabled` | `true` | Outbound priority 100 |
-| `jframe.logging.filters.outbound-logging.enabled` | `true` | Outbound priority 300 |
-| `jframe.logging.filters.tracing-response.enabled` | `true` | Priority 350 (requires `quarkus-otlp`) |
+| `jframe.logging.filters.transaction-id.enabled` | `false` | Read/generate transaction ID (Priority 100, opt-in) |
+| `jframe.logging.filters.request-id.enabled` | `false` | Generate unique request ID (Priority 200, opt-in) |
+| `jframe.logging.filters.request-duration.enabled` | `true` | Measure request duration (Priority 300) |
+| `jframe.logging.filters.request-response.enabled` | `true` | Log request/response bodies (Priority 400) |
+| `jframe.logging.filters.outbound-correlation.enabled` | `false` | Propagate correlation IDs (Outbound Priority 100, opt-in) |
+| `jframe.logging.filters.outbound-logging.enabled` | `false` | Log outbound calls (Outbound Priority 300, opt-in) |
+| `jframe.logging.filters.user-identity.enabled` | `true` | Capture authenticated user (Priority 50) |
 
 ## OpenTelemetry properties
 
@@ -72,7 +72,7 @@ Applies to both `spring-otlp` and `quarkus-otlp` modules.
 | `jframe.otlp.sampling-rate` | `1.0` | Sampling rate (0.0–1.0) |
 | `jframe.otlp.timeout` | `10s` | Export timeout |
 | `jframe.otlp.excluded-methods` | `health, actuator, ping, status, info, metrics` | Method names to exclude from tracing |
-| `jframe.otlp.propagators` | `tracecontext,baggage` | W3C trace context propagators |
+| `jframe.otlp.propagators` | `tracecontext,baggage` | W3C trace context propagators (Quarkus only; Spring config removed) |
 
 ### OTEL SDK mapping
 
@@ -84,7 +84,7 @@ JFrame maps `jframe.otlp.*` to the native OTEL SDK properties for each framework
 otel:
   sdk.disabled: ${jframe.otlp.disabled}
   service.name: ${jframe.application.name}-${jframe.application.environment}
-  propagators: [b3, jaeger, tracecontext]
+  propagators: [tracecontext, baggage]
   exporter.otlp:
     endpoint: ${jframe.otlp.url}
     timeout: ${jframe.otlp.timeout}
@@ -116,8 +116,8 @@ Fields written to SLF4J MDC by JFrame filters and interceptors. Both Spring and 
 | `transaction.id` | TransactionIdFilter / ScheduledAspect | Business transaction identifier (UUID) |
 | `transaction.duration` | RequestDurationFilter | Request processing time in ms |
 | `event.duration` | RequestDurationFilter | Same as `transaction.duration` |
-| `trace.id` | TracingResponseFilter | OpenTelemetry trace ID |
-| `span.id` | TracingResponseFilter | OpenTelemetry span ID |
+| `trace.id` | Span enrichment (via OTEL instrumentation) | OpenTelemetry trace ID |
+| `span.id` | Span enrichment (via OTEL instrumentation) | OpenTelemetry span ID |
 | `log.type` | Various filters | Log entry type (`request_body`, `response_body`, `call_request_body`, `call_response_body`, `end`) |
 | `http.request.method` | RequestResponseLogFilter | HTTP method (GET, POST, etc.) |
 | `url.path` | RequestResponseLogFilter | Request URI path |

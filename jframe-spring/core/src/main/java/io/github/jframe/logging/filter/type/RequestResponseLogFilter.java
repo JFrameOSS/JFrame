@@ -36,21 +36,18 @@ public class RequestResponseLogFilter extends AbstractGenericFilter {
         @NonNull final HttpServletResponse httpServletResponse,
         @NonNull final FilterChain filterChain)
         throws ServletException, IOException {
-        if (filterVoter.enabled(httpServletRequest)) {
-            final WrappedHttpRequestResponse wrapped = getWrapped(httpServletRequest, httpServletResponse);
-            requestResponseLogger.logRequest(wrapped.getRequest());
+        if (!requestResponseLogger.isDebugEnabled() || !filterVoter.enabled(httpServletRequest)) {
+            filterChain.doFilter(httpServletRequest, httpServletResponse);
+            return;
+        }
 
-            try {
-                filterChain.doFilter(wrapped.getRequest(), wrapped.getResponse());
-            } finally {
-                logResponse(wrapped);
-            }
-        } else {
-            try {
-                filterChain.doFilter(httpServletRequest, httpServletResponse);
-            } finally {
-                logResponse(getWrapped(httpServletRequest));
-            }
+        final WrappedHttpRequestResponse wrapped = getWrapped(httpServletRequest, httpServletResponse);
+        requestResponseLogger.logRequest(wrapped.getRequest());
+
+        try {
+            filterChain.doFilter(wrapped.getRequest(), wrapped.getResponse());
+        } finally {
+            logResponse(wrapped);
         }
     }
 

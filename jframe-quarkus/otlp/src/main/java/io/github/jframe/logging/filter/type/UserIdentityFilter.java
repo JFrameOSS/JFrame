@@ -1,6 +1,8 @@
 package io.github.jframe.logging.filter.type;
 
 import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.logging.filter.FilterConfig;
+import io.github.jframe.logging.filter.JFrameFilter;
 import io.github.jframe.security.AuthenticationConstants;
 import io.quarkus.security.identity.SecurityIdentity;
 import lombok.extern.slf4j.Slf4j;
@@ -29,27 +31,42 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.USER_ROLES;
  *
  * <p>Handles all identity states: authenticated principal with roles, anonymous identity,
  * unsatisfied CDI instance, and identities with blank or null principal names.
+ *
+ * <p>The filter can be enabled via configuration:
+ * <pre>{@code
+ * jframe.logging.filters.user-identity.enabled=true
+ * }</pre>
  */
 @Provider
 @ApplicationScoped
 @Priority(250)
 @Slf4j
-public class UserIdentityFilter implements ContainerRequestFilter, ContainerResponseFilter {
+public class UserIdentityFilter implements ContainerRequestFilter, ContainerResponseFilter, JFrameFilter {
 
     private final Instance<SecurityIdentity> securityIdentityInstance;
+    private final FilterConfig filterConfig;
 
     /**
-     * Creates a new {@code UserIdentityFilter} with the given CDI security identity instance.
+     * Creates a new {@code UserIdentityFilter} with the given CDI security identity instance and
+     * filter configuration.
      *
      * @param securityIdentityInstance the CDI instance used to resolve the security identity
+     * @param filterConfig             the filter configuration used to determine whether the filter is enabled
      */
-    public UserIdentityFilter(final Instance<SecurityIdentity> securityIdentityInstance) {
+    public UserIdentityFilter(
+                              final Instance<SecurityIdentity> securityIdentityInstance,
+                              final FilterConfig filterConfig) {
         this.securityIdentityInstance = securityIdentityInstance;
+        this.filterConfig = filterConfig;
     }
 
     @Override
     @SuppressWarnings("ReturnCount")
     public void filter(final ContainerRequestContext requestContext) throws IOException {
+        if (!filterConfig.userIdentity().enabled()) {
+            return;
+        }
+
         if (securityIdentityInstance.isUnsatisfied()) {
             EcsFields.tag(USER_NAME, AuthenticationConstants.ANONYMOUS);
             return;
