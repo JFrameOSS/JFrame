@@ -36,7 +36,7 @@ import static io.github.jframe.logging.filter.FilterRegistrator.register;
  * <ul>
  * <li>{@code jframe.logging.filters.request-response.enabled} - Enable/disable the filter
  * (default: true)</li>
- * <li>{@code jframe.logging.filters.request-response.order} - Filter execution order (default: -950)</li>
+ * <li>{@code jframe.logging.filters.request-response.order} - Filter execution order (default: -700)</li>
  * <li>{@code jframe.logging.response-length} - Maximum response body length to log (default: -1 for unlimited)</li>
  * <li>{@code jframe.logging.allowed-content-types} - Content types to include in logging</li>
  * <li>{@code jframe.logging.exclude-paths} - Request paths to exclude from logging</li>
@@ -61,7 +61,7 @@ import static io.github.jframe.logging.filter.FilterRegistrator.register;
  * filters:
  * request-response:
  * enabled: true
- * order: -950
+ * order: -700
  * </pre>
  *
  * <p><strong>Security Note:</strong> This filter automatically masks sensitive fields (like passwords)
@@ -89,7 +89,7 @@ public class RequestResponseLogFilterConfiguration {
      */
     public static final String FILTER_PREFIX = CONFIG_PREFIX + ".filters.request-response";
 
-    @Value("${" + FILTER_PREFIX + ".order:-950}")
+    @Value("${" + FILTER_PREFIX + ".order:-700}")
     private int filterOrder;
 
     /**

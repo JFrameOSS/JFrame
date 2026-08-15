@@ -35,7 +35,7 @@ import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
  * <ul>
  * <li>{@code jframe.logging.filters.transaction-id.enabled} - Enable/disable the filter (default: false) —
  * this filter is opt-in and intended as a debugging aid; enable it explicitly when needed</li>
- * <li>{@code jframe.logging.filters.transaction-id.order} - Filter execution order (default: -500)</li>
+ * <li>{@code jframe.logging.filters.transaction-id.order} - Filter execution order (default: -800)</li>
  * </ul>
  *
  * <h2>Configuration Example</h2>
@@ -45,7 +45,7 @@ import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
  * filters:
  * transaction-id:
  * enabled: true
- * order: -500
+ * order: -800
  * </pre>
  *
  * <p>The filter reads the transaction ID from the HTTP header defined by
@@ -70,7 +70,7 @@ public class TransactionIdFilterConfiguration {
      */
     public static final String FILTER_PREFIX = CONFIG_PREFIX + ".filters.transaction-id";
 
-    @Value("${" + FILTER_PREFIX + ".order:-500}")
+    @Value("${" + FILTER_PREFIX + ".order:-800}")
     private int filterOrder;
 
     /**

@@ -32,7 +32,7 @@ import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
  * <ul>
  * <li>{@code jframe.logging.filters.request-id.enabled} - Enable/disable the filter (default: false) —
  * this filter is opt-in and intended as a debugging aid; enable it explicitly when needed</li>
- * <li>{@code jframe.logging.filters.request-id.order} - Filter execution order (default: -400)</li>
+ * <li>{@code jframe.logging.filters.request-id.order} - Filter execution order (default: -900)</li>
  * </ul>
  *
  * <h2>Configuration Example</h2>
@@ -42,7 +42,7 @@ import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
  * filters:
  * request-id:
  * enabled: true
- * order: -400
+ * order: -900
  * </pre>
  *
  * <p>The filter reads the request ID from the HTTP header defined by
@@ -67,7 +67,7 @@ public class RequestIdFilterConfiguration {
      */
     public static final String FILTER_PREFIX = CONFIG_PREFIX + ".filters.request-id";
 
-    @Value("${" + FILTER_PREFIX + ".order:-400}")
+    @Value("${" + FILTER_PREFIX + ".order:-900}")
     private int filterOrder;
 
     /**

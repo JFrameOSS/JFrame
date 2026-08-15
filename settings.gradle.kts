@@ -1,15 +1,15 @@
 pluginManagement {
-    val springBootPluginVersion: String by settings
-    val springDependencyPluginVersion: String by settings
-    val qualityPluginVersion: String by settings
-    val cycloneDxPluginVersion: String by settings
-    val spotbugsPluginVersion: String by settings
-    val lombokPluginVersion: String by settings
-    val spotlessPluginVersion: String by settings
-    val dependencyUpdatesPluginVersion: String by settings
-    val publishingVersion: String by settings
-    val nmcpPluginVersion: String by settings
-    val jandexPluginVersion: String by settings
+    val springBootPluginVersion = providers.gradleProperty("springBootPluginVersion").get()
+    val springDependencyPluginVersion = providers.gradleProperty("springDependencyPluginVersion").get()
+    val qualityPluginVersion = providers.gradleProperty("qualityPluginVersion").get()
+    val cycloneDxPluginVersion = providers.gradleProperty("cycloneDxPluginVersion").get()
+    val spotbugsPluginVersion = providers.gradleProperty("spotbugsPluginVersion").get()
+    val lombokPluginVersion = providers.gradleProperty("lombokPluginVersion").get()
+    val spotlessPluginVersion = providers.gradleProperty("spotlessPluginVersion").get()
+    val dependencyUpdatesPluginVersion = providers.gradleProperty("dependencyUpdatesPluginVersion").get()
+    val publishingVersion = providers.gradleProperty("publishingVersion").get()
+    val nmcpPluginVersion = providers.gradleProperty("nmcpPluginVersion").get()
+    val jandexPluginVersion = providers.gradleProperty("jandexPluginVersion").get()
 
     plugins {
         id("org.springframework.boot") version springBootPluginVersion
@@ -19,7 +19,7 @@ pluginManagement {
         id("com.github.spotbugs") version spotbugsPluginVersion
         id("io.freefair.lombok") version lombokPluginVersion
         id("com.diffplug.spotless") version spotlessPluginVersion
-        id("com.github.ben-manes.versions") version dependencyUpdatesPluginVersion
+        id("io.github.ben-manes.versions") version dependencyUpdatesPluginVersion
         id("publishing") version publishingVersion
         id("com.gradleup.nmcp.settings") version nmcpPluginVersion
         id("com.github.vlsi.jandex") version jandexPluginVersion

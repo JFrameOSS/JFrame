@@ -26,7 +26,7 @@ plugins {
     id("com.github.spotbugs") apply true
     id("maven-publish") apply true
     id("signing") apply true
-    id("com.github.ben-manes.versions") apply true
+    id("io.github.ben-manes.versions") apply true
 }
 
 repositories {
@@ -46,7 +46,7 @@ subprojects {
     apply(plugin = "com.github.spotbugs")
     apply(plugin = "maven-publish")
     apply(plugin = "signing")
-    apply(plugin = "com.github.ben-manes.versions")
+    apply(plugin = "io.github.ben-manes.versions")
     apply(plugin = "project-report")
 
     if (project.name.startsWith("jframe-spring-")) {
@@ -95,16 +95,18 @@ subprojects {
             compileOnly("org.springframework.boot:spring-boot-starter-web")
 
             // ======= TEST DEPENDENCIES =======
-            testImplementation("jakarta.servlet", "jakarta.servlet-api", retrieve("jakartaServletVersion"))
-            testImplementation("org.springframework.boot", "spring-boot-test")
-            testImplementation("org.springframework.boot", "spring-boot-starter-test") {
+            testImplementation("jakarta.servlet:jakarta.servlet-api:${retrieve("jakartaServletVersion")}")
+            testImplementation("org.springframework.boot:spring-boot-test")
+            testImplementation("org.springframework.boot:spring-boot-starter-test") {
                 exclude("com.vaadin.external.google", module = "android-json")
             }
         }
     }
 
     tasks.withType<JavaCompile> {
-        dependsOn("spotlessApply")
+        if (!rootProject.hasProperty("disableAutoFormat")) {
+            dependsOn("spotlessApply")
+        }
         options.release = 21
         options.isDeprecation = true
         options.encoding = Charsets.UTF_8.name()
@@ -268,7 +270,11 @@ subprojects {
 // =============== CYCLONEDX SBOM CONFIGURATION =================
 // Disable per-project SBOM tasks — we only need the aggregated one
 allprojects {
-    tasks.named("cyclonedxDirectBom") { enabled = false }
+    tasks.configureEach {
+        if (name == "cyclonedxDirectBom") {
+            enabled = false
+        }
+    }
 }
 
 // Aggregated SBOM — single BOM for the entire project hierarchy

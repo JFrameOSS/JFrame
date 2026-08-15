@@ -5,8 +5,8 @@
 **Enterprise-grade utilities for Spring Boot and Quarkus applications**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Spring Boot](https://img.shields.io/badge/spring--boot-4.1.0--M1-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/quarkus-3.20.3-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
+[![Spring Boot](https://img.shields.io/badge/spring--boot-4.1.0-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/quarkus-3.38.2-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
 [![Java](https://img.shields.io/badge/java-21-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.java.net/projects/jdk/21/)
 
 [Features](#-features) •
@@ -55,9 +55,9 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:1.4.0")
-    implementation("io.github.jframeoss:jframe-spring-jpa:1.4.0")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:1.4.0")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.5.0")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.5.0")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.5.0")  // optional
 }
 ```
 
@@ -65,9 +65,9 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:1.4.0")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.4.0")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.4.0")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.5.0")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.5.0")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.5.0")  // optional
 }
 ```
 
@@ -177,6 +177,31 @@ cd JFrame
 ./gradlew spotlessApply checkQualityMain       # Code style + quality checks
 ./gradlew publishToMavenLocal                  # Install to local Maven repo
 ```
+
+Locally, `spotlessApply` runs automatically before every compile, so you never have
+to think about formatting. CI disables that with `-PdisableAutoFormat` and runs
+`spotlessCheck` as a real gate — code that was never formatted locally will fail the
+build rather than being silently reformatted on the runner.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request to `master` and
+`develop`, nightly, and on a pushed `X.Y.Z` tag.
+
+| Gate | What it does |
+| --- | --- |
+| Formatting | `spotlessCheck -PdisableAutoFormat`, fails fast before the build |
+| Build and test | `clean build cyclonedxBom`, which also runs PMD, Checkstyle, SpotBugs and CodeNarc |
+| Deprecations | Fails on any Gradle deprecation warning that is not in `.github/gradle-deprecation-allowlist.txt`. The allowlist holds only warnings raised inside third-party plugins, each annotated with the plugin and version responsible. Anything new in our own build files breaks the build. |
+| Version drift | On a tag, the tag must match `gradle.properties` **and** every `io.github.jframeoss:jframe-*` coordinate in `README.md` and `src/docs/getting-started.md`. A release cannot ship with stale examples. |
+
+Supporting workflows: `dependency-updates.yml` reports outdated dependencies weekly,
+`update-gradle-wrapper.yml` opens a wrapper-upgrade PR against `develop`, and
+`.github/dependabot.yml` keeps the pinned GitHub Actions and Gradle dependencies
+current. All actions are pinned to commit SHAs.
+
+Each release publishes to Maven Central and attaches a CycloneDX SBOM to the GitHub
+Release.
 
 ## 🤝 Contributing
 

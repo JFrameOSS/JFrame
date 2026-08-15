@@ -7,17 +7,17 @@ dependencies {
     api(project(":jframe-spring-core"))
 
     // ======= NECESSARY SPRING DEPENDENCIES =======
-    api("org.springframework.boot", "spring-boot-starter-web")
-    api("org.springframework.boot", "spring-boot-starter-webflux")
+    api("org.springframework.boot:spring-boot-starter-web")
+    api("org.springframework.boot:spring-boot-starter-webflux")
 
     // ======= OTEL DEPENDENCIES (https://opentelemetry.io/docs/getting-started/) =======
-    api("org.apache.httpcomponents.client5", "httpclient5", retrieve("httpClientVersion"))
+    api("org.apache.httpcomponents.client5:httpclient5:${retrieve("httpClientVersion")}")
     api(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:" + retrieve("openTelemetryVersion")))
-    api("io.opentelemetry.instrumentation", "opentelemetry-spring-boot-starter")
-    api("io.opentelemetry", "opentelemetry-extension-trace-propagators")
-    api("io.opentelemetry.semconv", "opentelemetry-semconv")
+    api("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
+    api("io.opentelemetry:opentelemetry-extension-trace-propagators")
+    api("io.opentelemetry.semconv:opentelemetry-semconv")
 
     // ======= OTHER DEPENDENCIES =======
-    compileOnly("jakarta.servlet", "jakarta.servlet-api", retrieve("jakartaServletVersion"))
-    compileOnly("org.aspectj", "aspectjweaver", retrieve("aspectjVersion"))
+    compileOnly("jakarta.servlet:jakarta.servlet-api:${retrieve("jakartaServletVersion")}")
+    compileOnly("org.aspectj:aspectjweaver:${retrieve("aspectjVersion")}")
 }

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: develop
 
@@ -24,7 +24,7 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "Java version: $version"
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
         with:
           distribution: 'temurin'
           java-version: ${{ steps.java-version.outputs.version }}
@@ -57,7 +57,7 @@ jobs:
 
       - name: Create Pull Request
         if: ${{ !env.ACT }}
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: 'chore: update Gradle wrapper to ${{ steps.new-version.outputs.version }}'

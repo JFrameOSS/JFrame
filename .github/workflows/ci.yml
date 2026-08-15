@@ -14,17 +14,15 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: write
-  packages: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') == false
+    permissions:
+      contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Read Java version
         id: java-version
@@ -33,26 +31,61 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "Java version: $version"
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: 'temurin'
           java-version: ${{ steps.java-version.outputs.version }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           cache-read-only: false
+
+      - name: Check formatting
+        run: ./gradlew spotlessCheck -PdisableAutoFormat
 
       - name: Build
         run: |
           echo "=== Starting clean build ==="
           echo "Branch: ${GITHUB_REF#refs/heads/}"
           echo "Commit: ${GITHUB_SHA::7}"
-          ./gradlew clean build cyclonedxBom
+          set -o pipefail
+          ./gradlew clean build cyclonedxBom -PdisableAutoFormat --warning-mode all 2>&1 | tee build-output.log
           echo "=== Build completed successfully ==="
 
+      - name: Check for new deprecation warnings
+        run: |
+          WARNINGS=$(grep -i "has been deprecated\|This will fail with an error\|is scheduled to be removed" build-output.log | sort -u || true)
+          if [ -z "$WARNINGS" ]; then
+            echo "✅ No deprecation warnings found."
+            exit 0
+          fi
+          ALLOWLIST_FILE=".github/gradle-deprecation-allowlist.txt"
+          UNMATCHED=""
+          while IFS= read -r LINE; do
+            MATCHED=false
+            while IFS= read -r PATTERN || [ -n "$PATTERN" ]; do
+              [[ "$PATTERN" =~ ^#.*$ || -z "$PATTERN" ]] && continue
+              ENTRY="${PATTERN%%#*}"
+              ENTRY="${ENTRY%"${ENTRY##*[![:space:]]}"}"
+              if [[ "$LINE" == *"$ENTRY"* ]]; then
+                MATCHED=true
+                break
+              fi
+            done < "$ALLOWLIST_FILE"
+            if [ "$MATCHED" = false ]; then
+              UNMATCHED="${UNMATCHED}${LINE}"$'\n'
+            fi
+          done <<< "$WARNINGS"
+          if [ -n "$UNMATCHED" ]; then
+            echo "❌ New (unallowlisted) deprecation warnings detected:"
+            echo "$UNMATCHED"
+            exit 1
+          fi
+          echo "✅ All deprecation warnings are on the allowlist."
+
       - name: Upload Test Results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: test-results
@@ -62,23 +95,21 @@ jobs:
           retention-days: 30
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: success()
         with:
           name: sbom
-          path: |
-            **/build/reports/sbom/*.json
-            **/build/reports/sbom/*.xml
-            build/reports/cyclonedx/bom.json
-            build/reports/cyclonedx/bom.xml
+          path: build/reports/cyclonedx/bom.json
           retention-days: 90
 
   publish:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
@@ -89,13 +120,13 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "Java version: $version"
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: 'temurin'
           java-version: ${{ steps.java-version.outputs.version }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           cache-read-only: false
 
@@ -115,14 +146,34 @@ jobs:
 
           echo "✅ Version verification passed"
 
+      - name: Verify doc versions match tag
+        run: |
+          TAG_VERSION=${{ github.ref_name }}
+          PATTERN="io\.github\.jframeoss:jframe-[a-z-]*:[0-9]"
+          FAILED=false
+          for FILE in README.md src/docs/getting-started.md; do
+            while IFS= read -r MATCH; do
+              COORD_VERSION="${MATCH##*:}"
+              COORD_VERSION="${COORD_VERSION%%[^0-9.]*}"
+              if [ "$COORD_VERSION" != "$TAG_VERSION" ]; then
+                echo "❌ $FILE: stale coordinate '$MATCH' (expected version $TAG_VERSION)"
+                FAILED=true
+              fi
+            done < <(grep -oP "$PATTERN[0-9.]*" "$FILE" 2>/dev/null || true)
+          done
+          if [ "$FAILED" = true ]; then
+            exit 1
+          fi
+          echo "✅ All doc coordinates match tag $TAG_VERSION"
+
       - name: Build
         run: |
           echo "=== Building release ${{ github.ref_name }} ==="
-          ./gradlew clean build cyclonedxBom
+          ./gradlew build cyclonedxBom -PdisableAutoFormat
           echo "=== Build completed successfully ==="
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: release-test-results
@@ -132,15 +183,11 @@ jobs:
           retention-days: 90
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: success()
         with:
           name: release-sbom
-          path: |
-            **/build/reports/sbom/*.json
-            **/build/reports/sbom/*.xml
-            build/reports/cyclonedx/bom.json
-            build/reports/cyclonedx/bom.xml
+          path: build/reports/cyclonedx/bom.json
           retention-days: 90
 
       - name: Publish to Maven Central
@@ -156,13 +203,14 @@ jobs:
 
       - name: Build Changelog
         id: build_changelog
-        uses: requarks/changelog-action@v1
+        uses: requarks/changelog-action@b78a3354a01f4a1affb484b9264b506a815c46b1 # v1.10.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           writeToFile: false
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           body: ${{ steps.build_changelog.outputs.changes }}
+          files: build/reports/cyclonedx/bom.json
