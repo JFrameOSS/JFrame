@@ -27,4 +27,5 @@ public class JacksonConfig {
             .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, DateTimeFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
             .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE);
     }
+
 }

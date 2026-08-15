@@ -18,8 +18,8 @@ import jakarta.ws.rs.core.MediaType;
 @Slf4j
 public class FilterVoter {
 
-    /** Property key suffix stored in the request context for caching the decision. */
-    private static final String CACHE_KEY_SUFFIX = ".FILTER_VOTER";
+    /** Property key stored in the request context for caching the voter decision. */
+    private static final String CACHE_KEY = FilterVoter.class.getPackageName() + ".FILTER_VOTER";
 
     /** The media type voter. */
     private final MediaTypeVoter mediaTypeVoter;
@@ -38,10 +38,9 @@ public class FilterVoter {
      * @return {@code true} if both voters allow the request; {@code false} otherwise
      */
     public boolean enabled(final ContainerRequestContext requestContext) {
-        final String key = this.getClass().getPackageName() + CACHE_KEY_SUFFIX;
-        final Boolean cached = (Boolean) requestContext.getProperty(key);
+        final Boolean cached = (Boolean) requestContext.getProperty(CACHE_KEY);
 
-        log.trace("Got cached value '{}' from property '{}'.", cached, key);
+        log.trace("Got cached value '{}' from property '{}'.", cached, CACHE_KEY);
 
         if (cached != null) {
             return cached;
@@ -66,7 +65,7 @@ public class FilterVoter {
             isEnabled
         );
 
-        requestContext.setProperty(key, isEnabled);
+        requestContext.setProperty(CACHE_KEY, isEnabled);
         return isEnabled;
     }
 }

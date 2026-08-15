@@ -1,6 +1,8 @@
 package io.github.jframe.logging.filter.config;
 
 
+
+import io.github.jframe.autoconfigure.properties.LoggingProperties;
 import io.github.jframe.logging.logger.RequestResponseLogger;
 import io.github.jframe.logging.voter.FilterVoter;
 
@@ -12,6 +14,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Context-runner tests for Spring filter auto-configuration defaults.
@@ -35,7 +38,12 @@ public class FilterConfigurationDefaultsTest {
             RequestResponseLogFilterConfiguration.class
         )
         .withBean(FilterVoter.class, () -> mock(FilterVoter.class))
-        .withBean(RequestResponseLogger.class, () -> mock(RequestResponseLogger.class));
+        .withBean(RequestResponseLogger.class, () -> mock(RequestResponseLogger.class))
+        .withBean(LoggingProperties.class, () -> {
+            final LoggingProperties props = mock(LoggingProperties.class);
+            when(props.getResponseLength()).thenReturn(-1);
+            return props;
+        });
 
     // ======================== REQUEST-ID FILTER ========================
 

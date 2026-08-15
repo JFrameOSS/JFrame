@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.type;
 
+import io.github.jframe.autoconfigure.properties.LoggingProperties;
 import io.github.jframe.logging.logger.RequestResponseLogger;
 import io.github.jframe.logging.voter.FilterVoter;
 import io.github.support.UnitTest;
@@ -46,6 +47,13 @@ public class RequestResponseLogFilterTest extends UnitTest {
     @Mock
     private FilterVoter filterVoter;
 
+    /** Unlimited cap (-1) — matches the behaviour of the deleted 2-arg constructor. */
+    private final LoggingProperties loggingProperties = mock(LoggingProperties.class);
+
+    {
+        when(loggingProperties.getResponseLength()).thenReturn(-1);
+    }
+
     // ======================== DEBUG ON: NORMAL LOGGING PATH ========================
 
     @Nested
@@ -56,7 +64,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should log request when filter voter is enabled and DEBUG is on")
         public void shouldLogRequestWhenFilterVoterIsEnabledAndDebugIsOn() throws Exception {
             // Given: A request response log filter with filter voter enabled and DEBUG logging on
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -76,7 +84,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should log response when filter voter is enabled and DEBUG is on")
         public void shouldLogResponseWhenFilterVoterIsEnabledAndDebugIsOn() throws Exception {
             // Given: A request response log filter with filter voter enabled and DEBUG logging on
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -96,7 +104,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should not log request when filter voter is disabled (regardless of DEBUG state)")
         public void shouldNotLogRequestWhenFilterVoterIsDisabled() throws Exception {
             // Given: A request response log filter with filter voter disabled
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -116,7 +124,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should not log response when filter voter is disabled (regardless of DEBUG state)")
         public void shouldNotLogResponseWhenFilterVoterIsDisabled() throws Exception {
             // Given: A request response log filter with filter voter disabled
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -144,7 +152,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should not capture body or log request when DEBUG is disabled")
         public void shouldNotCaptureBodyOrLogRequestWhenDebugIsDisabled() throws Exception {
             // Given: Filter voter enabled but DEBUG logging is OFF
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -164,7 +172,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should not capture body or log response when DEBUG is disabled")
         public void shouldNotCaptureBodyOrLogResponseWhenDebugIsDisabled() throws Exception {
             // Given: Filter voter enabled but DEBUG logging is OFF
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -184,7 +192,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should still invoke filter chain when DEBUG is disabled")
         public void shouldStillInvokeFilterChainWhenDebugIsDisabled() throws Exception {
             // Given: Filter voter enabled but DEBUG logging is OFF
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -204,7 +212,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should return unaltered response when DEBUG is disabled")
         public void shouldReturnUnalteredResponseWhenDebugIsDisabled() throws Exception {
             // Given: Filter voter enabled but DEBUG logging is OFF
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -233,7 +241,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should continue filter chain execution when voter enabled and DEBUG on")
         public void shouldContinueFilterChainExecution() throws Exception {
             // Given: A request response log filter with DEBUG on
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -253,7 +261,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should log response even when filter chain throws exception (DEBUG on)")
         public void shouldLogResponseEvenWhenFilterChainThrowsException() throws Exception {
             // Given: A request response log filter with filter chain that throws exception and DEBUG on
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
             final HttpServletRequest request = mock(HttpServletRequest.class);
             final HttpServletResponse response = mock(HttpServletResponse.class);
             final FilterChain filterChain = mock(FilterChain.class);
@@ -278,7 +286,7 @@ public class RequestResponseLogFilterTest extends UnitTest {
         @DisplayName("Should not filter async dispatch")
         public void shouldNotFilterAsyncDispatch() {
             // Given: A request response log filter
-            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter);
+            final RequestResponseLogFilter filter = new RequestResponseLogFilter(requestResponseLogger, filterVoter, loggingProperties);
 
             // When: Checking if should not filter async dispatch
             final boolean shouldNotFilter = filter.shouldNotFilterAsyncDispatch();

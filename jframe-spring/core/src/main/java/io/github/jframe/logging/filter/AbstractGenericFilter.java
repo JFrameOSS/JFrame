@@ -28,16 +28,18 @@ public abstract class AbstractGenericFilter extends OncePerRequestFilter impleme
     }
 
     /**
-     * Retrieve or create the {@link WrappedHttpRequestResponse}.
+     * Retrieve or create the {@link WrappedHttpRequestResponse} with a cap-aware response wrapper.
      *
-     * @param request  The http servlet request.
-     * @param response The http servlet response.
+     * @param request        The http servlet request.
+     * @param response       The http servlet response.
+     * @param responseLength Maximum bytes for the logging copy ({@code -1} = unlimited).
      * @return a, never {@code null} {@link WrappedHttpRequestResponse}.
      */
-    protected WrappedHttpRequestResponse getWrapped(final HttpServletRequest request, final HttpServletResponse response) {
+    protected WrappedHttpRequestResponse getWrapped(final HttpServletRequest request, final HttpServletResponse response,
+        final int responseLength) {
         WrappedHttpRequestResponse wrapped = getWrapped(request);
         if (wrapped == null) {
-            wrapped = new WrappedHttpRequestResponse(request, response);
+            wrapped = new WrappedHttpRequestResponse(request, response, responseLength);
             request.setAttribute(WRAPPED_REQUEST_RESPONSE, wrapped);
         }
         return wrapped;

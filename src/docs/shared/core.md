@@ -51,12 +51,12 @@ Built-in `ApiError` constants for common cases:
 
 ```java
 public enum JFrameErrorCode implements ApiError {
-    BAD_REQUEST("JFRAME_BAD_REQUEST", "Bad request", Response.Status.BAD_REQUEST),
-    NOT_FOUND("JFRAME_NOT_FOUND", "Resource not found", Response.Status.NOT_FOUND),
-    RATE_LIMITED("JFRAME_RATE_LIMITED", "Rate limit exceeded", Response.Status.TOO_MANY_REQUESTS),
-    VALIDATION_ERROR("JFRAME_VALIDATION_ERROR", "Validation failed", Response.Status.BAD_REQUEST),
-    INTERNAL_ERROR("JFRAME_INTERNAL_ERROR", "Internal server error", Response.Status.INTERNAL_SERVER_ERROR),
-    HTTP_ERROR("JFRAME_HTTP_ERROR", "HTTP error", Response.Status.BAD_REQUEST);
+    BAD_REQUEST("BAD_REQUEST", "Bad request", Response.Status.BAD_REQUEST),
+    NOT_FOUND("NOT_FOUND", "Resource not found", Response.Status.NOT_FOUND),
+    RATE_LIMIT_EXCEEDED("RATE_LIMIT_EXCEEDED", "Rate limit exceeded", Response.Status.TOO_MANY_REQUESTS),
+    VALIDATION_ERROR("VALIDATION_ERROR", "Validation failed", Response.Status.BAD_REQUEST),
+    INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR", "Internal server error", Response.Status.INTERNAL_SERVER_ERROR),
+    HTTP_ERROR("HTTP_ERROR", "HTTP error", Response.Status.BAD_REQUEST);
 }
 ```
 
@@ -256,6 +256,10 @@ try (var fields = EcsFields.tagCloseable(REQUEST_ID, reqId)
 `REQUEST_ID` (`request.id`), `TX_ID` (`transaction.id`), `TX_TYPE`, `TX_REQUEST_METHOD`, `TX_RESPONSE_SIZE`, `CALL_ID`, `TRACE_ID` (`trace.id`), `SPAN_ID` (`span.id`), `USER_NAME` (`user.name`), `HTTP_STATUS` (`http.response.status_code`), and 30+ more.
 
 ## Utilities
+
+### Amount normalization
+
+`AmountUtils.normalizeAmount(BigDecimal)` — null-safe `BigDecimal` normalization guaranteeing a minimum scale of two while preserving any greater scale.
 
 ### JSON processing
 

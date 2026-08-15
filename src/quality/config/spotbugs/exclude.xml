@@ -30,9 +30,32 @@
             <Bug pattern="EI_EXPOSE_REP2"/>
         </Or>
     </Match>
+    <!-- Exception hierarchy and value-object constructors intentionally throw from constructors -->
+    <Match>
+        <Package name="~io\.github\.jframe\.exception.*"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.jframe\.logging\.ecs.*"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.jframe\.logging\.masker.*"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.jframe\.util\.converter.*"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.jframe\.validation.*"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
 
-    <!-- Do not alarm class -->
-    <!--<Match>-->
-        <!--<Class name="com.foobar.ClassNotToBeAnalyzed" />-->
-    <!--</Match>-->
+    <!-- ResettableHttpServletRequest cap-aware constructor throws IOException when reading the request body -->
+    <Match>
+        <Package name="~io\.github\.jframe\.logging\.wrapper.*"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+
 </FindBugsFilter>

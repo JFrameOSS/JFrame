@@ -9,7 +9,7 @@ import javax.sql.DataSource;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 
 import static net.ttddyy.dsproxy.support.ProxyDataSourceBuilder.create;
 
@@ -17,7 +17,7 @@ import static net.ttddyy.dsproxy.support.ProxyDataSourceBuilder.create;
  * Builds a ProxyDataSource with a SLF4JQueryLoggingListener.
  */
 @Slf4j
-@Configuration
+@AutoConfiguration
 public class DatasourceProxyConfiguration implements BeanPostProcessor {
 
     /**

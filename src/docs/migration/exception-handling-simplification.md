@@ -140,7 +140,7 @@ throw new DataNotFoundException(WIDGET_NOT_FOUND);
 
 // After
 import io.github.jframe.exception.core.ResourceNotFoundException;
-throw new ResourceNotFoundException();                    // uses JFRAME_NOT_FOUND defaults
+throw new ResourceNotFoundException();                    // uses NOT_FOUND defaults
 throw new HttpException(MyErrors.WIDGET_NOT_FOUND);      // custom error code
 ```
 
@@ -150,11 +150,11 @@ throw new HttpException(MyErrors.WIDGET_NOT_FOUND);      // custom error code
 // Before
 throw new InternalServerErrorException("Operation failed", e);
 
-// After — let it propagate; global handler maps to JFRAME_INTERNAL_ERROR (500)
+// After — let it propagate; global handler maps to INTERNAL_SERVER_ERROR (500)
 throw e;
 
 // Or wrap with a cause for explicit framework handling
-throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, e);
+throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, e);
 ```
 
 ### `UnauthorizedRequestException` → `HttpException` with custom `ApiError`
@@ -234,7 +234,7 @@ throw new HttpException(MyErrors.CONFLICT);
 
 // Option 2: framework default for quick one-offs
 throw new HttpException(JFrameErrorCode.BAD_REQUEST);
-throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, cause);
+throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, cause);
 ```
 
 See [Step 9](#step-9-jframeerrorcode-defaults) for all `JFrameErrorCode` values.
@@ -394,19 +394,19 @@ All built-in exceptions now use `JFrameErrorCode` as their `ApiError`. These cod
 
 | Exception | `errorCode` | `errorReason` | HTTP Status |
 |-----------|-------------|---------------|-------------|
-| `BadRequestException` | `JFRAME_BAD_REQUEST` | Bad request | 400 |
-| `ResourceNotFoundException` | `JFRAME_NOT_FOUND` | Resource not found | 404 |
-| `RateLimitExceededException` | `JFRAME_RATE_LIMITED` | Rate limit exceeded | 429 |
-| `ValidationException` / constraint violation | `JFRAME_VALIDATION_ERROR` | Validation failed | 400 |
-| Unhandled `Throwable` | `JFRAME_INTERNAL_ERROR` | Internal server error | 500 |
-| Generic HTTP errors | `JFRAME_HTTP_ERROR` | HTTP error | varies |
+| `BadRequestException` | `BAD_REQUEST` | Bad request | 400 |
+| `ResourceNotFoundException` | `NOT_FOUND` | Resource not found | 404 |
+| `RateLimitExceededException` | `RATE_LIMIT_EXCEEDED` | Rate limit exceeded | 429 |
+| `ValidationException` / constraint violation | `VALIDATION_ERROR` | Validation failed | 400 |
+| Unhandled `Throwable` | `INTERNAL_SERVER_ERROR` | Internal server error | 500 |
+| Generic HTTP errors | `HTTP_ERROR` | HTTP error | varies |
 
 Use `JFrameErrorCode` in application code when you need a quick one-off throw without defining a custom `ApiError`:
 
 ```java
 import io.github.jframe.exception.JFrameErrorCode;
 
-throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, cause);
+throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, cause);
 throw new HttpException(JFrameErrorCode.BAD_REQUEST);
 ```
 
@@ -486,7 +486,7 @@ try {
 - [ ] `ApiException` → `HttpException(ApiError)`
 - [ ] `DataNotFoundException` → `ResourceNotFoundException()` or `HttpException(MyErrors.X)`
 - [ ] `UnauthorizedRequestException` → `HttpException(MyErrors.X)` with custom `ApiError`
-- [ ] `InternalServerErrorException` → let propagate, or `HttpException(JFrameErrorCode.INTERNAL_ERROR, cause)`
+- [ ] `InternalServerErrorException` → let propagate, or `HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, cause)`
 - [ ] All `HttpException(Response.Status, ...)` throws updated to use `ApiError`
 
 ### Subclass constructor updates
@@ -516,6 +516,6 @@ try {
 - [ ] Full build passes: `./gradlew clean build test`
 - [ ] HTTP error responses include `errorCode` and `errorReason` fields
 - [ ] `cause` field present when exception wraps a throwable, absent otherwise
-- [ ] Validation exceptions still produce `JFRAME_VALIDATION_ERROR` responses
+- [ ] Validation exceptions still produce `VALIDATION_ERROR` responses
 - [ ] Rate limit responses include `X-RateLimit-*` headers
 - [ ] Auth/permission errors use correct status codes (401, 403)

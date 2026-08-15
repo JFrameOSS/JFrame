@@ -18,13 +18,16 @@ public class WrappedHttpRequestResponse {
     private final WrappedContentCachingResponse response;
 
     /**
-     * The constructor.
+     * Cap-aware constructor. Both the request and response wrappers apply
+     * {@code responseLength} as their logging cap while still delivering the
+     * complete bodies to the application.
      *
-     * @param request  The HTTP servlet request.
-     * @param response The HTTP servlet response.
+     * @param request        The HTTP servlet request.
+     * @param response       The HTTP servlet response.
+     * @param responseLength Maximum bytes to retain in the logging copy ({@code -1} = unlimited).
      */
-    public WrappedHttpRequestResponse(final HttpServletRequest request, final HttpServletResponse response) {
-        this.response = new WrappedContentCachingResponse(response);
+    public WrappedHttpRequestResponse(final HttpServletRequest request, final HttpServletResponse response, final int responseLength) {
+        this.response = new WrappedContentCachingResponse(response, responseLength);
         this.request = new ResettableHttpServletRequest(request, response);
     }
 }

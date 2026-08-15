@@ -107,7 +107,6 @@ public class HttpRequestResponseDebugLogger {
      * @param body       The body.
      * @return a formatted multi-line string with the HTTP request.
      */
-    @SuppressWarnings("PMD.UseObjectForClearerAPI")
     public String getCallRequestDebugOutput(final String method, final String requestUri, final String headers, final String body) {
         final String requestLine = createRequestLine(method, requestUri, "");
         return createLogString(requestLine, headers, body);

@@ -157,10 +157,7 @@
             <property name="allowUnknownTags" value="true"/>
         </module>
 
-        <module name="JavadocStyle">
-            <property name="scope" value="package"/>
-            <property name="checkEmptyJavadoc" value="true"/>
-        </module>
+        <!-- JavadocStyle removed upstream in Checkstyle 13.x -->
 
         <module name="NonEmptyAtclauseDescription"/>
 
@@ -171,7 +168,7 @@
         <!--<module name="JavadocTagContinuationIndentation"/>-->
         <!--<module name="SingleLineJavadoc"/>-->
         <!--<module name="WriteTag"/>-->
-        <!--<module name="SummaryJavadoc"/>-->
+        <module name="SummaryJavadoc"/>
 
         <!-- Metrics (http://checkstyle.sourceforge.net/config_metrics.html) -->
         <module name="BooleanExpressionComplexity"/>

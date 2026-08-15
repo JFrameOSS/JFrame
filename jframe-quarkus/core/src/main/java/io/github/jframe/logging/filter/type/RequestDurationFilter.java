@@ -64,12 +64,29 @@ public class RequestDurationFilter implements ContainerRequestFilter, ContainerR
         final Object startTimestamp = requestContext.getProperty(START_TIMESTAMP);
         if (startTimestamp instanceof Long start) {
             try (AutoCloseableEcsField closableTag = EcsFields.tagCloseable(LOG_TYPE, LogTypeNames.END)) {
-                final String duration = String.format("%.2f", (System.nanoTime() - start) / 1E6);
+                final String duration = formatDurationMillis(System.nanoTime() - start);
                 EcsFields.tag(TX_DURATION, duration);
                 EcsFields.tag(REQUEST_DURATION, duration);
                 log.debug("Found tag '{}':'{}' [{}].", LOG_TYPE, LogTypeNames.END, closableTag);
                 log.debug("Duration '{}' ms.", duration);
             }
         }
+    }
+
+    /**
+     * Formats a nanosecond duration as a millisecond value with exactly 2 decimal places,
+     * always using {@code '.'} as the decimal separator (locale-invariant).
+     *
+     * <p>Equivalent to {@code String.format("%.2f", nanos / 1E6)} but without locale machinery
+     * and without per-call {@code Formatter} allocation.
+     *
+     * @param nanos elapsed nanoseconds
+     * @return duration string, e.g. {@code "12.34"}
+     */
+    static String formatDurationMillis(final long nanos) {
+        final long hundredths = Math.round(nanos / 10_000.0);
+        final long whole = hundredths / 100;
+        final long fraction = Math.abs(hundredths % 100);
+        return whole + "." + (fraction < 10 ? "0" : "") + fraction;
     }
 }

@@ -17,7 +17,6 @@ dependencies {
     compileOnly("com.fasterxml.jackson.core", "jackson-annotations", retrieve("jacksonAnnotationsVersion"))
 
     // Quarkus APIs — compileOnly (provided by consumer's Quarkus runtime)
-    compileOnly("jakarta.enterprise", "jakarta.enterprise.cdi-api", retrieve("jakartaCdiVersion"))
     compileOnly("io.quarkus", "quarkus-arc", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-core", retrieve("quarkusVersion"))
     compileOnly("io.quarkus", "quarkus-opentelemetry", retrieve("quarkusVersion"))

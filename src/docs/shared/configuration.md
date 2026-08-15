@@ -21,7 +21,7 @@ HTTP logging configuration. Applies to both Spring and Quarkus core modules.
 | Property | Default | Description |
 |----------|---------|-------------|
 | `jframe.logging.disabled` | `false` | Disable all HTTP logging |
-| `jframe.logging.response-length` | `-1` | Max response body chars to log (-1 = unlimited) |
+| `jframe.logging.response-length` | `-1` | Max response body chars to log (-1 = unlimited). Cap is applied before the body is decoded and masked; it bounds only the copy passed to the logger. The application and downstream client always receive the full body. |
 | `jframe.logging.exclude-paths` | `/actuator/*` | Path patterns to skip |
 | `jframe.logging.fields-to-mask` | `password, keyPassphrase, client_secret, secret` | Sensitive JSON fields to mask |
 | `jframe.logging.allowed-content-types` | `application/json, application/xml, text/plain, ...` | Content types eligible for body logging |

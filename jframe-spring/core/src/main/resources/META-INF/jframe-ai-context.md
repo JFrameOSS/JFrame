@@ -106,6 +106,9 @@ public class UserCache extends RequestScopedCache<Long, User> {
 ## Utilities
 
 - `ResourceLoaderUtil` — `getResourceFile(path)`, `getResourceAsString(path)`, `getResource(path)`
+- `AmountUtils` — null-safe `BigDecimal` normalization guaranteeing minimum scale of two
+- `UuidMapper` — MapStruct mapper for UUID to String conversion
+- `AmountMapper` — MapStruct mapper for BigDecimal normalization
 - `DateTimeMapper` — MapStruct mapper for ZonedDateTime/OffsetDateTime/LocalDateTime (UTC)
 - `FilterVoter` — combines `MediaTypeVoter` + `RequestVoter` for filter decisions
 - `CorePackageLogger` — logs app metadata + registered filters at startup

@@ -230,6 +230,24 @@ class DateTimeMapperTest extends UnitTest {
         assertThat(result.getSecond(), is(59));
     }
 
+    // -------------------------------------------------------------------------
+    // toOffsetDateTime(String) — null-safety regression test
+    // *** THIS TEST IS EXPECTED TO FAIL TODAY (NPE bug) — it drives the fix ***
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("[BUG] toOffsetDateTime should return null for null input — currently NPEs")
+    void toOffsetDateTime_withNullString_shouldReturnNullNotNpe() {
+        // Given: A null string input
+        final String nullTimestamp = null;
+
+        // When: Converting null string to OffsetDateTime
+        // Then: null is returned — NOT a NullPointerException.
+        //       *** This test WILL FAIL until toOffsetDateTime() is made null-safe ***
+        final OffsetDateTime result = dateTimeMapper.toOffsetDateTime(nullTimestamp);
+        assertThat(result, is(nullValue()));
+    }
+
     @Test
     @DisplayName("Should round-trip convert LocalDateTime to ZonedDateTime and back")
     void roundTripConversion_shouldPreserveValues() {

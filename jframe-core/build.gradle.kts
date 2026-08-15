@@ -8,8 +8,6 @@ dependencies {
     // ======= API (transitive to consumers) =======
     api("org.apache.commons", "commons-lang3", retrieve("commonsLangVersion"))
     api("org.apache.commons", "commons-collections4", retrieve("commonsCollectionVersion"))
-    api("commons-io", "commons-io", retrieve("commonsIoVersion"))
-
     // Hamcrest is used in public API signatures (FieldRejection, ValidationResult)
     api("org.hamcrest", "hamcrest", retrieve("hamcrestVersion"))
 

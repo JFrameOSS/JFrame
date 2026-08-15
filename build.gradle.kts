@@ -76,6 +76,18 @@ subprojects {
         configureRepositories()
     }
 
+    configurations.all {
+        // jackson-annotations:2.22 is required by tools.jackson.databind:3.x but gets downgraded by
+        // springdoc/swagger's jackson-bom:2.21.x constraint. Enforce the minimum required version.
+        resolutionStrategy.force("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
+        resolutionStrategy.eachDependency {
+            if (requested.group == "com.fasterxml.jackson.core" && requested.name == "jackson-annotations") {
+                useVersion(retrieve("jacksonAnnotationsVersion"))
+                because("tools.jackson.databind 3.x requires jackson-annotations 2.22; springdoc BOM downgrades to 2.21")
+            }
+        }
+    }
+
     dependencies {
         if (project.name.startsWith("jframe-spring-")) {
             annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

@@ -1,0 +1,153 @@
+# Library Efficiency & Dependency Update (1.5.0)
+
+This release contains no new features. It reduces startup cost, removes per-request allocations, tightens the published dependency surface, and updates the build toolchain. Most applications need no changes. The items under "Breaking changes" and "Behaviour changes" are the exceptions.
+
+## Breaking changes
+
+### Error code strings lost the `JFRAME_` prefix
+
+`JFrameErrorCode` now emits shorter codes. If your application, tests, or a downstream consumer matches on the `errorCode` field of an error response, update the expected values.
+
+| Before | After |
+|---|---|
+| `JFRAME_BAD_REQUEST` | `BAD_REQUEST` |
+| `JFRAME_NOT_FOUND` | `NOT_FOUND` |
+| `JFRAME_VALIDATION_ERROR` | `VALIDATION_ERROR` |
+| `JFRAME_HTTP_ERROR` | `HTTP_ERROR` |
+| `JFRAME_RATE_LIMITED` | `RATE_LIMIT_EXCEEDED` |
+| `JFRAME_INTERNAL_ERROR` | `INTERNAL_SERVER_ERROR` |
+
+Two enum constants were also renamed so the constant name matches the code it emits. If you reference them in Java code:
+
+| Before | After |
+|---|---|
+| `JFrameErrorCode.RATE_LIMITED` | `JFrameErrorCode.RATE_LIMIT_EXCEEDED` |
+| `JFrameErrorCode.INTERNAL_ERROR` | `JFrameErrorCode.INTERNAL_SERVER_ERROR` |
+
+Applications that define their own `ApiError` enum are unaffected — these are framework fallback codes only.
+
+### `spring-boot-starter-aop` replaced by `aspectjweaver`
+
+Spring Boot 4 GA removed the AOP starter; the only published 4.x artifacts were milestones. `jframe-spring-core` now depends on `org.aspectj:aspectjweaver` directly, and `spring-aop` arrives transitively via `spring-context`. No action is needed unless your build explicitly excluded or pinned `spring-boot-starter-aop` through jframe.
+
+### `commons-io` is no longer on your compile classpath
+
+`commons-io` was previously exposed by `jframe-core` at `api` scope. It has been removed from jframe entirely (its three internal usages were replaced with JDK equivalents). If your application used `org.apache.commons.io.*` without declaring the dependency yourself, add it explicitly:
+
+```kotlin
+implementation("commons-io:commons-io:2.21.0")
+```
+
+### `mapstruct` promoted to `api` scope
+
+`SharedMapperConfig` and the jframe mappers are types your own mappers annotate against, so MapStruct is now correctly exposed at `api` scope from `jframe-spring-core`. This makes it available transitively where it previously was not. No action needed — this only adds availability.
+
+## Behaviour changes
+
+### Request duration always uses `.` as the decimal separator
+
+The `duration` value tagged onto the ECS/MDC logging context was previously formatted with a locale-sensitive call. On a JVM running a European locale it produced `12,35`; it now always produces `12.35`.
+
+This is a structured field consumed by log shippers and dashboards, so a locale-dependent separator was a defect. Output is now deterministic across deployments. If any of your dashboards, alert rules, or log parsers were written against the comma form, update them.
+
+### `keyPassphrase` is now actually masked
+
+Password masking compares field names case-insensitively against the request/response body. Due to a case-handling defect, configured field names containing uppercase letters could never match — which included the shipped default `keyPassphrase`. Masking now works for those fields.
+
+The effect is that MORE values are redacted than before, never fewer. If you were relying on `keyPassphrase` values being visible in DEBUG logs, they will now appear as masked.
+
+### Request and response bodies are capped before they are logged
+
+Bodies are now truncated at the byte layer, before they are decoded and masked, rather than after. The `jframe.logging.response-length` property is honoured on all logging paths (previously three of the four Spring paths ignored it).
+
+The application and any downstream client always receive the FULL, unmodified body. Only the copy handed to the logger is bounded. The shipped default is `-1` (unlimited), so default behaviour is unchanged.
+
+A cap of `0` produces an empty logged body. If a cap falls in the middle of a multi-byte UTF-8 character, the partial character is replaced rather than throwing.
+
+## Improvements requiring no action
+
+### Faster application startup
+
+`jframe-spring-core` and `jframe-spring-otlp` no longer perform a broad component scan of the whole `io.github.jframe` package. Beans are now registered explicitly. On an application using both modules, this removes two full scans of the library's class tree from every boot, along with a duplicate parse of the bundled properties file.
+
+Beans that were previously discovered by that scan are all still registered, and all conditional annotations are preserved. If you had relied on the scan to pick up a class of your own that happened to live under the `io.github.jframe` package, register it yourself.
+
+### `jframe-spring-jpa` now registers itself
+
+Previously `DatasourceProxyConfiguration` was only activated as a side effect of the component scan performed by `jframe-spring-core` or `jframe-spring-otlp`. An application that depended on `jframe-spring-jpa` alone silently got no datasource query logging. The module now declares its own auto-configuration entry and works standalone.
+
+### Reduced per-request work
+
+Several per-request allocations were removed: cached filter attribute keys, content types normalised once at startup instead of per request, an early exit in path exclusion matching, and a cached lowercase buffer in the password masker. Traced-method exclusion and span-name resolution no longer allocate or reflect on every call.
+
+## New utilities
+
+Three small utilities have been added.
+
+### `AmountUtils`
+
+`io.github.jframe.util.AmountUtils` (in `jframe-core`) — `normalizeAmount(BigDecimal)` returns `null` for `null`, otherwise strips trailing zeros and guarantees a MINIMUM scale of two, preserving any greater scale. It never rounds.
+
+```java
+AmountUtils.normalizeAmount(new BigDecimal("10"));      // 10.00
+AmountUtils.normalizeAmount(new BigDecimal("1.500"));   // 1.50
+AmountUtils.normalizeAmount(new BigDecimal("1.2345"));  // 1.2345  (unchanged)
+```
+
+This is not a display formatter. For a fixed two-decimal presentation value, format at the presentation layer.
+
+### Mappers: `UuidMapper` and `AmountMapper`
+
+`io.github.jframe.util.mapper.UuidMapper` and `io.github.jframe.util.mapper.AmountMapper` (in `jframe-spring-core`) are MapStruct mappers registered in `SharedMapperConfig`.
+
+### `SharedMapperConfig` now carries a `uses` registry
+
+`SharedMapperConfig` declares `uses = { UuidMapper.class, AmountMapper.class }`. Any mapper annotated `@Mapper(config = SharedMapperConfig.class)` inherits these implicit conversions.
+
+**This means `UUID` to `String` now converts automatically in your mappers.** If you already declare your own `UUID` to `String` mapping method, MapStruct will report an ambiguous mapping at compile time. Resolve it by qualifying the mapping, or by removing your own method in favour of the shared one.
+
+`DateTimeMapper` is deliberately NOT in the registry. Three of its four methods assume UTC, and auto-applying `LocalDateTime` to `ZonedDateTime` across a non-UTC estate would silently shift timestamps. Opt in explicitly where you want it:
+
+```java
+@Mapper(config = SharedMapperConfig.class, uses = DateTimeMapper.class)
+public interface OrderMapper {
+    OrderDto toDto(Order order);
+}
+```
+
+Consumer-level `uses` merges with the config-level registry rather than replacing it, so both sets of conversions are available.
+
+Note that MapStruct fails at COMPILE time on an unmappable type pair — it does not silently leave the field null. A consumer who forgets to opt in gets a build error, not a wrong timestamp.
+
+## Build toolchain
+
+Gradle wrapper 9.5.1 to 9.7.0. Quarkus 3.34.2 to 3.38.2. Spring Boot 4.0.3 to 4.1.0. Logback 1.5.25 to 1.6.3. JUnit, Mockito, Jackson, OpenTelemetry, springdoc, SmallRye and all static-analysis tooling updated to current stable releases.
+
+`gradle.properties` no longer contains any pre-release (milestone, alpha, beta, RC) versions, and the three previously dynamic plugin versions are pinned for reproducible builds.
+
+### Known issue: Jackson annotation version conflict
+
+`tools.jackson.databind` requires `com.fasterxml.jackson.core:jackson-annotations:2.22`, but springdoc pulls a Jackson BOM that downgrades it to `2.21`, producing `NoClassDefFoundError: JsonApplyView` at runtime.
+
+jframe's own build forces the correct version, but a Gradle `resolutionStrategy` does not propagate to consumers. If you use jframe together with springdoc and hit this error, add the constraint to your own build:
+
+```kotlin
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "com.fasterxml.jackson.core" && requested.name == "jackson-annotations") {
+            useVersion("2.22")
+        }
+    }
+}
+```
+
+## Migration checklist
+
+- [ ] Search your codebase and dashboards for error codes and update them from the table above
+- [ ] Update references to `JFrameErrorCode.RATE_LIMITED` and `JFrameErrorCode.INTERNAL_ERROR`
+- [ ] If you parse the logged `duration` field, confirm your parser accepts `.` as the decimal separator
+- [ ] If you used `commons-io` transitively via jframe, declare it yourself
+- [ ] If you have your own `UUID` to `String` mapper method, check for an ambiguous-mapping compile error
+- [ ] If you want `LocalDateTime` to `ZonedDateTime` conversion, add `uses = DateTimeMapper.class` to your mapper
+- [ ] If you depend on `jframe-spring-jpa` alone, expect datasource query logging to start working
+- [ ] If you use springdoc, consider adding the jackson-annotations constraint above

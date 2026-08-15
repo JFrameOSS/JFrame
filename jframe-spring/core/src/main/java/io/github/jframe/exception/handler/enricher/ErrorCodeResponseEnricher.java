@@ -34,7 +34,7 @@ public class ErrorCodeResponseEnricher implements ErrorResponseEnricher {
         } else if (throwable instanceof ValidationException || throwable instanceof MethodArgumentNotValidException) {
             resource.setError(JFrameErrorCode.VALIDATION_ERROR);
         } else {
-            resource.setError(JFrameErrorCode.INTERNAL_ERROR);
+            resource.setError(JFrameErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -223,3 +223,20 @@ public RestTemplate restTemplate(LoggingClientHttpRequestInterceptor interceptor
     return rt;
 }
 ```
+
+## Mappers
+
+`SharedMapperConfig` declares `uses = { UuidMapper.class, AmountMapper.class }`. Any mapper annotated `@Mapper(config = SharedMapperConfig.class)` inherits these implicit conversions.
+
+**This means `UUID` to `String` now converts automatically in your mappers.** If you already declare your own `UUID` to `String` mapping method, MapStruct will report an ambiguous mapping at compile time. Resolve it by qualifying the mapping, or by removing your own method in favour of the shared one.
+
+`DateTimeMapper` is deliberately NOT in the registry. Three of its four methods assume UTC, and auto-applying `LocalDateTime` to `ZonedDateTime` across a non-UTC estate would silently shift timestamps. Opt in explicitly where you want it:
+
+```java
+@Mapper(config = SharedMapperConfig.class, uses = DateTimeMapper.class)
+public interface OrderMapper {
+    OrderDto toDto(Order order);
+}
+```
+
+Consumer-level `uses` merges with the config-level registry rather than replacing it, so both sets of conversions are available.

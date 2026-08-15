@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.config;
 
+import io.github.jframe.autoconfigure.properties.LoggingProperties;
 import io.github.jframe.logging.filter.type.RequestResponseLogFilter;
 import io.github.jframe.logging.logger.RequestResponseLogger;
 import io.github.jframe.logging.voter.FilterVoter;
@@ -94,8 +95,9 @@ public class RequestResponseLogFilterConfiguration {
     /**
      * Create the request/response logging filter bean.
      *
-     * @param voter  The filter voter.
-     * @param logger The logger.
+     * @param voter             The filter voter.
+     * @param logger            The logger.
+     * @param loggingProperties The logging configuration properties.
      * @return the {@link RequestResponseLogFilter} bean
      */
     @Bean
@@ -104,9 +106,10 @@ public class RequestResponseLogFilterConfiguration {
         name = "enabled",
         matchIfMissing = true
     )
-    public RequestResponseLogFilter requestResponseLogFilter(final FilterVoter voter, final RequestResponseLogger logger) {
+    public RequestResponseLogFilter requestResponseLogFilter(final FilterVoter voter, final RequestResponseLogger logger,
+        final LoggingProperties loggingProperties) {
         log.trace("Configuration: order '{}'.", filterOrder);
-        return new RequestResponseLogFilter(logger, voter);
+        return new RequestResponseLogFilter(logger, voter, loggingProperties);
     }
 
     /**

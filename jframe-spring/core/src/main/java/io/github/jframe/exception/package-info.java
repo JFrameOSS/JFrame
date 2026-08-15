@@ -56,7 +56,7 @@
  * <pre>
  * {
  * "statusCode": 400,
- * "errorCode": "JFRAME_BAD_REQUEST",
+ * "errorCode": "BAD_REQUEST",
  * "errorReason": "Bad request",
  * "method": "POST",
  * "uri": "/api/users",

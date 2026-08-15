@@ -21,7 +21,7 @@ import static org.hamcrest.Matchers.nullValue;
  * <li>Constructor variations (rate limit details, cause + rate limit details)</li>
  * <li>HTTP status is always TOO_MANY_REQUESTS (429)</li>
  * <li>Rate limit metadata (limit, remaining, resetDate) is correctly stored</li>
- * <li>Error code and reason are set from JFrameErrorCode.RATE_LIMITED</li>
+ * <li>Error code and reason are set from JFrameErrorCode.RATE_LIMIT_EXCEEDED</li>
  * </ul>
  */
 @DisplayName("Exception Hierarchy - Rate Limit Exceeded Exception")
@@ -60,7 +60,7 @@ public class RateLimitExceededExceptionTest extends UnitTest {
         // Then: Exception is created with TOO_MANY_REQUESTS status, cause, error code and rate limit details
         assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.TOO_MANY_REQUESTS)));
         assertThat(exception.getCause(), is(equalTo(cause)));
-        assertThat(exception.getErrorCode(), is(equalTo("JFRAME_RATE_LIMITED")));
+        assertThat(exception.getErrorCode(), is(equalTo("RATE_LIMIT_EXCEEDED")));
         assertThat(exception.getErrorReason(), is(equalTo("Rate limit exceeded")));
         assertThat(exception.getLimit(), is(equalTo(LIMIT)));
         assertThat(exception.getRemaining(), is(equalTo(REMAINING)));
