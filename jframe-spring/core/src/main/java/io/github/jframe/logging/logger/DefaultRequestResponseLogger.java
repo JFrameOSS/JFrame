@@ -43,6 +43,11 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
     private final MediaTypeVoter bodyExcludedMediaTypeVoter;
 
     @Override
+    public boolean isDebugEnabled() {
+        return log.isDebugEnabled();
+    }
+
+    @Override
     public void logRequest(final ResettableHttpServletRequest wrappedRequest) throws IOException {
         final String method = wrappedRequest.getMethod();
         final String requestUri = wrappedRequest.getRequestURI();
@@ -69,7 +74,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
             log.error("Error getting payload for request.", throwable);
             throw throwable;
         } finally {
-            log.info(
+            log.debug(
                 "Invoked '{} {}' with content type '{}' and size of '{}' bytes.",
                 method,
                 requestUri,
@@ -109,7 +114,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
             final String requestBody = bodyLogUtil.getCallRequestBody(body);
             addBodyTag(contentTypeCanBeLogged, CALL_REQUEST_BODY, requestBody);
 
-            log.info(
+            log.debug(
                 "Calling '{} {}' with content type '{}' and size of '{}' bytes.",
                 method,
                 requestUri,
@@ -174,7 +179,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
 
             final String requestUri = servletRequest.getRequestURI();
 
-            log.info(
+            log.debug(
                 "Response '{}' is '{}' with content type '{}' and size of '{}' bytes.",
                 requestUri,
                 httpStatus,
@@ -220,7 +225,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
                 EcsFields.tag(CALL_STATUS, FAILURE);
             }
 
-            log.info(
+            log.debug(
                 "Got response '{}' with content type '{}' and size of '{}' bytes.",
                 httpStatus,
                 contentType,

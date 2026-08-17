@@ -35,8 +35,6 @@ public final class Constants {
 
         public static final String TX_ID_HEADER = "x-transaction-id";
         public static final String REQ_ID_HEADER = "x-request-id";
-        public static final String TRACE_ID_HEADER = "x-trace-id";
-        public static final String SPAN_ID_HEADER = "x-span-id";
         public static final String L7_REQUEST_ID = "X-Layer7-Requestid";
         public static final String X_CLIENT_VERSION = "X-Client-Version";
         public static final String X_RATELIMIT_LIMIT = "X-RateLimit-Limit";

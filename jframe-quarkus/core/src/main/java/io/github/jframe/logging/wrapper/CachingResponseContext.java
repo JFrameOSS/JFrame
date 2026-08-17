@@ -1,7 +1,5 @@
 package io.github.jframe.logging.wrapper;
 
-import lombok.RequiredArgsConstructor;
-
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -27,12 +25,43 @@ import jakarta.ws.rs.core.Response;
  *
  * <p>The body is not captured automatically; callers must invoke {@link #setCachedBody(byte[])}
  * to store it. All other methods are delegated to the wrapped context.
+ *
+ * <p>The cap-aware constructor limits the stored logging copy to a configurable number of bytes.
+ * The full body is never modified here — it is the caller's responsibility to forward the
+ * complete body to the client.
  */
-@RequiredArgsConstructor
 public final class CachingResponseContext implements ContainerResponseContext {
 
     private final ContainerResponseContext delegate;
     private byte[] cachedBody;
+
+    /**
+     * Maximum bytes to retain in the logging copy. {@code -1} means unlimited.
+     */
+    private final int byteCap;
+
+    /**
+     * The no-cap constructor. Stores the full body passed to {@link #setCachedBody(byte[])}.
+     *
+     * @param delegate the original {@link ContainerResponseContext} to wrap
+     */
+    public CachingResponseContext(final ContainerResponseContext delegate) {
+        this.delegate = delegate;
+        this.byteCap = -1;
+    }
+
+    /**
+     * Cap-aware constructor. Limits the bytes stored by {@link #setCachedBody(byte[])} to
+     * {@code byteCap} bytes.
+     *
+     * @param delegate the original {@link ContainerResponseContext} to wrap
+     * @param byteCap  maximum bytes to retain in the logging copy.
+     *                 Use {@code -1} for unlimited; {@code 0} stores nothing in the logging copy.
+     */
+    public CachingResponseContext(final ContainerResponseContext delegate, final int byteCap) {
+        this.delegate = delegate;
+        this.byteCap = byteCap;
+    }
 
     /**
      * Returns the cached response body bytes.
@@ -61,12 +90,25 @@ public final class CachingResponseContext implements ContainerResponseContext {
     }
 
     /**
-     * Stores the serialized response body bytes.
+     * Stores the serialized response body bytes, applying the configured cap if set.
+     *
+     * <p>When a cap is configured, only the first {@code byteCap} bytes are retained in the
+     * in-memory logging copy. The full body must be forwarded to the client separately.
      *
      * @param body the body bytes to cache; may be {@code null}
      */
     public void setCachedBody(final byte[] body) {
-        this.cachedBody = body == null ? null : Arrays.copyOf(body, body.length);
+        if (body == null) {
+            this.cachedBody = null;
+            return;
+        }
+        if (byteCap == -1 || body.length <= byteCap) {
+            this.cachedBody = Arrays.copyOf(body, body.length);
+        } else if (byteCap == 0) {
+            this.cachedBody = new byte[0];
+        } else {
+            this.cachedBody = Arrays.copyOf(body, byteCap);
+        }
     }
 
     /**

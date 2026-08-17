@@ -89,7 +89,7 @@ public class HttpClientSSLFactory {
 
             return requestFactory;
         } catch (final Exception exception) {
-            throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, exception);
+            throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, exception);
         }
     }
 
@@ -107,7 +107,7 @@ public class HttpClientSSLFactory {
 
             return sslContext;
         } catch (final Exception exception) {
-            throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, exception);
+            throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, exception);
         }
     }
 
@@ -128,7 +128,7 @@ public class HttpClientSSLFactory {
             sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
             return sslContext;
         } catch (final Exception exception) {
-            throw new HttpException(JFrameErrorCode.INTERNAL_ERROR, exception);
+            throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, exception);
         }
     }
 

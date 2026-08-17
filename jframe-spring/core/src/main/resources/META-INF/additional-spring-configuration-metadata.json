@@ -38,7 +38,7 @@
       "type": "java.lang.Integer",
       "description": "Filter execution order for the Request ID filter. Lower values execute earlier in the filter chain. The Request ID filter should execute early to ensure the ID is available for other filters.",
       "sourceType": "io.github.jframe.logging.filter.config.RequestIdFilterConfiguration",
-      "defaultValue": -400
+      "defaultValue": -900
     },
     {
       "name": "jframe.logging.filters.transaction-id.enabled",
@@ -52,7 +52,7 @@
       "type": "java.lang.Integer",
       "description": "Filter execution order for the Transaction ID filter. Lower values execute earlier in the filter chain. The Transaction ID filter should execute early, before the Request ID filter.",
       "sourceType": "io.github.jframe.logging.filter.config.TransactionIdFilterConfiguration",
-      "defaultValue": -500
+      "defaultValue": -800
     },
     {
       "name": "jframe.logging.filters.request-duration.enabled",
@@ -66,7 +66,7 @@
       "type": "java.lang.Integer",
       "description": "Filter execution order for the Request Duration filter. Lower values execute earlier in the filter chain. This filter should execute very early to capture the full request processing time.",
       "sourceType": "io.github.jframe.logging.filter.config.RequestDurationFilterConfiguration",
-      "defaultValue": -17500
+      "defaultValue": -600
     },
     {
       "name": "jframe.logging.filters.request-response.enabled",
@@ -80,7 +80,7 @@
       "type": "java.lang.Integer",
       "description": "Filter execution order for the Request/Response Log filter. Lower values execute earlier in the filter chain. This filter should execute after ID filters but before application logic.",
       "sourceType": "io.github.jframe.logging.filter.config.RequestResponseLogFilterConfiguration",
-      "defaultValue": -950
+      "defaultValue": -700
     }
   ],
   "hints": [

@@ -35,7 +35,7 @@ Prefix: `jframe.otlp` (OpenTelemetryProperties)
 | `exporter` | String | `otlp` | Exporter type: otlp, jaeger, zipkin |
 | `samplingRate` | double | `1.0` | Trace sampling rate (0.0–1.0) |
 | `excludedMethods` | Set | health, actuator, ping, status, info, metrics | Methods to exclude |
-| `propagators` | String | `tracecontext,baggage` | W3C propagators |
+| `propagators` | String | *REMOVED* | Quarkus only; Spring uses W3C TraceContext by default |
 
 ## Auto-Configuration
 
@@ -65,10 +65,6 @@ public WebClient webClient(HttpFilter httpFilter) {
 ```
 
 `SpanManager` — creates/enriches outbound spans with attributes: `peer.service`, HTTP method/URI, response status.
-
-## Response Filter
-
-`TracingResponseFilter` (order -1000) — adds `x-trace-id` and `x-span-id` to HTTP response headers + MDC. Toggle: `jframe.logging.filters.tracing-id.enabled`.
 
 ## Error Response Enrichment
 

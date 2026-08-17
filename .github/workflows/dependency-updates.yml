@@ -1,0 +1,57 @@
+name: Dependency Updates Report
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-updates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: develop
+
+      - name: Read Java version from mise.toml
+        id: java-version
+        run: |
+          version=$(grep "^java" mise.toml | sed 's/.*temurin-//' | tr -d '"')
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Java version: $version"
+
+      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+        with:
+          distribution: 'temurin'
+          java-version: ${{ steps.java-version.outputs.version }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: true
+
+      - name: Generate dependency updates report
+        run: ./gradlew dependencyUpdates -Drevision=release
+
+      - name: Write report to job summary
+        run: |
+          REPORT=$(find . -path "*/build/dependencyUpdates/report.txt" | head -1)
+          if [ -f "$REPORT" ]; then
+            echo "## Dependency Updates Report" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat "$REPORT" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No report file found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload dependency updates report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dependency-updates-report
+          path: |
+            **/build/dependencyUpdates/
+          retention-days: 30

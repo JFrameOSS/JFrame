@@ -21,10 +21,13 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 
-import static io.github.jframe.util.constants.Constants.Headers.*;
+import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
+import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -83,12 +86,14 @@ class HttpFilterTest extends UnitTest {
         final ClientHttpRequestInterceptor interceptor = httpFilter.getRequestInterceptor(SERVICE_NAME_VALUE);
         final ClientHttpResponse response = interceptor.intercept(request, body, execution);
 
-        // Then: ECS headers are injected
+        // Then: Correlation headers (transaction-id and request-id) are injected
         verify(request.getHeaders()).add(REQ_ID_HEADER, TEST_REQUEST_ID);
         verify(request.getHeaders()).add(TX_ID_HEADER, TEST_TX_ID);
-        verify(request.getHeaders()).add(TRACE_ID_HEADER, TEST_TRACE_ID);
 
-        // And: Trace context is injected and span is created
+        // And: x-trace-id custom header is NOT added (removed; W3C traceparent replaces it)
+        verify(request.getHeaders(), never()).add(eq("x-trace-id"), anyString());
+
+        // And: W3C trace context is injected via OpenTelemetry propagator (traceparent header)
         verify(spanManager).injectTraceContext(request.getHeaders());
         verify(spanManager).createOutboundSpan(HttpMethod.GET, request.getURI(), SERVICE_NAME_VALUE);
         assertThat(response, is(notNullValue()));

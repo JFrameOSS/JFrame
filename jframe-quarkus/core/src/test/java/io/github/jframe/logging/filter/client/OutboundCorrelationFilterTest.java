@@ -18,10 +18,8 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.ecs.EcsFieldNames.TRACE_ID;
 import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
-import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
 import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -36,9 +34,10 @@ import static org.mockito.Mockito.when;
  * <p>Verifies the {@code ClientRequestFilter} that propagates correlation headers
  * from MDC (via {@link EcsFields}) to outbound HTTP calls, including:
  * <ul>
- * <li>Adding x-transaction-id, x-request-id and x-trace-id headers when MDC values are present</li>
+ * <li>Adding x-transaction-id and x-request-id headers when MDC values are present</li>
  * <li>Skipping headers when MDC values are null or empty</li>
  * <li>Not overwriting existing headers that are already set on the outbound request</li>
+ * <li>Never adding x-trace-id (removed; W3C traceparent via OTel propagator handles trace context)</li>
  * </ul>
  */
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -106,10 +105,11 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         }
 
         @Test
-        @DisplayName("Should add x-trace-id header from MDC when present")
-        public void shouldAddTraceIdHeaderWhenMdcValueIsPresent() throws Exception {
-            // Given: MDC contains a trace ID and an empty outbound headers map
-            EcsFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
+        @DisplayName("Should add both correlation headers when all MDC values are present")
+        public void shouldAddBothCorrelationHeadersWhenAllMdcValuesArePresent() throws Exception {
+            // Given: MDC is fully populated with correlation IDs
+            EcsFields.tag(TX_ID, "tx-111");
+            EcsFields.tag(REQUEST_ID, "req-222");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
             final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
@@ -117,18 +117,17 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
 
-            // Then: x-trace-id header is added with the MDC value
-            assertThat(headers.containsKey(TRACE_ID_HEADER), is(true));
-            assertThat(headers.getFirst(TRACE_ID_HEADER), is(equalTo("0123456789abcdef0123456789abcdef")));
+            // Then: Both correlation headers are added
+            assertThat(headers.containsKey(TX_ID_HEADER), is(true));
+            assertThat(headers.containsKey(REQ_ID_HEADER), is(true));
         }
 
         @Test
-        @DisplayName("Should add all three correlation headers when all MDC values are present")
-        public void shouldAddAllThreeCorrelationHeadersWhenAllMdcValuesArePresent() throws Exception {
-            // Given: MDC is fully populated with all three correlation IDs
+        @DisplayName("Should never add x-trace-id header even when TRACE_ID is in MDC")
+        public void shouldNeverAddTraceIdHeaderEvenWhenTraceIdIsInMdc() throws Exception {
+            // Given: MDC contains all correlation IDs including trace ID
             EcsFields.tag(TX_ID, "tx-111");
             EcsFields.tag(REQUEST_ID, "req-222");
-            EcsFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
             when(clientRequestContext.getHeaders()).thenReturn(headers);
             final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
@@ -136,10 +135,8 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             // When: Filter processes the outbound request
             filter.filter(clientRequestContext);
 
-            // Then: All three headers are added
-            assertThat(headers.containsKey(TX_ID_HEADER), is(true));
-            assertThat(headers.containsKey(REQ_ID_HEADER), is(true));
-            assertThat(headers.containsKey(TRACE_ID_HEADER), is(true));
+            // Then: x-trace-id is NEVER added (removed; W3C traceparent via OTel propagator handles trace context)
+            assertThat(headers.containsKey("x-trace-id"), is(false));
         }
     }
 
@@ -182,22 +179,7 @@ public class OutboundCorrelationFilterTest extends UnitTest {
         }
 
         @Test
-        @DisplayName("Should NOT add x-trace-id header when MDC value is null")
-        public void shouldNotAddTraceIdHeaderWhenMdcValueIsNull() throws Exception {
-            // Given: MDC does not contain a trace ID (null)
-            final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
-            when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
-
-            // When: Filter processes the outbound request
-            filter.filter(clientRequestContext);
-
-            // Then: x-trace-id header is NOT added
-            assertThat(headers.containsKey(TRACE_ID_HEADER), is(false));
-        }
-
-        @Test
-        @DisplayName("Should NOT add any headers when all MDC values are absent")
+        @DisplayName("Should NOT add any correlation headers when all MDC values are absent")
         public void shouldNotAddAnyHeadersWhenAllMdcValuesAreAbsent() throws Exception {
             // Given: MDC is completely empty (no correlation IDs)
             final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
@@ -210,7 +192,6 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             // Then: No correlation headers are added
             assertThat(headers.containsKey(TX_ID_HEADER), is(false));
             assertThat(headers.containsKey(REQ_ID_HEADER), is(false));
-            assertThat(headers.containsKey(TRACE_ID_HEADER), is(false));
         }
 
         @Test
@@ -272,24 +253,6 @@ public class OutboundCorrelationFilterTest extends UnitTest {
             // Then: The existing header value is preserved
             assertThat(headers.get(REQ_ID_HEADER), hasSize(1));
             assertThat(headers.getFirst(REQ_ID_HEADER), is(equalTo("existing-req-id")));
-        }
-
-        @Test
-        @DisplayName("Should NOT overwrite existing x-trace-id header")
-        public void shouldNotOverwriteExistingTraceIdHeader() throws Exception {
-            // Given: MDC has a trace ID and outbound request already carries that header
-            EcsFields.tag(TRACE_ID, "0123456789abcdef0123456789abcdef");
-            final MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
-            headers.putSingle(TRACE_ID_HEADER, "existing-trace-id");
-            when(clientRequestContext.getHeaders()).thenReturn(headers);
-            final OutboundCorrelationFilter filter = new OutboundCorrelationFilter(filterConfig);
-
-            // When: Filter processes the outbound request
-            filter.filter(clientRequestContext);
-
-            // Then: The existing header value is preserved
-            assertThat(headers.get(TRACE_ID_HEADER), hasSize(1));
-            assertThat(headers.getFirst(TRACE_ID_HEADER), is(equalTo("existing-trace-id")));
         }
     }
 }

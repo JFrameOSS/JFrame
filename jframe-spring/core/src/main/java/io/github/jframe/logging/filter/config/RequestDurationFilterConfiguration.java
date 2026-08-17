@@ -32,8 +32,9 @@ import static io.github.jframe.logging.filter.FilterRegistrator.register;
  * <h2>Configuration Properties</h2>
  * <p>The filter can be configured using the following properties:
  * <ul>
- * <li>{@code jframe.logging.filters.request-duration.enabled} - Enable/disable the filter (default: true)</li>
- * <li>{@code jframe.logging.filters.request-duration.order} - Filter execution order (default: -17500)</li>
+ * <li>{@code jframe.logging.filters.request-duration.enabled} - Enable/disable the filter
+ * (default: true)</li>
+ * <li>{@code jframe.logging.filters.request-duration.order} - Filter execution order (default: -600)</li>
  * </ul>
  *
  * <h2>Configuration Example</h2>
@@ -43,7 +44,7 @@ import static io.github.jframe.logging.filter.FilterRegistrator.register;
  * filters:
  * request-duration:
  * enabled: true
- * order: -17500
+ * order: -600
  * </pre>
  *
  * <p><strong>Note:</strong> The filter uses a {@link FilterVoter} to determine whether duration tracking
@@ -68,7 +69,7 @@ public class RequestDurationFilterConfiguration {
      */
     public static final String FILTER_PREFIX = CONFIG_PREFIX + ".filters.request-duration";
 
-    @Value("${" + FILTER_PREFIX + ".order:-17500}")
+    @Value("${" + FILTER_PREFIX + ".order:-600}")
     private int filterOrder;
 
     /**

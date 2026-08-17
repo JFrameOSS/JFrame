@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /** Media type voter allows configuration of allowed media types for JAX-RS filter decisions. */
 @Slf4j
@@ -13,8 +14,8 @@ public class MediaTypeVoter {
 
     private static final String WILDCARD_ALL = "*/*";
 
-    /** The configured allowed content types. */
-    private final List<String> allowedContentTypes;
+    /** The configured allowed content types, pre-normalised (trimmed + lowercased) at construction. */
+    private final List<String> normalizedAllowedTypes;
 
     /** The fallback value when content type is absent or allowed list is empty. */
     private final boolean matchIfEmpty;
@@ -26,7 +27,11 @@ public class MediaTypeVoter {
      * @param matchIfEmpty        the value returned when content type or allowed list is absent
      */
     public MediaTypeVoter(final List<String> allowedContentTypes, final boolean matchIfEmpty) {
-        this.allowedContentTypes = allowedContentTypes;
+        this.normalizedAllowedTypes = allowedContentTypes == null
+            ? List.of()
+            : allowedContentTypes.stream()
+                .map(s -> s.trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toUnmodifiableList());
         this.matchIfEmpty = matchIfEmpty;
         log.debug("Configured allowed content types: '{}'.", allowedContentTypes);
     }
@@ -39,7 +44,7 @@ public class MediaTypeVoter {
      */
     public boolean matches(final String contentType) {
         final boolean emptyInput = contentType == null || contentType.isBlank();
-        final boolean emptyList = allowedContentTypes == null || allowedContentTypes.isEmpty();
+        final boolean emptyList = normalizedAllowedTypes.isEmpty();
 
         boolean result = matchIfEmpty;
 
@@ -55,9 +60,10 @@ public class MediaTypeVoter {
         boolean found = false;
 
         if (baseType != null) {
-            for (final String allowed : allowedContentTypes) {
-                if (typeMatches(allowed, baseType)) {
-                    log.trace("Content type '{}' matched allowed type '{}'.", baseType, allowed);
+            final String normalizedActual = baseType.trim().toLowerCase(Locale.ROOT);
+            for (final String normalizedAllowed : normalizedAllowedTypes) {
+                if (typeMatches(normalizedAllowed, normalizedActual)) {
+                    log.trace("Content type '{}' matched allowed type '{}'.", baseType, normalizedAllowed);
                     found = true;
                 }
             }
@@ -89,13 +95,11 @@ public class MediaTypeVoter {
     }
 
     /**
-     * Checks whether the {@code allowed} type pattern matches the {@code actual} base type.
+     * Checks whether the {@code normalizedAllowed} type pattern matches the {@code normalizedActual} base type.
+     * Both arguments must already be trimmed and lowercased.
      * Supports wildcards: {@code *}{@code /*} and {@code type/*}.
      */
-    private static boolean typeMatches(final String allowed, final String actual) {
-        final String normalizedAllowed = allowed.trim().toLowerCase(Locale.ROOT);
-        final String normalizedActual = actual.trim().toLowerCase(Locale.ROOT);
-
+    private static boolean typeMatches(final String normalizedAllowed, final String normalizedActual) {
         boolean result = WILDCARD_ALL.equals(normalizedAllowed);
 
         if (!result) {

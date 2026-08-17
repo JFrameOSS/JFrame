@@ -7,9 +7,8 @@ dependencies {
     api(project(":jframe-spring-core"))
 
     // ======= NECESSARY SPRING DEPENDENCIES =======
-    api("org.springframework.boot", "spring-boot-starter-jdbc")
-    api("org.springframework.boot", "spring-boot-starter-data-jpa")
+    api("org.springframework.boot:spring-boot-starter-data-jpa")
 
     // ======= OTHER DEPENDENCIES =======
-    implementation("net.ttddyy", "datasource-proxy", retrieve("datasourceProxyVersion"))
+    implementation("net.ttddyy:datasource-proxy:${retrieve("datasourceProxyVersion")}")
 }

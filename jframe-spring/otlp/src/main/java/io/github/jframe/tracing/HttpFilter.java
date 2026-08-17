@@ -51,9 +51,8 @@ public class HttpFilter {
         log.debug("Creating request interceptor for service: '{}'", serviceName);
         return (request, body, execution) -> {
             log.trace("Processing Interceptor with MDC context: {}", MDC.getCopyOfContextMap());
-            request.getHeaders().add(REQ_ID_HEADER, EcsFields.get(REQUEST_ID));
-            request.getHeaders().add(TX_ID_HEADER, EcsFields.get(TX_ID));
-            request.getHeaders().add(TRACE_ID_HEADER, EcsFields.get(TRACE_ID));
+            addHeaderIfPresent(request.getHeaders(), REQ_ID_HEADER, EcsFields.get(REQUEST_ID));
+            addHeaderIfPresent(request.getHeaders(), TX_ID_HEADER, EcsFields.get(TX_ID));
             logRequest(request.getMethod(), request.getURI(), request.getHeaders());
 
             spanManager.ifPresent(sm -> sm.injectTraceContext(request.getHeaders()));
@@ -103,10 +102,9 @@ public class HttpFilter {
 
     private Mono<ClientRequest> processRequest(final ClientRequest request, final String serviceName) {
         log.trace("Processing Exchange Filter with MDC context: {}", MDC.getCopyOfContextMap());
-        final ClientRequest.Builder builder = ClientRequest.from(request)
-            .header(REQ_ID_HEADER, EcsFields.get(REQUEST_ID))
-            .header(TX_ID_HEADER, EcsFields.get(TX_ID))
-            .header(TRACE_ID_HEADER, EcsFields.get(TRACE_ID));
+        final ClientRequest.Builder builder = ClientRequest.from(request);
+        addHeaderIfPresent(builder, REQ_ID_HEADER, EcsFields.get(REQUEST_ID));
+        addHeaderIfPresent(builder, TX_ID_HEADER, EcsFields.get(TX_ID));
 
         spanManager.ifPresent(sm -> sm.injectTraceContext(builder));
         spanManager.ifPresent(sm -> {
@@ -139,6 +137,17 @@ public class HttpFilter {
     private void tagEcsFields(final HttpHeaders headers) {
         EcsFields.tag(TX_ID, headers.getFirst(TX_ID_HEADER));
         EcsFields.tag(REQUEST_ID, headers.getFirst(REQ_ID_HEADER));
-        EcsFields.tag(TRACE_ID, headers.getFirst(TRACE_ID_HEADER));
+    }
+
+    private static void addHeaderIfPresent(final HttpHeaders headers, final String name, final String value) {
+        if (value != null && !value.isBlank()) {
+            headers.add(name, value);
+        }
+    }
+
+    private static void addHeaderIfPresent(final ClientRequest.Builder builder, final String name, final String value) {
+        if (value != null && !value.isBlank()) {
+            builder.header(name, value);
+        }
     }
 }

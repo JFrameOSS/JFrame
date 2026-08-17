@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +27,10 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
  *
  * <p>The utility can be used to generate HTTP request / response log strings. Both for incoming
  * service calls as outgoing calls (i.e. calls to backend systems).
+ *
+ * <p>Body-size capping is applied at this layer before masking for paths that do not apply the
+ * cap at the byte-read layer (servlet request and response). This ensures that the expensive
+ * password-masking pass never operates on payload beyond the configured cap.
  */
 @Slf4j
 @Component
@@ -41,18 +44,25 @@ public class HttpRequestResponseBodyLogger {
     private final LoggingProperties loggingProperties;
 
     /**
-     * Get the request body. With password masking.
+     * Get the request body. With body-size cap enforcement and password masking.
+     *
+     * <p>The cap ({@code jframe.logging.response-length}) is applied before masking so that
+     * the masker never receives payload beyond the cap boundary.
      *
      * @param servletRequest The servlet request.
      * @return The body.
      * @throws IOException In case the body could not be read.
      */
     public String getTxRequestBody(final HttpServletRequest servletRequest) throws IOException {
-        return passwordMasker.maskPasswordsIn(getPostBody(servletRequest));
+        final String body = getPostBody(servletRequest);
+        return HttpBodyUtil.compressAndMaskBody(body, loggingProperties.getResponseLength(), passwordMasker);
     }
 
     /**
-     * Get the response body. With password masking.
+     * Get the response body. With body-size cap enforcement and password masking.
+     *
+     * <p>The cap ({@code jframe.logging.response-length}) is applied before masking so that
+     * the masker never receives payload beyond the cap boundary.
      *
      * @param servletResponse The servlet response.
      * @return The body.
@@ -65,17 +75,22 @@ public class HttpRequestResponseBodyLogger {
         if (characterEncoding == null || characterEncoding.isEmpty()) {
             characterEncoding = Charset.defaultCharset().name();
         }
-        return passwordMasker.maskPasswordsIn(toString(servletResponse.getContentAsByteArray(), characterEncoding));
+        final String body = toString(servletResponse.getContentForLogging(), characterEncoding);
+        return HttpBodyUtil.compressAndMaskBody(body, loggingProperties.getResponseLength(), passwordMasker);
     }
 
     /**
-     * Get the call request body. With password masking.
+     * Get the call request body. With body-size cap enforcement and password masking.
+     *
+     * <p>The cap ({@code jframe.logging.response-length}) is applied before masking so that
+     * the masker never receives payload beyond the cap boundary.
      *
      * @param body The http request body.
      * @return The body.
      */
     public String getCallRequestBody(final byte[] body) {
-        return passwordMasker.maskPasswordsIn(toString(body, Charset.defaultCharset()));
+        final String bodyStr = toString(body, Charset.defaultCharset());
+        return HttpBodyUtil.compressAndMaskBody(bodyStr, loggingProperties.getResponseLength(), passwordMasker);
     }
 
     /**
@@ -101,7 +116,9 @@ public class HttpRequestResponseBodyLogger {
     }
 
     private static String getPostBody(final HttpServletRequest servletRequest) throws IOException {
-        final String body = IOUtils.toString(servletRequest.getInputStream(), servletRequest.getCharacterEncoding());
+        final String encoding = servletRequest.getCharacterEncoding();
+        final Charset charset = encoding != null ? Charset.forName(encoding) : Charset.defaultCharset();
+        final String body = new String(servletRequest.getInputStream().readAllBytes(), charset);
         if (StringUtils.isNotBlank(body)) {
             return body;
         }

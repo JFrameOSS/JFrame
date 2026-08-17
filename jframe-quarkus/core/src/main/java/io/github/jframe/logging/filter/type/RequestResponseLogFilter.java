@@ -45,7 +45,7 @@ public class RequestResponseLogFilter implements ContainerRequestFilter, Contain
         if (!filterConfig.requestResponse().enabled()) {
             return;
         }
-        if (filterVoter.enabled(requestContext)) {
+        if (requestResponseLogger.isDebugEnabled() && filterVoter.enabled(requestContext)) {
             final CachingRequestContext cachingRequest = new CachingRequestContext(requestContext);
             requestContext.setProperty(CACHING_REQUEST_PROPERTY, cachingRequest);
             requestResponseLogger.logRequest(cachingRequest);
@@ -59,7 +59,7 @@ public class RequestResponseLogFilter implements ContainerRequestFilter, Contain
             if (!filterConfig.requestResponse().enabled()) {
                 return;
             }
-            if (filterVoter.enabled(requestContext)) {
+            if (requestResponseLogger.isDebugEnabled() && filterVoter.enabled(requestContext)) {
                 final CachingResponseContext cachingResponse = new CachingResponseContext(responseContext);
                 requestResponseLogger.logResponse(requestContext, cachingResponse);
             }

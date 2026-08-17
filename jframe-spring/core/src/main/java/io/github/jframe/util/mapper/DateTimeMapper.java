@@ -39,6 +39,9 @@ public class DateTimeMapper {
      * Converts a string to a OffsetDateTime.
      */
     public OffsetDateTime toOffsetDateTime(final String timestamp) {
+        if (timestamp == null) {
+            return null;
+        }
         final LocalDateTime localDateTime = LocalDateTime.parse(timestamp);
         return OffsetDateTime.of(localDateTime, UTC);
     }

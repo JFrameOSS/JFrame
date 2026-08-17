@@ -124,31 +124,6 @@ class OpenTelemetryPropertiesTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should have default propagators value of tracecontext,baggage")
-    void getPropagators_withDefaults_shouldReturnW3cPropagators() {
-        // Given: OpenTelemetryProperties with default values
-
-        // When: Getting propagators value
-        final String propagators = properties.getPropagators();
-
-        // Then: Default value is W3C trace context propagators
-        assertThat(propagators, is("tracecontext,baggage"));
-    }
-
-    @Test
-    @DisplayName("Should set and get propagators property")
-    void setPropagators_withValidValue_shouldSetAndGet() {
-        // Given: A custom propagators value
-        final String propagators = "b3,baggage";
-
-        // When: Setting the propagators property
-        properties.setPropagators(propagators);
-
-        // Then: Propagators property is set correctly
-        assertThat(properties.getPropagators(), is(propagators));
-    }
-
-    @Test
     @DisplayName("Should fail validation when url is null")
     void validate_withNullUrl_shouldFailValidation() {
         // Given: OpenTelemetryProperties with null url

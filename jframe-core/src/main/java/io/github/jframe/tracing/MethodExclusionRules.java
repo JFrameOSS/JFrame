@@ -26,11 +26,15 @@ public final class MethodExclusionRules {
      * <li>its lowercase name is present in {@code configExcludedMethods}.</li>
      * </ul>
      *
+     * <p>When {@code configExcludedMethods} is empty (the common case) the lowercase
+     * conversion is skipped entirely, avoiding a per-call string allocation.
+     *
      * @param methodName            the simple method name to test
      * @param configExcludedMethods set of method names (lowercase) from application configuration
      * @return {@code true} if the method should be excluded
      */
     public static boolean isExcluded(final String methodName, final Set<String> configExcludedMethods) {
-        return EXCLUDED_NAMES.contains(methodName) || configExcludedMethods.contains(methodName.toLowerCase());
+        return EXCLUDED_NAMES.contains(methodName)
+            || (!configExcludedMethods.isEmpty() && configExcludedMethods.contains(methodName.toLowerCase()));
     }
 }

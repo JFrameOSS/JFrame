@@ -29,9 +29,9 @@ import static org.mockito.Mockito.mock;
  * on the response resource for all supported exception types:
  * <ul>
  * <li>{@link HttpException} — uses ApiError for errorCode/errorReason, cause from wrapped throwable</li>
- * <li>{@link ValidationException} — maps to JFRAME_VALIDATION_ERROR / "Validation failed"</li>
- * <li>{@link ConstraintViolationException} — maps to JFRAME_VALIDATION_ERROR / "Validation failed"</li>
- * <li>Unhandled {@link Throwable} — maps to JFRAME_INTERNAL_ERROR / "Internal server error" with exception message as cause</li>
+ * <li>{@link ValidationException} — maps to VALIDATION_ERROR / "Validation failed"</li>
+ * <li>{@link ConstraintViolationException} — maps to VALIDATION_ERROR / "Validation failed"</li>
+ * <li>Unhandled {@link Throwable} — maps to INTERNAL_SERVER_ERROR / "Internal server error" with exception message as cause</li>
  * </ul>
  */
 @DisplayName("Unit Test - Error Code Response Enricher")
@@ -99,7 +99,7 @@ public class ErrorCodeResponseEnricherTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should set JFRAME_VALIDATION_ERROR code and reason for ValidationException")
+    @DisplayName("Should set VALIDATION_ERROR code and reason for ValidationException")
     public void shouldSetValidationErrorCodeForValidationException() {
         // Given: A JFrame ValidationException
         final ErrorResponseResource resource = new ErrorResponseResource();
@@ -109,13 +109,13 @@ public class ErrorCodeResponseEnricherTest extends UnitTest {
         // When: Enriching the response
         enricher.doEnrich(resource, exception, requestContext, 400);
 
-        // Then: errorCode is JFRAME_VALIDATION_ERROR and errorReason is "Validation failed"
-        assertThat(resource.getErrorCode(), is(equalTo("JFRAME_VALIDATION_ERROR")));
+        // Then: errorCode is VALIDATION_ERROR and errorReason is "Validation failed"
+        assertThat(resource.getErrorCode(), is(equalTo("VALIDATION_ERROR")));
         assertThat(resource.getErrorReason(), is(equalTo("Validation failed")));
     }
 
     @Test
-    @DisplayName("Should set JFRAME_VALIDATION_ERROR code and reason for ConstraintViolationException")
+    @DisplayName("Should set VALIDATION_ERROR code and reason for ConstraintViolationException")
     public void shouldSetValidationErrorCodeForConstraintViolationException() {
         // Given: A Jakarta ConstraintViolationException (Quarkus-specific validation failure)
         final ErrorResponseResource resource = new ErrorResponseResource();
@@ -128,13 +128,13 @@ public class ErrorCodeResponseEnricherTest extends UnitTest {
         // When: Enriching the response
         enricher.doEnrich(resource, exception, requestContext, 400);
 
-        // Then: errorCode is JFRAME_VALIDATION_ERROR and errorReason is "Validation failed"
-        assertThat(resource.getErrorCode(), is(equalTo("JFRAME_VALIDATION_ERROR")));
+        // Then: errorCode is VALIDATION_ERROR and errorReason is "Validation failed"
+        assertThat(resource.getErrorCode(), is(equalTo("VALIDATION_ERROR")));
         assertThat(resource.getErrorReason(), is(equalTo("Validation failed")));
     }
 
     @Test
-    @DisplayName("Should set JFRAME_INTERNAL_ERROR code with cause for unhandled Throwable")
+    @DisplayName("Should set INTERNAL_SERVER_ERROR code with cause for unhandled Throwable")
     public void shouldSetInternalErrorCodeForUnhandledThrowable() {
         // Given: An unhandled RuntimeException that is not a JFrame or validation exception
         final RuntimeException exception = new RuntimeException("something went wrong");
@@ -144,8 +144,8 @@ public class ErrorCodeResponseEnricherTest extends UnitTest {
         // When: Enriching the response
         enricher.doEnrich(resource, exception, requestContext, 500);
 
-        // Then: errorCode is JFRAME_INTERNAL_ERROR with cause set to exception message
-        assertThat(resource.getErrorCode(), is(equalTo("JFRAME_INTERNAL_ERROR")));
+        // Then: errorCode is INTERNAL_SERVER_ERROR with cause set to exception message
+        assertThat(resource.getErrorCode(), is(equalTo("INTERNAL_SERVER_ERROR")));
         assertThat(resource.getErrorReason(), is(equalTo("Internal server error")));
         assertThat(resource.getCause(), is(equalTo("something went wrong")));
     }

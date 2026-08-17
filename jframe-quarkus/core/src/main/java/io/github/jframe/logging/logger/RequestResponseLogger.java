@@ -9,6 +9,19 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 public interface RequestResponseLogger {
 
     /**
+     * Returns {@code true} when DEBUG logging is enabled.
+     *
+     * <p>The default implementation returns {@code true} so that existing custom
+     * implementations keep compiling and retain their current (always-log) behaviour.
+     * Override in concrete implementations to gate on the actual logger level.
+     *
+     * @return {@code true} if DEBUG logging is enabled
+     */
+    default boolean isDebugEnabled() {
+        return true;
+    }
+
+    /**
      * Logs the incoming HTTP request.
      *
      * @param request the caching request context

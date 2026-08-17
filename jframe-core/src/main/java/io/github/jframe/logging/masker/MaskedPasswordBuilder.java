@@ -22,6 +22,12 @@ public class MaskedPasswordBuilder {
     /** The string that contains the {@link MaskedPasswordBuilder#pattern} string. */
     private final String stringToMask;
 
+    /** Lowercase copy of {@link #stringToMask} used by {@link #findNextPassword()} for case-insensitive search. */
+    private final String lowerCaseStringToMask;
+
+    /** Lowercase copy of {@link #pattern} used by {@link #findNextPassword()} for case-insensitive search. */
+    private final String lowerCasePattern;
+
     /** The index of the current character. */
     private int currentIndex;
 
@@ -45,6 +51,8 @@ public class MaskedPasswordBuilder {
         this.stringToMask = requireNonNull(stringToMask);
         this.pattern = pattern;
         this.patternLength = pattern.length();
+        this.lowerCaseStringToMask = stringToMask.toLowerCase();
+        this.lowerCasePattern = pattern.toLowerCase();
     }
 
     /**
@@ -127,7 +135,7 @@ public class MaskedPasswordBuilder {
      * @return {@code true} if there is another password to be found in the string to mask.
      */
     public boolean findNextPassword() {
-        final int index = stringToMask.toLowerCase().indexOf(pattern.toLowerCase(), currentIndex);
+        final int index = lowerCaseStringToMask.indexOf(lowerCasePattern, currentIndex);
         if (index == -1) {
             return false;
         }

@@ -216,7 +216,7 @@ try (var s = SqlStatementLogging.suppress()) {
 
 ## Utilities
 
-- `Constants.Headers` — TX_ID_HEADER, REQ_ID_HEADER, TRACE_ID_HEADER, SPAN_ID_HEADER, rate limit headers
+- `Constants.Headers` — TX_ID_HEADER, REQ_ID_HEADER, rate limit headers (TRACE_ID_HEADER and SPAN_ID_HEADER removed)
 - `Constants.DateTime` — EUROPE_AMSTERDAM zone, ISO formatter, epoch start
 - `RequestId` / `TransactionId` — ThreadLocal UUID storage
 - `PathDefinition` — Ant-style path matcher (`/api/**`, `/user/*`, `/item/?`)
@@ -267,11 +267,13 @@ All extend `AbstractGenericFilter` (extends `OncePerRequestFilter`). Toggle with
 
 | Filter | Default Order | MDC Fields | Purpose |
 |--------|--------------|------------|---------|
-| `RequestDurationFilter` | -17500 | `event.duration`, `transaction.duration` | Measures request duration |
-| `TracingResponseFilter` | -1000 | `trace.id`, `span.id` | Adds trace context to response (from OTLP module) |
-| `RequestResponseLogFilter` | -950 | `event.category`, request/response fields | Logs HTTP request/response |
-| `TransactionIdFilter` | -500 | `transaction.id` | Reads/generates TX-ID from header |
-| `RequestIdFilter` | -400 | `request.id` | Generates unique request ID |
+| `RequestDurationFilter` | -17500 | `event.duration`, `transaction.duration` | Measures request duration (enabled by default) |
+| `RequestResponseLogFilter` | -950 | `event.category`, request/response fields | Logs HTTP request/response (enabled by default) |
+| `TransactionIdFilter` | -500 | `transaction.id` | Reads/generates TX-ID from header (opt-in) |
+| `RequestIdFilter` | -400 | `request.id` | Generates unique request ID (opt-in) |
+| `UserIdentityFilter` | -100 | `user.name` | Captures authenticated user identity (enabled by default) |
+
+**Performance note:** `RequestResponseLogFilter` and `RequestDurationFilter` short-circuit when DEBUG logging is disabled, causing zero overhead in production. Their output is written at DEBUG level.
 
 ## Global Exception Handling
 
@@ -507,10 +509,6 @@ public WebClient webClient(HttpFilter httpFilter) {
 
 `SpanManager` — creates/enriches outbound spans with attributes: `peer.service`, HTTP method/URI, response status.
 
-## Response Filter
-
-`TracingResponseFilter` (order -1000) — adds `x-trace-id` and `x-span-id` to HTTP response headers + MDC. Toggle: `jframe.logging.filters.tracing-id.enabled`.
-
 ## Error Response Enrichment
 
 `TracingResponseEnricher` — adds trace/span IDs to error responses, records exceptions on current span with HTTP attributes.
@@ -559,19 +557,20 @@ All `@Provider @ApplicationScoped`, implement `ContainerRequestFilter` + `Contai
 
 | Filter | @Priority | MDC Fields | Purpose |
 |--------|-----------|------------|---------|
-| `TransactionIdFilter` | 100 | `transaction.id` | Reads/generates TX-ID from header |
-| `RequestIdFilter` | 200 | `request.id` | Generates unique request ID |
-| `RequestDurationFilter` | 300 | `event.duration`, `transaction.duration` | Measures request duration |
-| `RequestResponseLogFilter` | 400 | request/response fields | Logs HTTP request/response |
+| `TransactionIdFilter` | 100 | `transaction.id` | Reads/generates TX-ID from header (opt-in) |
+| `RequestIdFilter` | 200 | `request.id` | Generates unique request ID (opt-in) |
+| `RequestDurationFilter` | 300 | `event.duration`, `transaction.duration` | Measures request duration (enabled by default) |
+| `RequestResponseLogFilter` | 400 | request/response fields | Logs HTTP request/response (enabled by default) |
+| `UserIdentityFilter` | 50 | `user.name` | Captures authenticated user identity (enabled by default) |
 
 ### Outbound Filters (`ClientRequestFilter`)
 
 | Filter | @Priority | Purpose |
 |--------|-----------|---------|
-| `OutboundCorrelationFilter` | 100 | Propagates txId, reqId, traceId to outbound headers |
-| `OutboundLoggingFilter` | 300 | Logs outbound HTTP request/response |
+| `OutboundCorrelationFilter` | 100 | Propagates txId and reqId to outbound headers; trace context uses W3C `traceparent` (opt-in) |
+| `OutboundLoggingFilter` | 300 | Logs outbound HTTP request/response (opt-in) |
 
-Toggle all with `jframe.logging.filters.{name}.enabled` (default: `true`).
+Toggle filters with `jframe.logging.filters.{name}.enabled`. RequestResponseLogFilter and RequestDurationFilter output at DEBUG level.
 
 ## Configuration
 
@@ -598,7 +597,7 @@ Toggle all with `jframe.logging.filters.{name}.enabled` (default: `true`).
 
 ### `jframe.logging.filters` (FilterConfig, @ConfigMapping)
 
-Each sub-config has `enabled()` (default: `true`): `transactionId`, `requestId`, `requestDuration`, `requestResponse`, `outboundCorrelation`, `outboundLogging`, `tracingResponse`.
+Each sub-config has `enabled()`: `transactionId` (default: `true`), `requestId` (default: `false`), `requestDuration` (default: `true`), `requestResponse` (default: `true`), `outboundCorrelation` (default: `false`), `outboundLogging` (default: `false`).
 
 ## CDI Producers
 
@@ -803,13 +802,9 @@ jframe properties are mapped to Quarkus OTEL properties:
 | Messaging | `quarkus.otel.instrument.messaging` | `true` |
 | Vert.x HTTP | `quarkus.otel.instrument.rest` | `true` |
 
-## Response Filter
-
-`TracingResponseFilter` (@Priority 350) — adds `x-trace-id` and `x-span-id` to response headers + MDC. Toggle: `jframe.logging.filters.tracing-response.enabled`.
-
 ## Error Enrichment
 
-`TracingEnricher` — adds trace/span IDs to error responses, records exception on span with HTTP attributes (uri, method, status, content-type).
+`TracingEnricher` — adds trace/span IDs to error responses, records exception on span with HTTP attributes (uri, method, status, content-type). Uses W3C `traceparent` header for trace context propagation.
 
 ## Security
 

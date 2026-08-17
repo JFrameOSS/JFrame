@@ -33,8 +33,9 @@ import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
  * <h2>Configuration Properties</h2>
  * <p>The filter can be configured using the following properties:
  * <ul>
- * <li>{@code jframe.logging.filters.transaction-id.enabled} - Enable/disable the filter (default: true)</li>
- * <li>{@code jframe.logging.filters.transaction-id.order} - Filter execution order (default: -500)</li>
+ * <li>{@code jframe.logging.filters.transaction-id.enabled} - Enable/disable the filter (default: false) —
+ * this filter is opt-in and intended as a debugging aid; enable it explicitly when needed</li>
+ * <li>{@code jframe.logging.filters.transaction-id.order} - Filter execution order (default: -800)</li>
  * </ul>
  *
  * <h2>Configuration Example</h2>
@@ -44,7 +45,7 @@ import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
  * filters:
  * transaction-id:
  * enabled: true
- * order: -500
+ * order: -800
  * </pre>
  *
  * <p>The filter reads the transaction ID from the HTTP header defined by
@@ -59,7 +60,7 @@ import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 @ConditionalOnProperty(
     prefix = TransactionIdFilterConfiguration.FILTER_PREFIX,
     name = "enabled",
-    matchIfMissing = true
+    matchIfMissing = false
 )
 public class TransactionIdFilterConfiguration {
 
@@ -69,7 +70,7 @@ public class TransactionIdFilterConfiguration {
      */
     public static final String FILTER_PREFIX = CONFIG_PREFIX + ".filters.transaction-id";
 
-    @Value("${" + FILTER_PREFIX + ".order:-500}")
+    @Value("${" + FILTER_PREFIX + ".order:-800}")
     private int filterOrder;
 
     /**
@@ -81,7 +82,7 @@ public class TransactionIdFilterConfiguration {
     @ConditionalOnProperty(
         prefix = FILTER_PREFIX,
         name = "enabled",
-        matchIfMissing = true
+        matchIfMissing = false
     )
     public TransactionIdFilter transactionIdFilter() {
         log.trace("Configuration: header '{}', order '{}'.", TX_ID_HEADER, filterOrder);
@@ -98,7 +99,7 @@ public class TransactionIdFilterConfiguration {
     @ConditionalOnProperty(
         prefix = FILTER_PREFIX,
         name = "enabled",
-        matchIfMissing = true
+        matchIfMissing = false
     )
     public FilterRegistrationBean<TransactionIdFilter> transactionIdFilterRegistration(final TransactionIdFilter filter) {
         return register(filter, filterOrder);

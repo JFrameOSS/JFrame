@@ -1,0 +1,6 @@
+# Gradle deprecation allowlist — third-party plugins we cannot fix.
+# Each line is a stable substring matched against the full deprecation warning text.
+# Format: <substring>  # <plugin> <version observed>
+val name: Type by project  # com.github.vlsi.jandex 4.0.0
+Using a Project object as a dependency notation  # com.gradleup.nmcp 1.6.1
+Using a `Provider` where a `boolean` is expected  # ru.vyarus.quality 6.1.0

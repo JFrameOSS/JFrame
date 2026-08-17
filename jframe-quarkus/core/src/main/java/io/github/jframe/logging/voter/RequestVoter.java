@@ -45,17 +45,15 @@ public class RequestVoter {
     }
 
     private boolean isNotExcluded(final String method, final String path) {
-        boolean notExcluded = true;
-
         for (final PathDefinition exclusion : excludePaths) {
             final boolean excluded = exclusion.matches(method, path);
             log.trace("Request '{} {}' matches exclusion '{}': '{}'.", method, path, exclusion, excluded);
             if (excluded) {
                 log.debug("Request '{} {}' excluded by pattern '{}'.", method, path, exclusion);
-                notExcluded = false;
+                return false;
             }
         }
 
-        return notExcluded;
+        return true;
     }
 }

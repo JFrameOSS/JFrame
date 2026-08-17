@@ -93,9 +93,4 @@ public class OpenTelemetryProperties {
      */
     private Set<String> excludedMethods = OtlpDefaults.parseCommaSeparated(OtlpDefaults.DEFAULT_EXCLUDED_METHODS);
 
-    /**
-     * W3C trace context propagators. Comma-separated list of propagator names (e.g., tracecontext,baggage).
-     */
-    private String propagators = OtlpDefaults.DEFAULT_PROPAGATORS;
-
 }

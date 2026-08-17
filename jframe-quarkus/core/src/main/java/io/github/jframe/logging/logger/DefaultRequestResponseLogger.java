@@ -54,6 +54,11 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
     private final MediaTypeVoter bodyExcludedMediaTypeVoter;
 
     @Override
+    public boolean isDebugEnabled() {
+        return log.isDebugEnabled();
+    }
+
+    @Override
     public void logRequest(final CachingRequestContext request) {
         final String method = request.getMethod();
         final String requestUri = extractPath(request.getUriInfo());
@@ -78,7 +83,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
             }
             addBodyTag(contentTypeCanBeLogged, TX_REQUEST_BODY, requestBody);
 
-            log.info(
+            log.debug(
                 "Invoked '{} {}' with content type '{}' and size of '{}' bytes.",
                 method,
                 requestUri,
@@ -129,7 +134,7 @@ public class DefaultRequestResponseLogger implements RequestResponseLogger {
             addBodyTag(contentTypeCanBeLogged, TX_RESPONSE_BODY, responseBody);
 
             final String requestUri = extractPath(request.getUriInfo());
-            log.info(
+            log.debug(
                 "Response '{}' is '{}' with content type '{}' and size of '{}' bytes.",
                 requestUri,
                 status + " " + reasonPhrase,

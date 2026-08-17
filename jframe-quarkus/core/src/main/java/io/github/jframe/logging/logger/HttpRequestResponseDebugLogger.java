@@ -29,7 +29,6 @@ public class HttpRequestResponseDebugLogger {
      * @param body       request body (may be null or empty)
      * @return formatted debug string
      */
-    @SuppressWarnings("PMD.UseObjectForClearerAPI")
     public String getRequestDebugOutput(
         final String method,
         final String requestUri,

@@ -13,18 +13,19 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 
 import static io.github.jframe.logging.ecs.EcsFieldNames.REQUEST_ID;
-import static io.github.jframe.logging.ecs.EcsFieldNames.TRACE_ID;
 import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
 import static io.github.jframe.util.constants.Constants.Headers.REQ_ID_HEADER;
-import static io.github.jframe.util.constants.Constants.Headers.TRACE_ID_HEADER;
 import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
 
 /**
  * JAX-RS {@link ClientRequestFilter} that propagates correlation IDs from MDC to outbound HTTP headers.
  *
- * <p>Reads x-transaction-id, x-request-id and x-trace-id from {@link EcsFields} (SLF4J MDC)
+ * <p>Reads x-transaction-id and x-request-id from {@link EcsFields} (SLF4J MDC)
  * and adds them as headers on the outbound request. Existing headers are never overwritten and
  * {@code null} or blank MDC values are silently skipped.
+ *
+ * <p>Trace context propagation is handled entirely by Quarkus's built-in OTel REST-client
+ * instrumentation via the standard W3C {@code traceparent} header — no jframe code needed.
  */
 @Provider
 @ApplicationScoped
@@ -51,7 +52,6 @@ public class OutboundCorrelationFilter implements ClientRequestFilter {
         final MultivaluedMap<String, Object> headers = requestContext.getHeaders();
         addHeaderIfAbsent(headers, TX_ID_HEADER, EcsFields.get(TX_ID));
         addHeaderIfAbsent(headers, REQ_ID_HEADER, EcsFields.get(REQUEST_ID));
-        addHeaderIfAbsent(headers, TRACE_ID_HEADER, EcsFields.get(TRACE_ID));
     }
 
     private void addHeaderIfAbsent(

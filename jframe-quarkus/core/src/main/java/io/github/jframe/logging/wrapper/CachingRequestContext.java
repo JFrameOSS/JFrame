@@ -27,10 +27,19 @@ import jakarta.ws.rs.core.UriInfo;
  * array on construction, enabling the body to be read multiple times.
  *
  * <p>All methods not related to body-buffering are delegated to the wrapped context.
+ *
+ * <p>The cap-aware constructor limits the logged copy to a configurable number of bytes while
+ * always restoring the full body to the delegate's entity stream so the JAX-RS handler receives
+ * the complete request.
  */
 public final class CachingRequestContext implements ContainerRequestContext {
 
     private final ContainerRequestContext delegate;
+
+    /** Full body — always the complete request bytes. */
+    private final byte[] fullBody;
+
+    /** Capped logging copy — may be shorter than {@link #fullBody}. */
     private final byte[] cachedBody;
 
     /**
@@ -46,15 +55,39 @@ public final class CachingRequestContext implements ContainerRequestContext {
     public CachingRequestContext(final ContainerRequestContext delegate) throws IOException {
         this.delegate = delegate;
         if (delegate.hasEntity()) {
-            this.cachedBody = delegate.getEntityStream().readAllBytes();
-            delegate.setEntityStream(new ByteArrayInputStream(this.cachedBody));
+            this.fullBody = delegate.getEntityStream().readAllBytes();
+            this.cachedBody = this.fullBody;
+            delegate.setEntityStream(new ByteArrayInputStream(this.fullBody));
         } else {
+            this.fullBody = new byte[0];
             this.cachedBody = new byte[0];
         }
     }
 
     /**
-     * Returns the buffered request body as a byte array.
+     * Cap-aware constructor. Reads the full body eagerly, stores a capped slice for logging, and
+     * restores the full body to the delegate's entity stream so the JAX-RS handler reads the
+     * complete request.
+     *
+     * @param delegate the original {@link ContainerRequestContext} to wrap
+     * @param byteCap  maximum bytes to retain in the logging copy.
+     *                 Use {@code -1} for unlimited; {@code 0} produces an empty logging copy.
+     * @throws IOException if an I/O error occurs while reading the entity stream
+     */
+    public CachingRequestContext(final ContainerRequestContext delegate, final int byteCap) throws IOException {
+        this.delegate = delegate;
+        if (delegate.hasEntity()) {
+            this.fullBody = delegate.getEntityStream().readAllBytes();
+            this.cachedBody = applyByteCap(this.fullBody, byteCap);
+            delegate.setEntityStream(new ByteArrayInputStream(this.fullBody));
+        } else {
+            this.fullBody = new byte[0];
+            this.cachedBody = new byte[0];
+        }
+    }
+
+    /**
+     * Returns the buffered request body (capped logging copy) as a byte array.
      *
      * @return the cached body bytes; never {@code null}, empty array if no entity was present
      */
@@ -63,7 +96,7 @@ public final class CachingRequestContext implements ContainerRequestContext {
     }
 
     /**
-     * Returns the buffered request body decoded as a UTF-8 string.
+     * Returns the buffered request body (capped logging copy) decoded as a UTF-8 string.
      *
      * @return the body as a UTF-8 string; empty string if no entity was present
      */
@@ -81,16 +114,25 @@ public final class CachingRequestContext implements ContainerRequestContext {
         return new String(cachedBody, Charset.forName(charset));
     }
 
+    private static byte[] applyByteCap(final byte[] data, final int byteCap) {
+        if (data == null || data.length == 0 || byteCap == 0) {
+            return new byte[0];
+        }
+        final int len = byteCap == -1 ? data.length : Math.min(data.length, byteCap);
+        return Arrays.copyOf(data, len);
+    }
+
     /**
-     * Returns a fresh {@link InputStream} over the cached body bytes.
+     * Returns a fresh {@link InputStream} over the FULL body bytes.
      *
-     * <p>Each call returns a new stream positioned at the beginning.
+     * <p>Each call returns a new stream positioned at the beginning. The full (uncapped) body
+     * is always returned so that downstream JAX-RS handlers receive the complete request.
      *
-     * @return a new {@link ByteArrayInputStream} backed by the cached body
+     * @return a new {@link ByteArrayInputStream} backed by the full body
      */
     @Override
     public InputStream getEntityStream() {
-        return new ByteArrayInputStream(cachedBody);
+        return new ByteArrayInputStream(fullBody);
     }
 
     @Override

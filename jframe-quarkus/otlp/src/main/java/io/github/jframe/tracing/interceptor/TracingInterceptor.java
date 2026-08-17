@@ -14,6 +14,8 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Method;
+import java.util.concurrent.ConcurrentHashMap;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
@@ -47,6 +49,21 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 @Priority(Interceptor.Priority.LIBRARY_BEFORE)
 @Traced
 public class TracingInterceptor {
+
+    /** Sentinel stored in {@link #spanNameCache} when {@link Traced#value()} is empty. */
+    private static final String NO_CUSTOM_SPAN_NAME = "";
+
+    /**
+     * Cache of resolved span names keyed by the intercepted {@link Method}.
+     *
+     * <p>The key set is bounded by the number of distinct {@code @Traced} methods in the
+     * application — a small, finite set — so a plain {@link ConcurrentHashMap} is safe.
+     * The cached value is the resolved span-name string (never {@code null}, because
+     * {@link ConcurrentHashMap} cannot store {@code null} values). A sentinel
+     * {@link #NO_CUSTOM_SPAN_NAME} is stored when the {@link Traced} annotation carries no
+     * custom value, so that the empty-string case is also cached.
+     */
+    private final ConcurrentHashMap<Method, String> spanNameCache = new ConcurrentHashMap<>();
 
     /** Lazily initialised; Mockito {@code @InjectMocks} injects a test double via reflection. */
     private volatile Tracer tracer;
@@ -159,8 +176,11 @@ public class TracingInterceptor {
     }
 
     private String resolveSpanName(final InvocationContext context, final String className, final String methodName) {
-        final Traced traced = context.getMethod().getAnnotation(Traced.class);
-        final String customName = traced != null ? traced.value() : null;
+        final String cached = spanNameCache.computeIfAbsent(context.getMethod(), method -> {
+            final Traced traced = method.getAnnotation(Traced.class);
+            return (traced != null && !traced.value().isEmpty()) ? traced.value() : NO_CUSTOM_SPAN_NAME;
+        });
+        final String customName = cached.isEmpty() ? null : cached;
         return SpanNamingUtil.resolveSpanName(className, methodName, customName);
     }
 

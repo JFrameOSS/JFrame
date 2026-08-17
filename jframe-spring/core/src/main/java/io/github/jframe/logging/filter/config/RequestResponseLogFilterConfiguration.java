@@ -1,5 +1,6 @@
 package io.github.jframe.logging.filter.config;
 
+import io.github.jframe.autoconfigure.properties.LoggingProperties;
 import io.github.jframe.logging.filter.type.RequestResponseLogFilter;
 import io.github.jframe.logging.logger.RequestResponseLogger;
 import io.github.jframe.logging.voter.FilterVoter;
@@ -33,8 +34,9 @@ import static io.github.jframe.logging.filter.FilterRegistrator.register;
  * <h2>Configuration Properties</h2>
  * <p>The filter can be configured using the following properties:
  * <ul>
- * <li>{@code jframe.logging.filters.request-response.enabled} - Enable/disable the filter (default: true)</li>
- * <li>{@code jframe.logging.filters.request-response.order} - Filter execution order (default: -950)</li>
+ * <li>{@code jframe.logging.filters.request-response.enabled} - Enable/disable the filter
+ * (default: true)</li>
+ * <li>{@code jframe.logging.filters.request-response.order} - Filter execution order (default: -700)</li>
  * <li>{@code jframe.logging.response-length} - Maximum response body length to log (default: -1 for unlimited)</li>
  * <li>{@code jframe.logging.allowed-content-types} - Content types to include in logging</li>
  * <li>{@code jframe.logging.exclude-paths} - Request paths to exclude from logging</li>
@@ -59,7 +61,7 @@ import static io.github.jframe.logging.filter.FilterRegistrator.register;
  * filters:
  * request-response:
  * enabled: true
- * order: -950
+ * order: -700
  * </pre>
  *
  * <p><strong>Security Note:</strong> This filter automatically masks sensitive fields (like passwords)
@@ -87,14 +89,15 @@ public class RequestResponseLogFilterConfiguration {
      */
     public static final String FILTER_PREFIX = CONFIG_PREFIX + ".filters.request-response";
 
-    @Value("${" + FILTER_PREFIX + ".order:-950}")
+    @Value("${" + FILTER_PREFIX + ".order:-700}")
     private int filterOrder;
 
     /**
      * Create the request/response logging filter bean.
      *
-     * @param voter  The filter voter.
-     * @param logger The logger.
+     * @param voter             The filter voter.
+     * @param logger            The logger.
+     * @param loggingProperties The logging configuration properties.
      * @return the {@link RequestResponseLogFilter} bean
      */
     @Bean
@@ -103,9 +106,10 @@ public class RequestResponseLogFilterConfiguration {
         name = "enabled",
         matchIfMissing = true
     )
-    public RequestResponseLogFilter requestResponseLogFilter(final FilterVoter voter, final RequestResponseLogger logger) {
+    public RequestResponseLogFilter requestResponseLogFilter(final FilterVoter voter, final RequestResponseLogger logger,
+        final LoggingProperties loggingProperties) {
         log.trace("Configuration: order '{}'.", filterOrder);
-        return new RequestResponseLogFilter(logger, voter);
+        return new RequestResponseLogFilter(logger, voter, loggingProperties);
     }
 
     /**

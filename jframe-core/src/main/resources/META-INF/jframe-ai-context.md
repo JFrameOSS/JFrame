@@ -184,7 +184,8 @@ try (var s = SqlStatementLogging.suppress()) {
 
 ## Utilities
 
-- `Constants.Headers` — TX_ID_HEADER, REQ_ID_HEADER, TRACE_ID_HEADER, SPAN_ID_HEADER, rate limit headers
+- `AmountUtils` — null-safe `BigDecimal` normalization guaranteeing minimum scale of two
+- `Constants.Headers` — TX_ID_HEADER, REQ_ID_HEADER, rate limit headers (TRACE_ID_HEADER and SPAN_ID_HEADER removed)
 - `Constants.DateTime` — EUROPE_AMSTERDAM zone, ISO formatter, epoch start
 - `RequestId` / `TransactionId` — ThreadLocal UUID storage
 - `PathDefinition` — Ant-style path matcher (`/api/**`, `/user/*`, `/item/?`)

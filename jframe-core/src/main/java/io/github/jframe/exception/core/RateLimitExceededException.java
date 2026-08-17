@@ -27,7 +27,7 @@ public class RateLimitExceededException extends HttpException {
 
     /** Constructs a new {@code RateLimitExceededException} with rate limit details. */
     public RateLimitExceededException(final int limit, final int remaining, final OffsetDateTime resetDate) {
-        super(JFrameErrorCode.RATE_LIMITED);
+        super(JFrameErrorCode.RATE_LIMIT_EXCEEDED);
         this.limit = limit;
         this.remaining = remaining;
         this.resetDate = resetDate;
@@ -38,7 +38,7 @@ public class RateLimitExceededException extends HttpException {
                                       final int limit,
                                       final int remaining,
                                       final OffsetDateTime resetDate) {
-        super(JFrameErrorCode.RATE_LIMITED, cause);
+        super(JFrameErrorCode.RATE_LIMIT_EXCEEDED, cause);
         this.limit = limit;
         this.remaining = remaining;
         this.resetDate = resetDate;

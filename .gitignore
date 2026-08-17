@@ -26,3 +26,6 @@ secring.gpg
 /CLAUDE.md
 /.opencode/
 .factorypath
+
+# Heap dumps (may contain secrets)
+*.hprof

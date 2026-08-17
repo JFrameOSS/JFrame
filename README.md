@@ -5,8 +5,8 @@
 **Enterprise-grade utilities for Spring Boot and Quarkus applications**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Spring Boot](https://img.shields.io/badge/spring--boot-4.1.0--M1-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/quarkus-3.20.3-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
+[![Spring Boot](https://img.shields.io/badge/spring--boot-4.1.0-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/quarkus-3.38.2-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
 [![Java](https://img.shields.io/badge/java-21-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.java.net/projects/jdk/21/)
 
 [Features](#-features) •
@@ -55,9 +55,9 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:1.4.0")
-    implementation("io.github.jframeoss:jframe-spring-jpa:1.4.0")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:1.4.0")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.5.0")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.5.0")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.5.0")  // optional
 }
 ```
 
@@ -65,9 +65,9 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:1.4.0")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.4.0")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.4.0")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.5.0")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.5.0")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.5.0")  // optional
 }
 ```
 
@@ -115,37 +115,44 @@ jframe.application.version=1.0.0
 jframe.application.environment=dev
 ```
 
-All four properties are **required**. See the [Configuration Reference](./src/docs/shared/configuration.md) for the full property list.
+All four properties are **required**. See the [Configuration Reference](./docs/configuration.md) for the full property list.
 
 ## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Getting Started](./src/docs/getting-started.md) | Installation, configuration, feature matrix |
-| [Configuration Reference](./src/docs/shared/configuration.md) | All `jframe.*` properties, filter toggles, OTEL mapping, MDC fields |
-| [Core API](./src/docs/shared/core.md) | Exceptions, validation, search framework, ECS logging |
+| [Getting Started](./docs/getting-started.md) | Installation, configuration, feature matrix |
+| [Configuration Reference](./docs/configuration.md) | All `jframe.*` properties, filter toggles, OTEL mapping, MDC fields |
+| [Core API](./docs/modules/core.md) | Exceptions, validation, search framework, ECS logging |
 
 ### Spring Boot
 
 | Module | Documentation |
 |--------|---------------|
-| `jframe-spring-core` — Filters, exception handling, logging, caching | [📖 Docs](./src/docs/spring/core.md) |
-| `jframe-spring-jpa` — Search specifications, pagination, SQL logging | [📖 Docs](./src/docs/spring/jpa.md) |
-| `jframe-spring-otlp` — Tracing, auto-instrumentation, HTTP client | [📖 Docs](./src/docs/spring/otlp.md) |
+| `jframe-spring-core` — Filters, exception handling, logging, caching | [📖 Docs](./docs/modules/spring-core.md) |
+| `jframe-spring-jpa` — Search specifications, pagination, SQL logging | [📖 Docs](./docs/modules/spring-jpa.md) |
+| `jframe-spring-otlp` — Tracing, auto-instrumentation, HTTP client | [📖 Docs](./docs/modules/spring-otlp.md) |
 
 ### Quarkus
 
 | Module | Documentation |
 |--------|---------------|
-| `jframe-quarkus-core` — Exception mappers, JAX-RS filters, outbound correlation | [📖 Docs](./src/docs/quarkus/core.md) |
-| `jframe-quarkus-jpa` — Panache search, repository, page mapping | [📖 Docs](./src/docs/quarkus/jpa.md) |
-| `jframe-quarkus-otlp` — CDI tracing, build-time `@Traced`, auto-instrumentation | [📖 Docs](./src/docs/quarkus/otlp.md) |
+| `jframe-quarkus-core` — Exception mappers, JAX-RS filters, outbound correlation | [📖 Docs](./docs/modules/quarkus-core.md) |
+| `jframe-quarkus-jpa` — Panache search, repository, page mapping | [📖 Docs](./docs/modules/quarkus-jpa.md) |
+| `jframe-quarkus-otlp` — CDI tracing, build-time `@Traced`, auto-instrumentation | [📖 Docs](./docs/modules/quarkus-otlp.md) |
 
 ### Migration Guides
 
-- [Spring Boot 1.0.0 Migration](./src/docs/migration/spring-migration-1.0.0.md) — `jframe-starter-*` → `jframe-spring-*`
-- [Exception Handling Simplification](./src/docs/migration/exception-handling-simplification.md) — Unified `HttpException` + `ApiError`, homogeneous `errorCode`/`errorReason` on all responses
-- [ECS Naming Convention Migration](./src/docs/migration/ecs-naming-convention-migration.md) — `KibanaLogField*` → `EcsField*`
+Newest first. See the [migration index](./docs/migration/README.md) for the full list.
+
+| Version | Guide | What changed |
+|---------|-------|--------------|
+| 1.5.0 | [Upgrading to 1.5.0](./docs/migration/1.5.0-upgrading.md) | **Start here** — consolidated checklist for the whole release |
+| 1.5.0 | [Filters Opt-In](./docs/migration/1.5.0-filters-opt-in.md) | Correlation ID filters are opt-in, W3C `traceparent` only |
+| 1.5.0 | [Library Efficiency](./docs/migration/1.5.0-library-efficiency.md) | Dependency and toolchain update, body-size caps |
+| 1.2.0 | [Exception Handling](./docs/migration/1.2.0-exception-handling.md) | Unified `HttpException` + `ApiError`, homogeneous `errorCode`/`errorReason` |
+| 1.0.0 | [Spring Modules](./docs/migration/1.0.0-spring-modules.md) | `jframe-starter-*` → `jframe-spring-*` |
+| 1.0.0 | [ECS Naming Convention](./docs/migration/1.0.0-ecs-naming-convention.md) | `KibanaLogField*` → `EcsField*` |
 
 ## 🏗️ Project Structure
 
@@ -177,6 +184,31 @@ cd JFrame
 ./gradlew spotlessApply checkQualityMain       # Code style + quality checks
 ./gradlew publishToMavenLocal                  # Install to local Maven repo
 ```
+
+Locally, `spotlessApply` runs automatically before every compile, so you never have
+to think about formatting. CI disables that with `-PdisableAutoFormat` and runs
+`spotlessCheck` as a real gate — code that was never formatted locally will fail the
+build rather than being silently reformatted on the runner.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request to `master` and
+`develop`, nightly, and on a pushed `X.Y.Z` tag.
+
+| Gate | What it does |
+| --- | --- |
+| Formatting | `spotlessCheck -PdisableAutoFormat`, fails fast before the build |
+| Build and test | `clean build cyclonedxBom`, which also runs PMD, Checkstyle, SpotBugs and CodeNarc |
+| Deprecations | Fails on any Gradle deprecation warning that is not in `.github/gradle-deprecation-allowlist.txt`. The allowlist holds only warnings raised inside third-party plugins, each annotated with the plugin and version responsible. Anything new in our own build files breaks the build. |
+| Version drift | On a tag, the tag must match `gradle.properties` **and** every `io.github.jframeoss:jframe-*` coordinate in `README.md` and `docs/getting-started.md`. A release cannot ship with stale examples. |
+
+Supporting workflows: `dependency-updates.yml` reports outdated dependencies weekly,
+`update-gradle-wrapper.yml` opens a wrapper-upgrade PR against `develop`, and
+`.github/dependabot.yml` keeps the pinned GitHub Actions and Gradle dependencies
+current. All actions are pinned to commit SHAs.
+
+Each release publishes to Maven Central and attaches a CycloneDX SBOM to the GitHub
+Release.
 
 ## 🤝 Contributing
 

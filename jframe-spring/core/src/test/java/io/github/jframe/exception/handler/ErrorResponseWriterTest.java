@@ -68,7 +68,7 @@ public class ErrorResponseWriterTest extends UnitTest {
         // Given: A request with an error code (errorCode is always populated — never null in the new design)
         final MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/data");
         final MockHttpServletResponse response = new MockHttpServletResponse();
-        final String errorCode = "JFRAME_INTERNAL_ERROR";
+        final String errorCode = "INTERNAL_SERVER_ERROR";
 
         // When: Writing error response with a non-null error code
         ErrorResponseWriter.write(request, response, Response.Status.INTERNAL_SERVER_ERROR, errorCode, "Unexpected error");
@@ -141,7 +141,7 @@ public class ErrorResponseWriterTest extends UnitTest {
         final MockHttpServletResponse response = new MockHttpServletResponse();
 
         // When: Writing error response
-        ErrorResponseWriter.write(request, response, Response.Status.SERVICE_UNAVAILABLE, "JFRAME_INTERNAL_ERROR", "Service unavailable");
+        ErrorResponseWriter.write(request, response, Response.Status.SERVICE_UNAVAILABLE, "INTERNAL_SERVER_ERROR", "Service unavailable");
 
         // Then: Query field is absent from JSON body (NON_NULL serialization)
         final Map<String, Object> body = parseBody(response);

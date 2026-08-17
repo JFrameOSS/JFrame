@@ -9,6 +9,6 @@ dependencies {
 
     // Quarkus deployment dependencies — must be 'implementation' so they appear in the
     // published POM; the Quarkus extension resolver needs them on the deployment classpath.
-    implementation("io.quarkus", "quarkus-core-deployment", retrieve("quarkusVersion"))
-    implementation("io.quarkus", "quarkus-arc-deployment", retrieve("quarkusVersion"))
+    implementation("io.quarkus:quarkus-core-deployment:${retrieve("quarkusVersion")}")
+    implementation("io.quarkus:quarkus-arc-deployment:${retrieve("quarkusVersion")}")
 }
