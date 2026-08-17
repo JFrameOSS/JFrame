@@ -294,7 +294,7 @@ Generates `role != 'DISABLED'` instead of `role = 'DISABLED'`.
 
 ## Search types reference
 
-Same types as Spring — see [Search types reference](../spring/jpa.md#search-types-reference).
+Same types as Spring — see [Search types reference](./spring-jpa.md#search-types-reference).
 
 ## Sort adapter
 

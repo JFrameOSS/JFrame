@@ -151,7 +151,7 @@ jobs:
           TAG_VERSION=${{ github.ref_name }}
           PATTERN="io\.github\.jframeoss:jframe-[a-z-]*:[0-9]"
           FAILED=false
-          for FILE in README.md src/docs/getting-started.md; do
+          for FILE in README.md docs/getting-started.md; do
             while IFS= read -r MATCH; do
               COORD_VERSION="${MATCH##*:}"
               COORD_VERSION="${COORD_VERSION%%[^0-9.]*}"
