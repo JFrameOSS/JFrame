@@ -88,6 +88,39 @@ subprojects {
         }
     }
 
+    // Spring Boot's platform owns every `io.opentelemetry:*` coordinate. The instrumentation
+    // artifacts JFrame pins are compiled against one specific API version - when Spring Boot pins an
+    // older one they link against symbols that are not on the classpath and fail at runtime with
+    // NoClassDefFoundError, invisible to compilation. Fail the build on any such downgrade.
+    if (project.name.startsWith("jframe-spring-")) {
+        val graph =
+            configurations
+                .named("runtimeClasspath")
+                .flatMap { it.incoming.resolutionResult.rootComponent }
+
+        val otelVersionGuard =
+            tasks.register("otelVersionGuard") {
+                group = "verification"
+                description = "Fails if an io.opentelemetry module resolves below a requested version."
+                doLast {
+                    val downgrades = otelDowngrades(graph.get())
+                    if (downgrades.isNotEmpty()) {
+                        throw GradleException(
+                            downgrades.joinToString(
+                                separator = "\n  - ",
+                                prefix =
+                                    "OpenTelemetry version conflict. Align " +
+                                        "openTelemetryInstrumentationVersion with the release train " +
+                                        "targeting the API version Spring Boot pins:\n  - ",
+                            ),
+                        )
+                    }
+                }
+            }
+
+        tasks.named("check") { dependsOn(otelVersionGuard) }
+    }
+
     dependencies {
         if (project.name.startsWith("jframe-spring-")) {
             annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
@@ -360,3 +393,37 @@ fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")
 
+/**
+ * Reports every `io.opentelemetry:*` module that some dependency requested at a higher version than
+ * the one actually selected. Only downgrades matter - the requesting artifact is then compiled
+ * against an API that is not on the classpath. Upgrades are safe, the API is backward compatible.
+ */
+fun otelDowngrades(root: ResolvedComponentResult): List<String> {
+    // `1.62.0-alpha` is the same release line as `1.62.0`; the suffix marks an incubating artifact.
+    fun parse(version: String) = version.substringBefore('-').split('.').map { it.toIntOrNull() ?: 0 }
+
+    val found = sortedSetOf<String>()
+    val seen = mutableSetOf<ComponentIdentifier>()
+
+    fun visit(component: ResolvedComponentResult) {
+        if (!seen.add(component.id)) return
+        component.dependencies.filterIsInstance<ResolvedDependencyResult>().forEach { edge ->
+            val selected = edge.selected.moduleVersion
+            val requested = edge.requested
+            if (selected != null && selected.group == "io.opentelemetry" && requested is ModuleComponentSelector) {
+                val firstDifference =
+                    parse(requested.version).zip(parse(selected.version)).firstOrNull { it.first != it.second }
+                if (firstDifference != null && firstDifference.first > firstDifference.second) {
+                    found.add(
+                        "${selected.name} requested at ${requested.version} but resolved to " +
+                            "${selected.version} (requested by ${component.id})",
+                    )
+                }
+            }
+            visit(edge.selected)
+        }
+    }
+
+    visit(root)
+    return found.toList()
+}

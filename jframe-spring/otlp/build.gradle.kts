@@ -12,10 +12,8 @@ dependencies {
 
     // ======= OTEL DEPENDENCIES (https://opentelemetry.io/docs/getting-started/) =======
     api("org.apache.httpcomponents.client5:httpclient5:${retrieve("httpClientVersion")}")
-    api(platform("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:" + retrieve("openTelemetryVersion")))
-    api("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
-    api("io.opentelemetry:opentelemetry-extension-trace-propagators")
-    api("io.opentelemetry.semconv:opentelemetry-semconv")
+    api("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:${retrieve("openTelemetryInstrumentationVersion")}")
+    api("io.opentelemetry.semconv:opentelemetry-semconv:${retrieve("openTelemetrySemconvVersion")}")
 
     // ======= OTHER DEPENDENCIES =======
     compileOnly("jakarta.servlet:jakarta.servlet-api:${retrieve("jakartaServletVersion")}")

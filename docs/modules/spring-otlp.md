@@ -2,6 +2,21 @@
 
 OpenTelemetry distributed tracing, method instrumentation, and HTTP client tracing for Spring Boot.
 
+## Dependency versions
+
+This module does not version any `io.opentelemetry:*` coordinate. Spring Boot's platform owns the
+OpenTelemetry API, context, SDK and exporters; JFrame pins only the artifacts Spring Boot does not
+manage — the instrumentation starter and the semantic conventions library — and pins them to the
+release train targeting the API version Spring Boot pins.
+
+Do not import `opentelemetry-instrumentation-bom` in your build. It manages the same coordinates as
+Spring Boot's platform, and the resulting conflict fails at runtime with
+`NoClassDefFoundError` rather than at build time. See [Compatibility](../getting-started.md#compatibility).
+
+Non-W3C propagation formats (`b3`, `jaeger`, `ottrace`) need an explicit, unversioned
+`io.opentelemetry:opentelemetry-extension-trace-propagators` dependency. W3C `traceparent` and
+`baggage` are built in.
+
 ## Setup
 
 ```yaml

@@ -44,6 +44,21 @@ dependencies {
 }
 ```
 
+## Compatibility
+
+JFrame builds on its host framework's dependency management rather than shipping a competing one.
+Each JFrame minor targets one framework minor.
+
+| JFrame | Spring Boot | Quarkus | Java |
+| --- | --- | --- | --- |
+| 1.5.x | 4.1.x | 3.38.x | 21+ |
+| 1.4.x | 4.0.x | 3.34.x | 21+ |
+
+Use the matching row. JFrame does not version any `io.opentelemetry:*` coordinate on Spring — those
+come from Spring Boot's platform, and the OpenTelemetry instrumentation artifacts JFrame does pin
+belong to the release train targeting the API version your Spring Boot version pins. Mixing rows
+produces a version conflict that the build cannot resolve for you.
+
 ## Minimal configuration
 
 ### Spring Boot (`application.yml`)
