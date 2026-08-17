@@ -301,12 +301,11 @@ subprojects {
 }
 
 // =============== CYCLONEDX SBOM CONFIGURATION =================
-// Disable per-project SBOM tasks — we only need the aggregated one
-allprojects {
-    tasks.configureEach {
-        if (name == "cyclonedxDirectBom") {
-            enabled = false
-        }
+// The root `cyclonedxBom` task aggregates the per-project `cyclonedxDirectBom` outputs, so those
+// must stay enabled in the subprojects. Only the root project's own direct BOM is redundant.
+tasks.configureEach {
+    if (name == "cyclonedxDirectBom") {
+        enabled = false
     }
 }
 
