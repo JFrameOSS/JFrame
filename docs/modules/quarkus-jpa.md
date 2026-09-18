@@ -208,7 +208,7 @@ public class AdminUserResource {
 |--------|---------|-------------|
 | `toSearchSpecification(SortablePageInput)` | `PanacheSearchSpecification<T>` | Builds a specification from the input's search criteria. |
 | `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. |
-| `toSort(List<SortableColumn>)` | `Sort` | Returns `Sort.empty()` for null/empty input. Throws `IllegalArgumentException` for non-sortable fields. |
+| `toSort(List<SortableColumn>)` | `Sort` | Returns `Sort.empty()` for null/empty input. Invalid or non-sortable columns are logged at WARN and discarded; if all requested columns are invalid the query runs unsorted. Paginated reads over an all-invalid sort may return overlapping or skipped rows. |
 | `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. |
 
 ### Overriding the default page size
@@ -306,4 +306,4 @@ Sort sort = PanacheSortAdapter.toSort(input.getSortOrder());
 
 This is handled automatically by `AbstractPanacheSearchMetaData.toSort()` — you only need `PanacheSortAdapter` for custom queries outside the search framework.
 
-> **Null-safety:** `toSort()` returns `Sort.empty()` (not `null`) when the input is null or empty.
+> **Null-safety:** `toSort()` returns `Sort.empty()` (not `null`) when the input is null or empty. Invalid or non-sortable columns are discarded with a WARN log rather than thrown.

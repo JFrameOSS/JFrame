@@ -4,6 +4,8 @@ OpenTelemetry distributed tracing with CDI interceptors, W3C trace propagation, 
 
 ## Setup
 
+> **Breaking change:** `jframe.otlp.disabled` now defaults to `true` on Quarkus (previously `false`). If your application relied on telemetry being active by default, you must now set `jframe.otlp.disabled=false` explicitly.
+
 ```properties
 # application.properties
 jframe.otlp.disabled=false
@@ -11,7 +13,13 @@ jframe.otlp.url=http://localhost:4318
 jframe.otlp.exporter=otlp
 jframe.otlp.sampling-rate=1.0
 jframe.otlp.timeout=10s
-jframe.otlp.excluded-methods=health,actuator,ping,status
+jframe.otlp.excluded-methods=health,actuator,ping,status,info,metrics
+jframe.otlp.sampler-type=parentbased_traceidratio
+# Per-signal toggles (all default true):
+jframe.otlp.traces.enabled=true
+jframe.otlp.metrics.enabled=true
+jframe.otlp.logs.enabled=true
+# excluded-resource-attributes defaults to process.command_args,process.command_line,process.executable.path
 ```
 
 Requires `quarkus-opentelemetry` extension on your classpath.
@@ -100,6 +108,18 @@ Override any in your `application.properties`:
 ```properties
 quarkus.otel.instrument.grpc=false
 ```
+
+### SDK property mappings
+
+JFrame sets these SDK properties automatically:
+
+| JFrame property | SDK property | Notes |
+|----------------|-------------|-------|
+| `jframe.otlp.sampler-type` | `quarkus.otel.traces.sampler` | Default changed from `traceidratio` to `parentbased_traceidratio`. |
+| `jframe.otlp.excluded-resource-attributes` | `otel.resource.disabled.keys` | Plain `otel.` prefix, not `quarkus.otel.`. |
+| `jframe.otlp.{traces,metrics,logs}.enabled=false` | `otel.{signal}.exporter=none` | Applied by `AutoConfiguredOpenTelemetrySdkBuilderCustomizer`. |
+
+The `service.environment` resource attribute is also set from `jframe.application.environment` (same as Spring).
 
 ## Build-time auto-tracing
 

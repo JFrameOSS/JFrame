@@ -27,14 +27,22 @@ jframe:
     exporter: otlp                     # otlp, jaeger, or zipkin
     sampling-rate: 1.0                 # 0.0 to 1.0
     timeout: 10s                       # Export timeout
+    sampler-type: parentbased_traceidratio  # Trace sampler (default)
     excluded-methods:
       - health
       - actuator
       - ping
       - status
+      - info
+      - metrics
+    # Per-signal toggles (all default true):
+    traces.enabled: true
+    metrics.enabled: true
+    logs.enabled: true
+    # excluded-resource-attributes defaults to process.command_args,process.command_line,process.executable.path
 ```
 
-JFrame maps `jframe.otlp.*` to OpenTelemetry SDK properties (`otel.*`) automatically. The bundled `jframe-properties.yml` configures W3C TraceContext propagation, exporter settings, and instrumentation flags.
+JFrame maps `jframe.otlp.*` to OpenTelemetry SDK properties (`otel.*`) automatically. The bundled `jframe-properties.yml` configures W3C TraceContext propagation, exporter settings, and instrumentation flags. The `otel.{traces,metrics,logs}.exporter` properties (set to `none` when a signal is disabled) are contributed by an `EnvironmentPostProcessor`, not from `jframe-properties.yml`.
 
 ### Auto-instrumentation defaults
 

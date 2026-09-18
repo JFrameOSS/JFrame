@@ -218,7 +218,7 @@ public class AdminUserController {
 | `toSearchSpecification(SortablePageInput)` | `JpaSearchSpecification<T>` | Builds a specification from the input's search criteria. |
 | `toSearchSpecification(SortablePageInput, String, Object)` | `Specification<T>` | Same as above, ANDed with an equality predicate on the given field path. Supports nested paths (`"tenant.id"`). |
 | `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. |
-| `toSort(List<SortableColumn>)` | `Sort` | Returns `Sort.unsorted()` for null/empty input. Throws `IllegalArgumentException` for non-sortable fields. |
+| `toSort(List<SortableColumn>)` | `Sort` | Returns `Sort.unsorted()` for null/empty input. Invalid or non-sortable columns are logged at WARN and discarded; if all requested columns are invalid the query runs unsorted. Paginated reads over an all-invalid sort may return overlapping or skipped rows. |
 | `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. |
 
 ### Overriding the default page size
