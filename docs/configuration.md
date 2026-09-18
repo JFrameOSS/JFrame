@@ -77,7 +77,7 @@ Applies to both `spring-otlp` and `quarkus-otlp` modules.
 | `jframe.otlp.excluded-resource-attributes` | `process.command_args,process.command_line,process.executable.path` | Resource attribute keys stripped before export. These three keys are excluded by default because `process.command_args` captures the JVM command line verbatim — any secret passed as a `-D` flag would appear in every exported trace. OTel semantic conventions mark them as Opt-In. `process.pid` and `process.runtime.*` are still exported. Override to re-enable. |
 | `jframe.otlp.traces.enabled` | `true` | Enable/disable trace export independently of `jframe.otlp.disabled`. |
 | `jframe.otlp.metrics.enabled` | `true` | Enable/disable metric export independently of `jframe.otlp.disabled`. |
-| `jframe.otlp.logs.enabled` | `true` | Enable/disable log export independently of `jframe.otlp.disabled`. |
+| `jframe.otlp.logs.enabled` | `true` | Enable/disable log export independently of `jframe.otlp.disabled`. On Spring this also drives `otel.instrumentation.logback-appender.enabled`, which is what produces the log records in the first place. |
 
 ### OTEL SDK mapping
 

@@ -328,6 +328,61 @@ class OtlpConfigParityTest extends UnitTest {
     }
 
     @Test
+    @DisplayName("Should have a live log-record path on both runtimes when logs.enabled=true — closes the tap/drain blind spot")
+    public void shouldHaveLiveLogPathOnBothRuntimesWhenLogsEnabled() {
+        // Given: Both runtime config files parsed to flat maps
+        final Map<String, String> spring = parseSpringYaml();
+        final Map<String, String> quarkus = parseQuarkusProperties();
+
+        // Precondition: both agree that logs are enabled (existing test covers this,
+        // but we assert it here explicitly so the failure message is clear)
+        final String logsEnabledKey = "jframe.otlp.logs.enabled";
+        final String springLogsEnabled = requireKey(spring, logsEnabledKey, "Spring YAML");
+        assertThat(
+            "Precondition: " + logsEnabledKey + " must be true in Spring YAML for this test to be meaningful",
+            Boolean.parseBoolean(springLogsEnabled),
+            is(true)
+        );
+
+        // When: reading the runtime-specific keys that PRODUCE log records (not just export them)
+
+        // Quarkus: quarkus.otel.logs.exporter=cdi means the CDI exporter is active and
+        // Quarkus' built-in log handler feeds into it. A non-cdi value (e.g. "none") means
+        // no records are produced. We read it directly from the raw Quarkus properties file.
+        final Map<String, String> quarkusRaw = parseAllQuarkusProperties();
+        final String quarkusLogsExporter = requireKey(
+            quarkusRaw,
+            "quarkus.otel.logs.exporter",
+            "Quarkus properties (quarkus.otel.logs.exporter)"
+        );
+
+        // Spring: the logback-appender instrumentation is the source of log records.
+        // Its enabled value must be the placeholder ${jframe.otlp.logs.enabled} — NOT a
+        // literal 'false'. We verify this by reading the raw YAML line from disk.
+        final String logbackAppenderLine = readLogbackAppenderEnabledLine();
+
+        // Then: Quarkus must have a live exporter path (cdi, not none)
+        assertThat(
+            "quarkus.otel.logs.exporter must be 'cdi' so log records flow when logs.enabled=true. "
+                + "Actual: [" + quarkusLogsExporter + "].",
+            quarkusLogsExporter,
+            is("cdi")
+        );
+
+        // Then: Spring must NOT hardcode 'false' for the logback appender.
+        // The value must be the placeholder so it follows jframe.otlp.logs.enabled.
+        final String expectedPlaceholder = "${jframe.otlp.logs.enabled}";
+        assertThat(
+            "otel.instrumentation.logback-appender.enabled in jframe-properties.yml must be "
+                + "the placeholder [" + expectedPlaceholder + "] so it follows jframe.otlp.logs.enabled. "
+                + "Actual YAML line content: [" + logbackAppenderLine.strip() + "]. "
+                + "A hardcoded 'false' means log records are never produced regardless of the toggle.",
+            logbackAppenderLine.contains(expectedPlaceholder),
+            is(true)
+        );
+    }
+
+    @Test
     @DisplayName("Should have identical jframe.otlp.* key sets — future additions to one file must appear in both")
     public void shouldHaveIdenticalKeySetInBothFiles() {
         // Given: Both runtime config files parsed to flat maps
@@ -357,6 +412,73 @@ class OtlpConfigParityTest extends UnitTest {
     }
 
     // ======================== PARSING INFRASTRUCTURE ========================
+
+    /**
+     * Reads ALL key-value pairs from the Quarkus {@code microprofile-config.properties} file,
+     * without filtering by prefix. Used to inspect runtime-specific keys such as
+     * {@code quarkus.otel.logs.exporter} that are outside the {@code jframe.otlp.*} scope.
+     */
+    private Map<String, String> parseAllQuarkusProperties() {
+        final Path path = resolveModuleRelativePath(QUARKUS_PROPERTIES_PATH);
+        try (InputStream in = Files.newInputStream(path)) {
+            final Properties props = new Properties();
+            props.load(in);
+            final Map<String, String> result = new HashMap<>();
+            for (final String name : props.stringPropertyNames()) {
+                result.put(name, props.getProperty(name).trim());
+            }
+            assertThat(
+                "Quarkus properties at " + path.toAbsolutePath() + " is empty — path may be wrong",
+                result.entrySet(),
+                is(not(empty()))
+            );
+            return result;
+        } catch (final IOException ex) {
+            throw new AssertionError(
+                "Cannot read Quarkus properties at " + path.toAbsolutePath() + ": " + ex.getMessage(),
+                ex
+            );
+        }
+    }
+
+    /**
+     * Returns the raw YAML line that sets {@code enabled} inside the {@code logback-appender:}
+     * block of {@code jframe-properties.yml}. Used to verify the placeholder is present in source.
+     */
+    private String readLogbackAppenderEnabledLine() {
+        final Path path = resolveModuleRelativePath(SPRING_YAML_PATH);
+        final java.util.List<String> lines;
+        try {
+            lines = Files.readAllLines(path);
+        } catch (final IOException ex) {
+            throw new AssertionError(
+                "Cannot read Spring YAML at " + path.toAbsolutePath() + ": " + ex.getMessage(),
+                ex
+            );
+        }
+
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).strip().startsWith("logback-appender:")) {
+                // Look for the 'enabled:' line immediately following (skipping blanks/comments)
+                for (int j = i + 1; j < lines.size(); j++) {
+                    final String candidate = lines.get(j);
+                    final String stripped = candidate.strip();
+                    if (stripped.isEmpty() || stripped.startsWith("#")) {
+                        continue;
+                    }
+                    if (stripped.startsWith("enabled:")) {
+                        return candidate;
+                    }
+                    // Any non-blank, non-comment line that isn't 'enabled:' means the block ended
+                    break;
+                }
+            }
+        }
+        throw new AssertionError(
+            "Could not find 'logback-appender: enabled:' entry in " + path.toAbsolutePath()
+                + ". YAML structure may have changed."
+        );
+    }
 
     /**
      * Parses the Spring Boot {@code jframe-properties.yml} file and returns a flat map
