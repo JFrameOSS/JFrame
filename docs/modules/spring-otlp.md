@@ -57,6 +57,7 @@ JFrame enables these OpenTelemetry Java Starter instrumentations via `jframe-pro
 | MongoDB | `otel.instrumentation.mongo.enabled` | `true` |
 | R2DBC | `otel.instrumentation.r2dbc.enabled` | `true` |
 | Logback MDC | `otel.instrumentation.logback-mdc.enabled` | `true` |
+| Logback Appender | `otel.instrumentation.logback-appender.enabled` | follows `jframe.otlp.logs.enabled` (`true`) |
 
 Override any in `application.yml`:
 

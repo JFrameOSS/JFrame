@@ -104,7 +104,7 @@ otel:
     jdbc:
       enabled: true
     logback-appender:
-      enabled: false
+      enabled: ${jframe.otlp.logs.enabled}
     logback-mdc:
       enabled: true
     spring-web:

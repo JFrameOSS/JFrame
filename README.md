@@ -55,9 +55,9 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:1.6.0")
-    implementation("io.github.jframeoss:jframe-spring-jpa:1.6.0")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:1.6.0")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.6.1")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.6.1")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.6.1")  // optional
 }
 ```
 
@@ -65,9 +65,9 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:1.6.0")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.6.0")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.6.0")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.6.1")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.6.1")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.6.1")  // optional
 }
 ```
 
@@ -147,6 +147,7 @@ Newest first. See the [migration index](./docs/migration/README.md) for the full
 
 | Version | Guide | What changed |
 |---------|-------|--------------|
+| 1.6.1 | [Spring Log Export](./docs/migration/1.6.1-spring-log-export.md) | `jframe.otlp.logs.enabled` now works on Spring — log records start exporting |
 | 1.6.0 | [OTLP Opt-In](./docs/migration/1.6.0-otlp-opt-in.md) | Telemetry is opt-in, Opt-In process attributes excluded, `sampling-rate` now honoured |
 | 1.5.0 | [Upgrading to 1.5.0](./docs/migration/1.5.0-upgrading.md) | **Start here** — consolidated checklist for the whole release |
 | 1.5.0 | [Filters Opt-In](./docs/migration/1.5.0-filters-opt-in.md) | Correlation ID filters are opt-in, W3C `traceparent` only |
