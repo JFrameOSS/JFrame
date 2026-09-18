@@ -2,6 +2,12 @@
 
 Every breaking or behaviour-changing release has a guide. Read the guides for each version between the one you are on and the one you are moving to, oldest first.
 
+## 1.6.1
+
+| Guide | What changed |
+|-------|--------------|
+| [Spring Log Export](./1.6.1-spring-log-export.md) | `jframe.otlp.logs.enabled` was inert on Spring and is now wired up — Spring applications with telemetry enabled start exporting log records |
+
 ## 1.6.0
 
 | Guide | What changed |
