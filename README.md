@@ -46,7 +46,7 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 ### Prerequisites
 
 - Java 21+ (Temurin recommended)
-- Spring Boot 4.1.0-M1+ **or** Quarkus 3.20.3+
+- Spring Boot 4.1.0+ **or** Quarkus 3.20.3+
 - Gradle 9.x
 
 ### Installation
@@ -147,6 +147,7 @@ Newest first. See the [migration index](./docs/migration/README.md) for the full
 
 | Version | Guide | What changed |
 |---------|-------|--------------|
+| 1.6.0 | [OTLP Opt-In](./docs/migration/1.6.0-otlp-opt-in.md) | Telemetry is opt-in, Opt-In process attributes excluded, `sampling-rate` now honoured |
 | 1.5.0 | [Upgrading to 1.5.0](./docs/migration/1.5.0-upgrading.md) | **Start here** — consolidated checklist for the whole release |
 | 1.5.0 | [Filters Opt-In](./docs/migration/1.5.0-filters-opt-in.md) | Correlation ID filters are opt-in, W3C `traceparent` only |
 | 1.5.0 | [Library Efficiency](./docs/migration/1.5.0-library-efficiency.md) | Dependency and toolchain update, body-size caps |
