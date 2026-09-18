@@ -1,5 +1,6 @@
 package io.github.jframe.autoconfigure;
 
+import io.github.jframe.tracing.OtlpDefaults;
 import io.github.support.UnitTest;
 
 import java.util.Set;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -52,16 +54,16 @@ class OpenTelemetryConfigTest extends UnitTest {
     class DefaultValues {
 
         @Test
-        @DisplayName("Should return false for disabled by default (enabled by default)")
-        public void shouldReturnFalseForDisabledByDefault() {
+        @DisplayName("Should return true for disabled by default — telemetry requires explicit opt-in")
+        public void shouldReturnTrueForDisabledByDefault() {
             // Given: Config built with no overrides
             final OpenTelemetryConfig otlpConfig = buildDefaultConfig();
 
             // When: Accessing the disabled flag
             final boolean disabled = otlpConfig.disabled();
 
-            // Then: Default is false — OTLP is enabled by default
-            assertThat(disabled, is(false));
+            // Then: Default is true — OTLP is disabled until the consumer opts in
+            assertThat(disabled, is(true));
         }
 
         @Test
@@ -141,6 +143,79 @@ class OpenTelemetryConfigTest extends UnitTest {
 
             // Then: Default propagators use W3C standard (no extra dependencies needed)
             assertThat(propagators, is("tracecontext,baggage"));
+        }
+
+        @Test
+        @DisplayName("Should return parentbased_traceidratio as default sampler type")
+        public void shouldReturnParentBasedTraceIdRatioAsDefaultSamplerType() {
+            // Given: Config built with no overrides
+            final OpenTelemetryConfig otlpConfig = buildDefaultConfig();
+
+            // When: Accessing the samplerType property
+            final String samplerType = otlpConfig.samplerType();
+
+            // Then: Default sampler type is parentbased_traceidratio — respects parent sampling decision
+            assertThat(samplerType, is(OtlpDefaults.DEFAULT_SAMPLER_TYPE));
+        }
+
+        @Test
+        @DisplayName("Should return three process.* keys as default excludedResourceAttributes")
+        public void shouldReturnProcessKeysAsDefaultExcludedResourceAttributes() {
+            // Given: Config built with no overrides
+            final OpenTelemetryConfig otlpConfig = buildDefaultConfig();
+
+            // When: Accessing the excludedResourceAttributes set
+            final Set<String> excluded = otlpConfig.excludedResourceAttributes();
+
+            // Then: Default excludes three OTel spec Opt-In process keys that can leak secrets
+            assertThat(excluded, hasSize(3));
+            assertThat(
+                excluded,
+                containsInAnyOrder(
+                    "process.command_args",
+                    "process.command_line",
+                    "process.executable.path"
+                )
+            );
+        }
+
+        @Test
+        @DisplayName("Should return true for traces enabled by default")
+        public void shouldReturnTrueForTracesEnabledByDefault() {
+            // Given: Config built with no overrides
+            final OpenTelemetryConfig otlpConfig = buildDefaultConfig();
+
+            // When: Accessing the tracesEnabled flag
+            final boolean tracesEnabled = otlpConfig.tracesEnabled();
+
+            // Then: Traces are enabled by default
+            assertThat(tracesEnabled, is(true));
+        }
+
+        @Test
+        @DisplayName("Should return true for metrics enabled by default")
+        public void shouldReturnTrueForMetricsEnabledByDefault() {
+            // Given: Config built with no overrides
+            final OpenTelemetryConfig otlpConfig = buildDefaultConfig();
+
+            // When: Accessing the metricsEnabled flag
+            final boolean metricsEnabled = otlpConfig.metricsEnabled();
+
+            // Then: Metrics are enabled by default
+            assertThat(metricsEnabled, is(true));
+        }
+
+        @Test
+        @DisplayName("Should return true for logs enabled by default")
+        public void shouldReturnTrueForLogsEnabledByDefault() {
+            // Given: Config built with no overrides
+            final OpenTelemetryConfig otlpConfig = buildDefaultConfig();
+
+            // When: Accessing the logsEnabled flag
+            final boolean logsEnabled = otlpConfig.logsEnabled();
+
+            // Then: Logs are enabled by default
+            assertThat(logsEnabled, is(true));
         }
     }
 
@@ -246,6 +321,75 @@ class OpenTelemetryConfigTest extends UnitTest {
             // Then: Propagators include B3
             assertThat(propagators, is("tracecontext,baggage,b3"));
         }
+
+        @Test
+        @DisplayName("Should reflect overridden sampler type when provided")
+        public void shouldReflectOverriddenSamplerTypeWhenProvided() {
+            // Given: Config overriding sampler type to a fixed rate sampler
+            final OpenTelemetryConfig otlpConfig = buildConfigWith("jframe.otlp.sampler-type", "traceidratio");
+
+            // When: Accessing the samplerType property
+            final String samplerType = otlpConfig.samplerType();
+
+            // Then: Sampler type is the custom value
+            assertThat(samplerType, is("traceidratio"));
+        }
+
+        @Test
+        @DisplayName("Should parse overridden excludedResourceAttributes from comma-separated string")
+        public void shouldParseOverriddenExcludedResourceAttributesFromCommaSeparatedString() {
+            // Given: Config overriding excludedResourceAttributes with custom keys
+            final OpenTelemetryConfig otlpConfig = buildConfigWith(
+                "jframe.otlp.excluded-resource-attributes",
+                "process.command_args,host.name"
+            );
+
+            // When: Accessing the excludedResourceAttributes set
+            final Set<String> excluded = otlpConfig.excludedResourceAttributes();
+
+            // Then: Set contains exactly the two overridden keys
+            assertThat(excluded, hasSize(2));
+            assertThat(excluded, containsInAnyOrder("process.command_args", "host.name"));
+        }
+
+        @Test
+        @DisplayName("Should reflect overridden tracesEnabled=false when provided")
+        public void shouldReflectOverriddenTracesEnabledFalseWhenProvided() {
+            // Given: Config disabling traces signal
+            final OpenTelemetryConfig otlpConfig = buildConfigWith("jframe.otlp.traces.enabled", "false");
+
+            // When: Accessing the tracesEnabled flag
+            final boolean tracesEnabled = otlpConfig.tracesEnabled();
+
+            // Then: Traces are disabled
+            assertThat(tracesEnabled, is(false));
+        }
+
+        @Test
+        @DisplayName("Should reflect overridden metricsEnabled=false when provided")
+        public void shouldReflectOverriddenMetricsEnabledFalseWhenProvided() {
+            // Given: Config disabling metrics signal
+            final OpenTelemetryConfig otlpConfig = buildConfigWith("jframe.otlp.metrics.enabled", "false");
+
+            // When: Accessing the metricsEnabled flag
+            final boolean metricsEnabled = otlpConfig.metricsEnabled();
+
+            // Then: Metrics are disabled
+            assertThat(metricsEnabled, is(false));
+        }
+
+        @Test
+        @DisplayName("Should reflect overridden logsEnabled=false when provided")
+        public void shouldReflectOverriddenLogsEnabledFalseWhenProvided() {
+            // Given: Config disabling logs signal
+            final OpenTelemetryConfig otlpConfig = buildConfigWith("jframe.otlp.logs.enabled", "false");
+
+            // When: Accessing the logsEnabled flag
+            final boolean logsEnabled = otlpConfig.logsEnabled();
+
+            // Then: Logs are disabled
+            assertThat(logsEnabled, is(false));
+        }
     }
 
     // ======================== EDGE CASES ========================
@@ -282,6 +426,17 @@ class OpenTelemetryConfigTest extends UnitTest {
             assertThat(samplingRate, is(0.0));
         }
 
+        @Test
+        @DisplayName("Should return empty set when excludedResourceAttributes is overridden to empty string")
+        public void shouldReturnEmptySetWhenExcludedResourceAttributesIsEmpty() {
+            // Given: Config explicitly clearing excluded resource attributes (consumer wants none excluded)
+            final OpenTelemetryConfig otlpConfig = buildConfigWith("jframe.otlp.excluded-resource-attributes", "");
 
+            // When: Accessing the excludedResourceAttributes set
+            final Set<String> excluded = otlpConfig.excludedResourceAttributes();
+
+            // Then: Result is empty — not a single blank entry
+            assertThat(excluded, is(empty()));
+        }
     }
 }
