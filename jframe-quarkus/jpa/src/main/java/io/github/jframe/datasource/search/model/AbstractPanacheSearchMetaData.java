@@ -147,11 +147,11 @@ public abstract class AbstractPanacheSearchMetaData {
     /**
      * Convert a list of SortableColumn objects into a Panache Sort object based on the defined sortable fields.
      *
-     * <p>Returns {@code null} when the input list is null or empty.
+     * <p>Non-sortable or unregistered columns are silently discarded with a WARN log; the method never throws.
+     * Returns {@link Sort#empty()} when the input list is null/empty or all columns are invalid.
      *
      * @param sortOrders List of SortableColumn objects representing user-defined sort orders.
-     * @return Panache Sort object for querying the database, or {@code null} if input is null/empty.
-     * @throws IllegalArgumentException if any requested sort field is not defined as sortable.
+     * @return Panache Sort object for querying the database; empty when all columns are invalid.
      */
     public Sort toSort(final List<SortableColumn> sortOrders) {
         if (CollectionUtils.isEmpty(sortOrders)) {
@@ -163,14 +163,26 @@ public abstract class AbstractPanacheSearchMetaData {
             .toList();
 
         if (filtered.size() != sortOrders.size()) {
-            throw new IllegalArgumentException("Attempted to sort on non-sortable fields: " + sortOrders);
+            final List<String> discarded = sortOrders.stream()
+                .map(SortableColumn::getName)
+                .filter(name -> !sortableFields.contains(name))
+                .toList();
+            log.warn("Discarding non-sortable or unregistered sort columns: " + discarded);
         }
 
-        final SortableColumn first = filtered.getFirst();
+        return buildSort(filtered);
+    }
+
+    private Sort buildSort(final List<SortableColumn> columns) {
+        if (columns.isEmpty()) {
+            return Sort.empty();
+        }
+
+        final SortableColumn first = columns.getFirst();
         Sort sort = Sort.by(columnNames.get(first.getName()).getFirst(), toDirection(first.getDirection()));
 
-        for (int i = 1; i < filtered.size(); i++) {
-            final SortableColumn column = filtered.get(i);
+        for (int i = 1; i < columns.size(); i++) {
+            final SortableColumn column = columns.get(i);
             sort = sort.and(columnNames.get(column.getName()).getFirst(), toDirection(column.getDirection()));
         }
 

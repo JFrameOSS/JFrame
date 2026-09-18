@@ -22,21 +22,27 @@ import io.github.support.TestStatus;
 import io.github.support.UnitTest;
 import io.quarkus.panache.common.Sort;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -126,12 +132,51 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
 
     private TestSearchMetaData testMetaData;
     private FullSearchMetaData fullMetaData;
+    private CapturingHandler logCapture;
 
     @BeforeEach
     @Override
     public void setUp() {
         testMetaData = new TestSearchMetaData();
         fullMetaData = new FullSearchMetaData();
+        logCapture = new CapturingHandler();
+        final java.util.logging.Logger jul = java.util.logging.Logger.getLogger(
+            AbstractPanacheSearchMetaData.class.getName()
+        );
+        jul.addHandler(logCapture);
+    }
+
+    @AfterEach
+    void tearDownLogCapture() {
+        final java.util.logging.Logger jul = java.util.logging.Logger.getLogger(
+            AbstractPanacheSearchMetaData.class.getName()
+        );
+        jul.removeHandler(logCapture);
+    }
+
+    /** Minimal JUL Handler that collects log records for assertion. */
+    private static final class CapturingHandler extends Handler {
+
+        private final List<LogRecord> records = new ArrayList<>();
+
+        @Override
+        public void publish(final LogRecord record) {
+            records.add(record);
+        }
+
+        @Override
+        public void flush() {}
+
+        @Override
+        public void close() {
+            records.clear();
+        }
+
+        List<LogRecord> warnings() {
+            return records.stream()
+                .filter(r -> r.getLevel().intValue() >= Level.WARNING.intValue())
+                .toList();
+        }
     }
 
     // =========================================================================
@@ -665,36 +710,155 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when sorting on non-sortable field")
-    public void shouldThrowIllegalArgumentExceptionWhenSortingOnNonSortableField() {
-        // Given: 'createdAt' is registered as non-sortable
+    @DisplayName("Should discard non-sortable field and not throw — logs a warning naming the field")
+    public void shouldDiscardNonSortableFieldAndNotThrow() {
+        // Given: 'createdAt' is registered but marked non-sortable
         final List<SortableColumn> columns = List.of(aSortableColumn("createdAt", "ASC"));
 
-        // When & Then: toSort should throw for non-sortable field
-        assertThrows(IllegalArgumentException.class, () -> fullMetaData.toSort(columns));
+        // When: converting to Sort — must not throw
+        final Sort sort = fullMetaData.toSort(columns);
+
+        // Then: result is empty (non-sortable column discarded)
+        assertThat(sort.getColumns(), empty());
+
+        // And: a WARN log is emitted naming the offending column
+        final List<LogRecord> warnings = logCapture.warnings();
+        assertThat("expected at least one WARN log", warnings, hasSize(1));
+        assertThat(warnings.getFirst().getMessage(), containsString("createdAt"));
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when sorting on unregistered field")
-    public void shouldThrowIllegalArgumentExceptionWhenSortingOnUnregisteredField() {
-        // Given: 'unknownField' is not registered in metadata
+    @DisplayName("Should discard unregistered field and not throw — logs a warning naming the field")
+    public void shouldDiscardUnregisteredFieldAndNotThrow() {
+        // Given: 'unknownField' is not registered in metadata at all
         final List<SortableColumn> columns = List.of(aSortableColumn("unknownField", "ASC"));
 
-        // When & Then: toSort should throw because field is unknown
-        assertThrows(IllegalArgumentException.class, () -> fullMetaData.toSort(columns));
+        // When: converting to Sort — must not throw
+        final Sort sort = fullMetaData.toSort(columns);
+
+        // Then: result is empty (unknown column discarded)
+        assertThat(sort.getColumns(), empty());
+
+        // And: a WARN log is emitted naming the offending column
+        final List<LogRecord> warnings = logCapture.warnings();
+        assertThat("expected at least one WARN log", warnings, hasSize(1));
+        assertThat(warnings.getFirst().getMessage(), containsString("unknownField"));
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when mix of sortable and non-sortable fields requested")
-    public void shouldThrowIllegalArgumentExceptionWhenMixOfSortableAndNonSortableFieldsRequested() {
-        // Given: 'name' is sortable, 'createdAt' is not sortable
+    @DisplayName("Should return only valid column when mix of sortable and non-sortable fields requested")
+    public void shouldReturnOnlyValidColumnsWhenMixOfSortableAndNonSortableFieldsRequested() {
+        // Given: 'name' is sortable, 'createdAt' is registered but non-sortable
         final List<SortableColumn> columns = List.of(
             aSortableColumn("name", "ASC"),
             aSortableColumn("createdAt", "DESC")
         );
 
-        // When & Then: toSort should throw because not all requested fields are sortable
-        assertThrows(IllegalArgumentException.class, () -> fullMetaData.toSort(columns));
+        // When: converting to Sort — must not throw
+        final Sort sort = fullMetaData.toSort(columns);
+
+        // Then: only 'name' survives, direction is preserved, createdAt is gone
+        assertThat(sort.getColumns(), hasSize(1));
+        assertThat(sort.getColumns().getFirst().getName(), is("u.name"));
+        assertThat(sort.getColumns().getFirst().getDirection(), is(Sort.Direction.Ascending));
+
+        // And: a WARN log is emitted naming the discarded column, not the valid one
+        final List<LogRecord> warnings = logCapture.warnings();
+        assertThat("expected at least one WARN log", warnings, hasSize(1));
+        assertThat(warnings.getFirst().getMessage(), containsString("createdAt"));
+    }
+
+    @Test
+    @DisplayName("Should not log a warning when all requested columns are valid")
+    public void shouldNotLogWarningWhenAllSortColumnsAreValid() {
+        // Given: both 'name' and 'status' are sortable
+        final List<SortableColumn> columns = List.of(
+            aSortableColumn("name", "ASC"),
+            aSortableColumn("status", "DESC")
+        );
+
+        // When: converting to Sort
+        fullMetaData.toSort(columns);
+
+        // Then: no WARN log is emitted
+        assertThat(logCapture.warnings(), empty());
+    }
+
+    @Test
+    @DisplayName("Should return empty sort and not throw when every requested column is invalid")
+    public void shouldReturnEmptySortAndNotThrowWhenEveryRequestedColumnIsInvalid() {
+        // Given: both 'unknownA' and 'unknownB' are not registered
+        final List<SortableColumn> columns = List.of(
+            aSortableColumn("unknownA", "ASC"),
+            aSortableColumn("unknownB", "DESC")
+        );
+
+        // When: converting to Sort — must not throw
+        final Sort sort = fullMetaData.toSort(columns);
+
+        // Then: result is empty
+        assertThat(sort.getColumns(), empty());
+    }
+
+    @Test
+    @DisplayName("Should preserve original requested order of surviving valid columns")
+    public void shouldPreserveOriginalOrderOfSurvivingValidColumns() {
+        // Given: 'status' then 'name' with an invalid column in between
+        final List<SortableColumn> columns = List.of(
+            aSortableColumn("status", "DESC"),
+            aSortableColumn("unknownField", "ASC"),
+            aSortableColumn("name", "ASC")
+        );
+
+        // When: converting to Sort
+        final Sort sort = fullMetaData.toSort(columns);
+
+        // Then: 'status' is primary, 'name' is secondary — unknown is absent
+        assertThat(sort.getColumns(), hasSize(2));
+        assertThat(sort.getColumns().get(0).getName(), is("u.status"));
+        assertThat(sort.getColumns().get(1).getName(), is("u.name"));
+    }
+
+    @Test
+    @DisplayName("Should handle duplicate valid column names without throwing")
+    public void shouldHandleDuplicateValidColumnNamesWithoutThrowing() {
+        // Given: 'name' appears twice in the request
+        final List<SortableColumn> columns = List.of(
+            aSortableColumn("name", "ASC"),
+            aSortableColumn("name", "DESC")
+        );
+
+        // When: converting to Sort — must not throw
+        final Sort sort = fullMetaData.toSort(columns);
+
+        // Then: result is non-null (duplicate handling delegated to Panache Sort)
+        assertThat(sort, is(notNullValue()));
+    }
+
+    @Test
+    @DisplayName("Should treat column names as case-sensitive — 'Name' does not match 'name'")
+    public void shouldTreatColumnNamesAsCaseSensitive() {
+        // Given: 'Name' with a capital N is not the registered field 'name'
+        final List<SortableColumn> columns = List.of(aSortableColumn("Name", "ASC"));
+
+        // When: converting to Sort
+        final Sort sort = fullMetaData.toSort(columns);
+
+        // Then: 'Name' is treated as unknown, result is empty
+        assertThat(sort.getColumns(), empty());
+    }
+
+    @Test
+    @DisplayName("Should not log a warning when empty sort list is provided")
+    public void shouldNotLogWarningWhenEmptySortListProvided() {
+        // Given: no sort columns requested
+        final List<SortableColumn> columns = Collections.emptyList();
+
+        // When: converting to Sort
+        fullMetaData.toSort(columns);
+
+        // Then: no WARN log is emitted
+        assertThat(logCapture.warnings(), empty());
     }
 
     @Test

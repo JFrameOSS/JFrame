@@ -15,8 +15,8 @@ public final class OtlpDefaults {
     /** Configuration property prefix for OTLP settings. */
     public static final String PREFIX = "jframe.otlp.";
 
-    /** Default disabled flag — OTLP tracing is enabled by default. */
-    public static final boolean DEFAULT_DISABLED = false;
+    /** Default disabled flag — telemetry requires explicit opt-in. */
+    public static final boolean DEFAULT_DISABLED = true;
 
     /** Default OTLP collector endpoint URL. */
     public static final String DEFAULT_URL = "http://localhost:4318";
@@ -35,6 +35,29 @@ public final class OtlpDefaults {
 
     /** Default W3C trace context propagators. */
     public static final String DEFAULT_PROPAGATORS = "tracecontext,baggage";
+
+    /**
+     * Default sampler type. Uses parentbased_traceidratio so sampled parents keep their children
+     * and the sampling-rate argument is actually applied.
+     */
+    public static final String DEFAULT_SAMPLER_TYPE = "parentbased_traceidratio";
+
+    /**
+     * OTel spec Opt-In process keys excluded from exported resources by default.
+     * These keys can capture JVM command-line arguments verbatim, which may expose secrets
+     * passed as -D flags (e.g. -Dspring.datasource.password=...).
+     */
+    public static final String DEFAULT_EXCLUDED_RESOURCE_ATTRIBUTES =
+        "process.command_args,process.command_line,process.executable.path";
+
+    /** Default per-signal toggle for traces — enabled by default. */
+    public static final boolean DEFAULT_TRACES_ENABLED = true;
+
+    /** Default per-signal toggle for metrics — enabled by default. */
+    public static final boolean DEFAULT_METRICS_ENABLED = true;
+
+    /** Default per-signal toggle for logs — enabled by default. */
+    public static final boolean DEFAULT_LOGS_ENABLED = true;
 
     private OtlpDefaults() {
         throw new UnsupportedOperationException("Utility class");

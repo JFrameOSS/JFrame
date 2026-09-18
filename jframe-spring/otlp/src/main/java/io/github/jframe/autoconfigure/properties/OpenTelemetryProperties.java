@@ -30,14 +30,26 @@ import org.springframework.validation.annotation.Validated;
  *     timeout: 10s
  *     exporter: otlp
  *     sampling-rate: 0.5
+ *     sampler-type: parentbased_traceidratio
  *     excluded-methods:
  *       - health
  *       - ping
+ *     excluded-resource-attributes:
+ *       - process.command_args
+ *       - process.command_line
+ *       - process.executable.path
+ *     traces:
+ *       enabled: true
+ *     metrics:
+ *       enabled: true
+ *     logs:
+ *       enabled: true
  * }</pre>
  *
- * <p>This configuration allows fine-grained control over telemetry behavior —
- * such as which exporter is used, where spans are sent, and which methods are
- * excluded from tracing.</p>
+ * <p>This configuration allows fine-grained control over telemetry behaviour —
+ * such as which exporter is used, where spans are sent, which methods are
+ * excluded from tracing, which resource attributes are filtered for security,
+ * and which signals are enabled independently.</p>
  */
 @Data
 @Validated
@@ -45,9 +57,10 @@ import org.springframework.validation.annotation.Validated;
 public class OpenTelemetryProperties {
 
     /**
-     * Whether JFrame OpenTelemetry is disabled. Set to true to completely disable tracing and span creation.
+     * Whether JFrame OpenTelemetry is disabled. Set to false to enable tracing and span creation.
+     * Telemetry requires explicit opt-in — defaults to true (disabled).
      */
-    private boolean disabled;
+    private boolean disabled = OtlpDefaults.DEFAULT_DISABLED;
 
     /**
      * OpenTelemetry OTLP endpoint URL. The URL where telemetry data will be sent (e.g., http://jaeger:4318).
@@ -92,5 +105,27 @@ public class OpenTelemetryProperties {
      * Method names to exclude from automatic tracing. These methods will not generate spans when called.
      */
     private Set<String> excludedMethods = OtlpDefaults.parseCommaSeparated(OtlpDefaults.DEFAULT_EXCLUDED_METHODS);
+
+    /**
+     * OTel resource attribute keys to exclude from exported telemetry.
+     * Defaults to the three OTel spec Opt-In process keys that may expose secrets from JVM command-line arguments.
+     */
+    private Set<String> excludedResourceAttributes =
+        OtlpDefaults.parseCommaSeparated(OtlpDefaults.DEFAULT_EXCLUDED_RESOURCE_ATTRIBUTES);
+
+    /**
+     * Whether to export traces. When false, {@code otel.traces.exporter} is set to {@code none}.
+     */
+    private boolean tracesEnabled = OtlpDefaults.DEFAULT_TRACES_ENABLED;
+
+    /**
+     * Whether to export metrics. When false, {@code otel.metrics.exporter} is set to {@code none}.
+     */
+    private boolean metricsEnabled = OtlpDefaults.DEFAULT_METRICS_ENABLED;
+
+    /**
+     * Whether to export logs. When false, {@code otel.logs.exporter} is set to {@code none}.
+     */
+    private boolean logsEnabled = OtlpDefaults.DEFAULT_LOGS_ENABLED;
 
 }

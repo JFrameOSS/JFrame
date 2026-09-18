@@ -24,6 +24,8 @@ import static org.hamcrest.Matchers.*;
  * <li>Property getters and setters</li>
  * <li>Pattern validation for timeout and exporter</li>
  * <li>Range validation for sampling rate</li>
+ * <li>Excluded resource attributes default and override behaviour</li>
+ * <li>Per-signal toggle defaults and independence</li>
  * </ul>
  */
 @DisplayName("Properties - OpenTelemetryProperties")
@@ -51,17 +53,21 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         assertThat(violations, is(empty()));
     }
 
+    // ── Disabled default (changed: now true — opt-in required) ─────────────
+
     @Test
-    @DisplayName("Should have default disabled value of false")
-    void isDisabled_withDefaults_shouldReturnFalse() {
+    @DisplayName("Should have default disabled value of true — telemetry requires explicit opt-in")
+    void shouldDefaultDisabledToTrueWhenNoConfiguration() {
         // Given: OpenTelemetryProperties with default values
 
-        // When: Getting disabled value
+        // When: reading the disabled flag
         final boolean disabled = properties.isDisabled();
 
-        // Then: Default value is false
-        assertThat(disabled, is(false));
+        // Then: telemetry is disabled by default; consumers must opt in
+        assertThat(disabled, is(true));
     }
+
+    // ── Existing defaults (regression guard) ───────────────────────────────
 
     @Test
     @DisplayName("Should have default url value of http://localhost:4318")
@@ -123,6 +129,147 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         assertThat(excludedMethods, hasItems("health", "actuator", "ping", "status", "info", "metrics"));
     }
 
+    // ── Excluded resource attributes ───────────────────────────────────────
+
+    @Test
+    @DisplayName("Should default excludedResourceAttributes to the three Opt-In process keys")
+    void shouldDefaultExcludedResourceAttributesToOptInProcessKeys() {
+        // Given: OpenTelemetryProperties with default values
+
+        // When: reading excluded resource attributes
+        final Set<String> excluded = properties.getExcludedResourceAttributes();
+
+        // Then: exactly the three OTel spec Opt-In process keys are excluded by default
+        assertThat(excluded, hasSize(3));
+        assertThat(
+            excluded,
+            containsInAnyOrder(
+                "process.command_args",
+                "process.command_line",
+                "process.executable.path"
+            )
+        );
+    }
+
+    @Test
+    @DisplayName("Should yield empty set when excludedResourceAttributes is overridden to empty")
+    void shouldReturnEmptySetWhenExcludedResourceAttributesOverriddenToEmpty() {
+        // Given: consumer overrides excluded attributes to empty (re-enables all attributes)
+        properties.setExcludedResourceAttributes(Set.of());
+
+        // When: reading excluded resource attributes
+        final Set<String> excluded = properties.getExcludedResourceAttributes();
+
+        // Then: the set is empty — no attributes are filtered
+        assertThat(excluded, is(empty()));
+    }
+
+    @Test
+    @DisplayName("Should set and get excludedResourceAttributes property")
+    void shouldSetAndGetExcludedResourceAttributes() {
+        // Given: a custom set of attribute keys to exclude
+        final Set<String> custom = Set.of("process.pid", "host.name");
+
+        // When: setting the property
+        properties.setExcludedResourceAttributes(custom);
+
+        // Then: the property reflects the custom value
+        assertThat(properties.getExcludedResourceAttributes(), is(custom));
+    }
+
+    // ── Per-signal toggles — defaults ──────────────────────────────────────
+
+    @Test
+    @DisplayName("Should default tracesEnabled to true")
+    void shouldDefaultTracesEnabledToTrue() {
+        // Given: OpenTelemetryProperties with default values
+
+        // When: reading the traces-enabled toggle
+        final boolean tracesEnabled = properties.isTracesEnabled();
+
+        // Then: traces are enabled by default
+        assertThat(tracesEnabled, is(true));
+    }
+
+    @Test
+    @DisplayName("Should default metricsEnabled to true")
+    void shouldDefaultMetricsEnabledToTrue() {
+        // Given: OpenTelemetryProperties with default values
+
+        // When: reading the metrics-enabled toggle
+        final boolean metricsEnabled = properties.isMetricsEnabled();
+
+        // Then: metrics are enabled by default
+        assertThat(metricsEnabled, is(true));
+    }
+
+    @Test
+    @DisplayName("Should default logsEnabled to true")
+    void shouldDefaultLogsEnabledToTrue() {
+        // Given: OpenTelemetryProperties with default values
+
+        // When: reading the logs-enabled toggle
+        final boolean logsEnabled = properties.isLogsEnabled();
+
+        // Then: logs are enabled by default
+        assertThat(logsEnabled, is(true));
+    }
+
+    // ── Per-signal toggles — independence ─────────────────────────────────
+
+    @Test
+    @DisplayName("Should leave metrics and logs enabled when only traces are disabled")
+    void shouldLeaveOtherSignalsEnabledWhenTracesDisabled() {
+        // Given: consumer turns off only traces
+        properties.setTracesEnabled(false);
+
+        // When: reading all three toggles
+        final boolean traces = properties.isTracesEnabled();
+        final boolean metrics = properties.isMetricsEnabled();
+        final boolean logs = properties.isLogsEnabled();
+
+        // Then: only traces are off; metrics and logs remain on
+        assertThat(traces, is(false));
+        assertThat(metrics, is(true));
+        assertThat(logs, is(true));
+    }
+
+    @Test
+    @DisplayName("Should leave traces and logs enabled when only metrics are disabled")
+    void shouldLeaveOtherSignalsEnabledWhenMetricsDisabled() {
+        // Given: consumer turns off only metrics
+        properties.setMetricsEnabled(false);
+
+        // When: reading all three toggles
+        final boolean traces = properties.isTracesEnabled();
+        final boolean metrics = properties.isMetricsEnabled();
+        final boolean logs = properties.isLogsEnabled();
+
+        // Then: only metrics are off; traces and logs remain on
+        assertThat(traces, is(true));
+        assertThat(metrics, is(false));
+        assertThat(logs, is(true));
+    }
+
+    @Test
+    @DisplayName("Should leave traces and metrics enabled when only logs are disabled")
+    void shouldLeaveOtherSignalsEnabledWhenLogsDisabled() {
+        // Given: consumer turns off only logs
+        properties.setLogsEnabled(false);
+
+        // When: reading all three toggles
+        final boolean traces = properties.isTracesEnabled();
+        final boolean metrics = properties.isMetricsEnabled();
+        final boolean logs = properties.isLogsEnabled();
+
+        // Then: only logs are off; traces and metrics remain on
+        assertThat(traces, is(true));
+        assertThat(metrics, is(true));
+        assertThat(logs, is(false));
+    }
+
+    // ── Validation: url ────────────────────────────────────────────────────
+
     @Test
     @DisplayName("Should fail validation when url is null")
     void validate_withNullUrl_shouldFailValidation() {
@@ -156,6 +303,8 @@ class OpenTelemetryPropertiesTest extends UnitTest {
             containsString("OpenTelemetry OTLP URL must not be blank")
         );
     }
+
+    // ── Validation: timeout ────────────────────────────────────────────────
 
     @Test
     @DisplayName("Should fail validation when timeout is null")
@@ -243,6 +392,8 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         assertThat(violations, is(empty()));
     }
 
+    // ── Validation: exporter ───────────────────────────────────────────────
+
     @Test
     @DisplayName("Should fail validation when exporter is null")
     void validate_withNullExporter_shouldFailValidation() {
@@ -329,6 +480,8 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         assertThat(violations, is(empty()));
     }
 
+    // ── Validation: samplingRate ───────────────────────────────────────────
+
     @Test
     @DisplayName("Should fail validation when samplingRate is below 0.0")
     void validate_withNegativeSamplingRate_shouldFailValidation() {
@@ -401,6 +554,8 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         // Then: No validation violations
         assertThat(violations, is(empty()));
     }
+
+    // ── Setter/getter round-trips ──────────────────────────────────────────
 
     @Test
     @DisplayName("Should set and get disabled property")
@@ -478,6 +633,8 @@ class OpenTelemetryPropertiesTest extends UnitTest {
         // Then: ExcludedMethods property is set correctly
         assertThat(properties.getExcludedMethods(), is(excludedMethods));
     }
+
+    // ── Multi-field validation ─────────────────────────────────────────────
 
     @Test
     @DisplayName("Should fail validation when multiple fields are invalid")

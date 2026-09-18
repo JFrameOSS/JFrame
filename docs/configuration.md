@@ -66,13 +66,18 @@ Applies to both `spring-otlp` and `quarkus-otlp` modules.
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `jframe.otlp.disabled` | `true` (Spring) / `false` (Quarkus) | Disable tracing |
+| `jframe.otlp.disabled` | `true` | Disable tracing. **Both runtimes now default to `true`.** Quarkus consumers who relied on telemetry being on by default must explicitly set `jframe.otlp.disabled=false`. |
 | `jframe.otlp.url` | `http://localhost:4318` | OTLP collector endpoint |
 | `jframe.otlp.exporter` | `otlp` | Exporter: `otlp`, `jaeger`, `zipkin` |
 | `jframe.otlp.sampling-rate` | `1.0` | Sampling rate (0.0–1.0) |
 | `jframe.otlp.timeout` | `10s` | Export timeout |
 | `jframe.otlp.excluded-methods` | `health, actuator, ping, status, info, metrics` | Method names to exclude from tracing |
 | `jframe.otlp.propagators` | `tracecontext,baggage` | W3C trace context propagators (Quarkus only; Spring config removed) |
+| `jframe.otlp.sampler-type` | `parentbased_traceidratio` | Trace sampler strategy. Parent-based means a sampled parent keeps all its child spans. |
+| `jframe.otlp.excluded-resource-attributes` | `process.command_args,process.command_line,process.executable.path` | Resource attribute keys stripped before export. These three keys are excluded by default because `process.command_args` captures the JVM command line verbatim — any secret passed as a `-D` flag would appear in every exported trace. OTel semantic conventions mark them as Opt-In. `process.pid` and `process.runtime.*` are still exported. Override to re-enable. |
+| `jframe.otlp.traces.enabled` | `true` | Enable/disable trace export independently of `jframe.otlp.disabled`. |
+| `jframe.otlp.metrics.enabled` | `true` | Enable/disable metric export independently of `jframe.otlp.disabled`. |
+| `jframe.otlp.logs.enabled` | `true` | Enable/disable log export independently of `jframe.otlp.disabled`. |
 
 ### OTEL SDK mapping
 
@@ -91,7 +96,11 @@ otel:
     protocol: http/protobuf
     compression: gzip
   traces.exporter: ${jframe.otlp.exporter}
+  traces.sampler: ${jframe.otlp.sampler-type}
+  resource.disabled.keys: ${jframe.otlp.excluded-resource-attributes}
 ```
+
+`otel.{traces,metrics,logs}.exporter` is set to `none` when the corresponding `jframe.otlp.{signal}.enabled=false`. This is applied by an `EnvironmentPostProcessor` at startup, not in `jframe-properties.yml`.
 
 **Quarkus** (`microprofile-config.properties` → `quarkus.otel.*`):
 
@@ -102,9 +111,12 @@ quarkus.otel.propagators=${jframe.otlp.propagators:tracecontext,baggage}
 quarkus.otel.exporter.otlp.endpoint=${jframe.otlp.url}
 quarkus.otel.exporter.otlp.protocol=http/protobuf
 quarkus.otel.exporter.otlp.compression=gzip
-quarkus.otel.traces.sampler=traceidratio
+quarkus.otel.traces.sampler=${jframe.otlp.sampler-type}
 quarkus.otel.traces.sampler.arg=${jframe.otlp.sampling-rate}
+otel.resource.disabled.keys=${jframe.otlp.excluded-resource-attributes}
 ```
+
+`otel.{traces,metrics,logs}.exporter` is set to `none` when the corresponding `jframe.otlp.{signal}.enabled=false`. This is applied by an `AutoConfiguredOpenTelemetrySdkBuilderCustomizer` at startup. Note: `otel.resource.disabled.keys` uses the plain `otel.` prefix (not `quarkus.otel.`) — this is intentional.
 
 ## MDC field reference
 

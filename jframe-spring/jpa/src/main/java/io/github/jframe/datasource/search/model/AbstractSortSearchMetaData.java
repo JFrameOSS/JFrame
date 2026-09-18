@@ -112,9 +112,10 @@ public abstract class AbstractSortSearchMetaData {
     /**
      * Convert a list of SortableColumn objects into a Spring Data Sort object based on the defined sortable fields.
      *
+     * <p>Non-sortable or unregistered columns are silently discarded with a WARN log; the method never throws.
+     *
      * @param sortOrders List of SortableColumn objects representing user-defined sort orders.
-     * @return Spring Data Sort object for querying the database.
-     * @throws IllegalArgumentException if any requested sort field is not defined as sortable.
+     * @return Spring Data Sort object for querying the database; unsorted when all columns are invalid.
      */
     public Sort toSort(final List<SortableColumn> sortOrders) {
         if (CollectionUtils.isEmpty(sortOrders)) {
@@ -127,10 +128,14 @@ public abstract class AbstractSortSearchMetaData {
             .toList();
 
         if (orders.size() != sortOrders.size()) {
-            throw new IllegalArgumentException("Attempted to sort on non-sortable fields: " + sortOrders);
+            final List<String> discarded = sortOrders.stream()
+                .map(SortableColumn::getName)
+                .filter(name -> !sortableFields.contains(name))
+                .toList();
+            log.warn("Discarding non-sortable or unregistered sort columns: {}", discarded);
         }
 
-        return Sort.by(orders);
+        return orders.isEmpty() ? Sort.unsorted() : Sort.by(orders);
     }
 
     /**

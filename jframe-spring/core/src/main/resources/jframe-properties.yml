@@ -51,6 +51,7 @@ jframe:
     timeout: 10s
     exporter: otlp
     sampling-rate: 1.0
+    sampler-type: parentbased_traceidratio
     excluded-methods:
       - "health"
       - "actuator"
@@ -58,12 +59,20 @@ jframe:
       - "status"
       - "info"
       - "metrics"
+    excluded-resource-attributes: "process.command_args,process.command_line,process.executable.path"
+    traces:
+      enabled: true
+    metrics:
+      enabled: true
+    logs:
+      enabled: true
 
 # ===================== DEPENDENCY CONFIGURATION =====================
 otel:
   sdk.disabled: ${jframe.otlp.disabled}
   service.name: ${jframe.application.name}-${jframe.application.environment}
   resource:
+    disabled.keys: ${jframe.otlp.excluded-resource-attributes}
     attributes:
       service.name: ${jframe.application.name}
       service.version: ${jframe.application.version}
@@ -83,15 +92,11 @@ otel:
       compression: gzip
 
   traces:
-    exporter: ${jframe.otlp.exporter}
-    sampler:
-      arg: ${jframe.otlp.sampling-rate}
+    sampler: ${jframe.otlp.sampler-type}
+    sampler.arg: ${jframe.otlp.sampling-rate}
+    # exporter is managed by OtlpSignalExporterEnvironmentPostProcessor
 
-  metrics:
-    exporter: ${jframe.otlp.exporter}
-
-  logs:
-    exporter: ${jframe.otlp.exporter}
+  # metrics.exporter and logs.exporter are managed by OtlpSignalExporterEnvironmentPostProcessor
 
   # Instrumentation Control
   # https://opentelemetry.io/docs/zero-code/java/spring-boot-starter/out-of-the-box-instrumentation/

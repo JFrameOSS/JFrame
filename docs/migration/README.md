@@ -2,6 +2,12 @@
 
 Every breaking or behaviour-changing release has a guide. Read the guides for each version between the one you are on and the one you are moving to, oldest first.
 
+## 1.6.0
+
+| Guide | What changed |
+|-------|--------------|
+| [OTLP Opt-In and Hardening](./1.6.0-otlp-opt-in.md) | Telemetry is now opt-in (Quarkus behaviour change); process command-line attributes excluded by default for security; `sampling-rate` now honoured on Spring; per-signal toggles for traces, metrics and logs |
+
 ## 1.5.0
 
 | Guide | What changed |

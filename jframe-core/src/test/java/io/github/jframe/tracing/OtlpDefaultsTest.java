@@ -18,10 +18,71 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * Unit tests for {@link OtlpDefaults}.
  *
- * <p>Verifies the parseCommaSeparated utility method behaviour.
+ * <p>Verifies the parseCommaSeparated utility method behaviour and all shared default constants.
  */
 @DisplayName("Tracing - OtlpDefaults")
 class OtlpDefaultsTest extends UnitTest {
+
+    @Nested
+    @DisplayName("Default constants")
+    class DefaultConstants {
+
+        @Test
+        @DisplayName("Should default disabled flag to true — telemetry requires explicit opt-in")
+        void shouldDefaultDisabledToTrueWhenNoConfiguration() {
+            // Given: the shared default constant
+
+            // When: reading DEFAULT_DISABLED
+
+            // Then: telemetry is disabled unless explicitly opted in
+            assertThat(OtlpDefaults.DEFAULT_DISABLED, is(true));
+        }
+
+        @Test
+        @DisplayName("Should provide sampler type default of parentbased_traceidratio")
+        void shouldDefaultSamplerTypeToParentBasedTraceIdRatio() {
+            // Given: the shared sampler-type default constant
+
+            // When: reading DEFAULT_SAMPLER_TYPE
+
+            // Then: the value is parentbased_traceidratio so sampled parents keep their children
+            assertThat(OtlpDefaults.DEFAULT_SAMPLER_TYPE, is("parentbased_traceidratio"));
+        }
+
+        @Test
+        @DisplayName("Should provide excluded resource attributes default as comma-separated string")
+        void shouldDefaultExcludedResourceAttributesToOptInProcessKeys() {
+            // Given: the shared excluded resource attributes constant
+
+            // When: parsing the constant
+            final Set<String> attributes = OtlpDefaults.parseCommaSeparated(
+                OtlpDefaults.DEFAULT_EXCLUDED_RESOURCE_ATTRIBUTES
+            );
+
+            // Then: exactly the three OTel spec Opt-In process keys are excluded by default
+            assertThat(attributes, hasSize(3));
+            assertThat(
+                attributes,
+                containsInAnyOrder(
+                    "process.command_args",
+                    "process.command_line",
+                    "process.executable.path"
+                )
+            );
+        }
+
+        @Test
+        @DisplayName("Should not be instantiable — private constructor throws")
+        void shouldThrowWhenInstantiatedViaReflection() throws Exception {
+            // Given: the private constructor
+            final var constructor = OtlpDefaults.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+
+            // When/Then: invoking it wraps the UnsupportedOperationException
+            assertThrows(java.lang.reflect.InvocationTargetException.class, constructor::newInstance);
+        }
+    }
+
 
     @Nested
     @DisplayName("parseCommaSeparated")
