@@ -55,9 +55,9 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:1.6.0")
-    implementation("io.github.jframeoss:jframe-spring-jpa:1.6.0")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:1.6.0")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.6.1")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.6.1")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.6.1")  // optional
 }
 ```
 
@@ -65,9 +65,9 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:1.6.0")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.6.0")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.6.0")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.6.1")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.6.1")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.6.1")  // optional
 }
 ```
 
