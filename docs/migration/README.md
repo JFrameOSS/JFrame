@@ -2,6 +2,12 @@
 
 Every breaking or behaviour-changing release has a guide. Read the guides for each version between the one you are on and the one you are moving to, oldest first.
 
+## 1.6.2
+
+| Guide | What changed |
+|-------|--------------|
+| [OpenAPI Validation Schema](./1.6.2-openapi-validation-schema.md) | The 400 validation schema in the generated OpenAPI spec is now always `ValidationErrorResponseResource` (was random) — re-baseline contract tests once |
+
 ## 1.6.1
 
 | Guide | What changed |

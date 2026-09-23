@@ -23,4 +23,9 @@ public class ValidationErrorResponseResource extends ErrorResponseResource {
         super(validationException);
     }
 
+    /** Constructor with a generic throwable for subclasses. */
+    protected ValidationErrorResponseResource(final Throwable throwable) {
+        super(throwable);
+    }
+
 }
