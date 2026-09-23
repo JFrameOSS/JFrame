@@ -13,8 +13,11 @@ import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;
 import io.github.support.UnitTest;
 import io.github.support.fixtures.TestApiError;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.List;
 import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -280,6 +283,46 @@ public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
         assertThat(response.getBody().getRemaining(), is(equalTo(remaining)));
         assertThat(response.getBody().getResetDate(), is(equalTo(resetDate)));
         verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.TOO_MANY_REQUESTS, webRequest);
+    }
+
+    @Test
+    @DisplayName("Should have unique @ApiResponse response codes across all handler methods")
+    public void shouldHaveUniqueApiResponseCodesAcrossAllHandlerMethods() {
+        // Given: all declared methods of the exception handler that carry @ApiResponse
+        // When: collecting all responseCode values
+        final List<String> allCodes = Arrays.stream(JFrameResponseEntityExceptionHandler.class.getDeclaredMethods())
+            .filter(method -> method.isAnnotationPresent(ApiResponse.class))
+            .map(method -> method.getAnnotation(ApiResponse.class).responseCode())
+            .toList();
+
+        // Then: every code must appear exactly once — duplicates make springdoc nondeterministic
+        final long distinctCount = allCodes.stream().distinct().count();
+        assertThat(
+            "Duplicate @ApiResponse responseCodes found — springdoc schema will be nondeterministic: " + allCodes,
+            distinctCount,
+            is(equalTo((long) allCodes.size()))
+        );
+    }
+
+    @Test
+    @DisplayName("Should have MethodArgumentNotValidResponseResource assignable to ValidationErrorResponseResource")
+    public void shouldHaveMethodArgumentNotValidResponseResourceAssignableToValidationErrorResponseResource() {
+        // Given: the two 400 validation response resource types used in the handler
+        final Class<?> methodArgNotValidResource = MethodArgumentNotValidResponseResource.class;
+        final Class<?> validationErrorResource = ValidationErrorResponseResource.class;
+
+        // When: checking the type hierarchy
+        final boolean isAssignable = validationErrorResource.isAssignableFrom(methodArgNotValidResource);
+
+        // Then: MethodArgumentNotValidResponseResource must be a subtype of ValidationErrorResponseResource
+        //       so both 400 validation bodies share one OpenAPI schema shape
+        assertThat(
+            "MethodArgumentNotValidResponseResource must extend ValidationErrorResponseResource "
+                + "so both validation 400 bodies share one OpenAPI schema — current parent: "
+                + methodArgNotValidResource.getSuperclass().getSimpleName(),
+            isAssignable,
+            is(true)
+        );
     }
 
     @Test

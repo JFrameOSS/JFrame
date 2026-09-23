@@ -5,7 +5,6 @@ import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.exception.factory.ErrorResponseEntityBuilder;
 import io.github.jframe.exception.resource.ErrorResponseResource;
-import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -238,14 +237,6 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
      * @return a response entity reflecting the current exception
      */
     @Override
-    @ApiResponse(
-        responseCode = "400 (Validation)",
-        description = "Input Validation Exception",
-        content = @Content(
-            mediaType = "application/json",
-            schema = @Schema(implementation = MethodArgumentNotValidResponseResource.class)
-        )
-    )
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
         @NonNull final MethodArgumentNotValidException exception,
         @NonNull final HttpHeaders headers,
