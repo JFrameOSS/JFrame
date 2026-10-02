@@ -2,6 +2,7 @@ package io.github.jframe.datasource.search;
 
 import io.github.jframe.datasource.search.model.PageableItem;
 import io.github.jframe.datasource.search.model.resource.PageResource;
+import io.github.jframe.exception.page.InvalidPageException;
 import io.github.support.UnitTest;
 import io.quarkus.panache.common.Sort;
 
@@ -12,7 +13,11 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Nulls;
 import jakarta.persistence.criteria.Order;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
@@ -27,10 +32,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -122,6 +129,27 @@ public class PanacheSearchRepositoryTest extends UnitTest {
 
     @Mock
     private Expression<Long> countExpression;
+
+    @Mock
+    private Path<String> namePath;
+
+    @Mock
+    private Path<Object> agePath;
+
+    @Mock
+    private Path<Object> idPath;
+
+    @Mock
+    private Path<String> tenantNamePath;
+
+    @Mock
+    private Join<Object, Object> tenantJoin;
+
+    @Mock
+    private Expression<String> lowerName;
+
+    @Mock
+    private Expression<String> lowerTenantName;
 
     private TestPanacheSearchRepository repository;
 
@@ -492,8 +520,7 @@ public class PanacheSearchRepositoryTest extends UnitTest {
         // Given: A non-null Panache Sort
         final SearchSpecification<TestEntity> spec = aMatchingSpec(predicate);
         final Sort sort = Sort.by("name", Sort.Direction.Ascending);
-        when(typedQuery.getResultList()).thenReturn(Collections.emptyList());
-        when(countTypedQuery.getSingleResult()).thenReturn(0L);
+        givenPaths();
 
         // When: Searching with an explicit sort
         final PageResource<TestEntity> result = repository.searchPage(spec, 0, 10, sort);
@@ -508,13 +535,181 @@ public class PanacheSearchRepositoryTest extends UnitTest {
         // Given: A non-null Panache Sort by "name" ascending
         final SearchSpecification<TestEntity> spec = aMatchingSpec(predicate);
         final Sort sort = Sort.by("name", Sort.Direction.Ascending);
-        when(typedQuery.getResultList()).thenReturn(Collections.emptyList());
-        when(countTypedQuery.getSingleResult()).thenReturn(0L);
+        givenPaths();
 
         // When: Searching with the sort
         repository.searchPage(spec, 0, 10, sort);
 
         // Then: An orderBy clause is applied to the criteria query
         verify(criteriaQuery).orderBy(anyList());
+    }
+
+    // -------------------------------------------------------------------------
+    // 11. Ordering parity with Spring (case-insensitive strings, nulls last, joins)
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Should order String attribute case-insensitively with nulls last")
+    public void shouldOrderStringAttributeCaseInsensitivelyWithNullsLast() {
+        // Given: A String attribute sorted ascending
+        givenPaths();
+        final Sort sort = Sort.by("name", Sort.Direction.Ascending);
+
+        // When: Searching
+        repository.searchPage(null, 0, 10, sort);
+
+        // Then: The lowered expression is ordered ascending with nulls last
+        verify(criteriaBuilder).lower(namePath);
+        verify(criteriaBuilder).asc(lowerName, Nulls.LAST);
+    }
+
+    @Test
+    @DisplayName("Should order descending String attribute case-insensitively with nulls last")
+    public void shouldOrderDescendingStringAttributeCaseInsensitivelyWithNullsLast() {
+        // Given: A String attribute sorted descending
+        givenPaths();
+        final Sort sort = Sort.by("name", Sort.Direction.Descending);
+
+        // When: Searching
+        repository.searchPage(null, 0, 10, sort);
+
+        // Then: The lowered expression is ordered descending with nulls last
+        verify(criteriaBuilder).desc(lowerName, Nulls.LAST);
+    }
+
+    @Test
+    @DisplayName("Should not lower non-String attribute and still order nulls last")
+    public void shouldNotLowerNonStringAttributeAndStillOrderNullsLast() {
+        // Given: An Integer attribute sorted descending
+        givenPaths();
+        final Sort sort = Sort.by("age", Sort.Direction.Descending);
+
+        // When: Searching
+        repository.searchPage(null, 0, 10, sort);
+
+        // Then: The raw path is ordered with nulls last, no lower() applied
+        verify(criteriaBuilder, never()).lower(any());
+        verify(criteriaBuilder).desc(agePath, Nulls.LAST);
+    }
+
+    @Test
+    @DisplayName("Should order tiebreaker column with nulls last")
+    public void shouldOrderTiebreakerColumnWithNullsLast() {
+        // Given: A sort with a String column followed by the 'id' tiebreaker
+        givenPaths();
+        final Sort sort = Sort.by("name", Sort.Direction.Ascending).and("id", Sort.Direction.Ascending);
+
+        // When: Searching
+        repository.searchPage(null, 0, 10, sort);
+
+        // Then: The tiebreaker also gets nulls last
+        verify(criteriaBuilder).asc(idPath, Nulls.LAST);
+    }
+
+    @Test
+    @DisplayName("Should never use orderings without explicit null precedence")
+    public void shouldNeverUseOrderingsWithoutExplicitNullPrecedence() {
+        // Given: A multi-column sort
+        givenPaths();
+        final Sort sort = Sort.by("name", Sort.Direction.Ascending)
+            .and("age", Sort.Direction.Descending)
+            .and("id", Sort.Direction.Ascending);
+
+        // When: Searching
+        repository.searchPage(null, 0, 10, sort);
+
+        // Then: The single-arg asc/desc overloads are never used
+        verify(criteriaBuilder, never()).asc(any(Expression.class));
+        verify(criteriaBuilder, never()).desc(any(Expression.class));
+    }
+
+    @Test
+    @DisplayName("Should navigate dotted path via left join instead of root attribute lookup")
+    public void shouldNavigateDottedPathViaLeftJoinInsteadOfRootAttributeLookup() {
+        // Given: A dotted sort path 'tenant.name'
+        givenPaths();
+        final Sort sort = Sort.by("tenant.name", Sort.Direction.Ascending);
+
+        // When: Searching
+        repository.searchPage(null, 0, 10, sort);
+
+        // Then: The intermediate segment is LEFT joined and the leaf is resolved on the join
+        verify(root).join("tenant", JoinType.LEFT);
+        verify(tenantJoin).get("name");
+        verify(root, never()).get("tenant.name");
+        verify(criteriaBuilder).asc(lowerTenantName, Nulls.LAST);
+    }
+
+    // -------------------------------------------------------------------------
+    // 12. Paging bounds
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Should reject negative page number")
+    public void shouldRejectNegativePageNumber() {
+        // Given: A negative page number
+
+        // When: Searching
+        final InvalidPageException exception = assertThrows(
+            InvalidPageException.class,
+            () -> repository.searchPage(null, -1, 10, null)
+        );
+
+        // Then: pageNumber is rejected
+        assertThat(exception.getRejectedParameter(), is("pageNumber"));
+        assertThat(exception.getRejectedValue(), is(-1));
+    }
+
+    @Test
+    @DisplayName("Should reject page number whose offset overflows int")
+    public void shouldRejectPageNumberWhoseOffsetOverflowsInt() {
+        // Given: pageNumber * pageSize exceeds Integer.MAX_VALUE
+        final int pageSize = 100;
+        final int pageNumber = Integer.MAX_VALUE / pageSize + 1;
+
+        // When: Searching
+        final InvalidPageException exception = assertThrows(
+            InvalidPageException.class,
+            () -> repository.searchPage(null, pageNumber, pageSize, null)
+        );
+
+        // Then: pageNumber is rejected and no query is executed
+        assertThat(exception.getRejectedParameter(), is("pageNumber"));
+        verify(typedQuery, never()).getResultList();
+    }
+
+    @Test
+    @DisplayName("Should accept large page size without cap")
+    public void shouldAcceptLargePageSizeWithoutCap() {
+        // Given: A spec and a very large page size
+        final SearchSpecification<TestEntity> spec = aMatchingSpec(predicate);
+        when(typedQuery.getResultList()).thenReturn(Collections.emptyList());
+        when(countTypedQuery.getSingleResult()).thenReturn(0L);
+
+        // When: Searching with pageSize 10_000
+        repository.searchPage(spec, 0, 10_000, null);
+
+        // Then: maxResults is not capped
+        verify(typedQuery).setMaxResults(10_000);
+    }
+
+    private void givenPaths() {
+        when(typedQuery.getResultList()).thenReturn(Collections.emptyList());
+        when(countTypedQuery.getSingleResult()).thenReturn(0L);
+
+        doReturn(namePath).when(root).get("name");
+        doReturn(String.class).when(namePath).getJavaType();
+        doReturn(lowerName).when(criteriaBuilder).lower(namePath);
+
+        doReturn(agePath).when(root).get("age");
+        doReturn(Integer.class).when(agePath).getJavaType();
+
+        doReturn(idPath).when(root).get("id");
+        doReturn(Long.class).when(idPath).getJavaType();
+
+        doReturn(tenantJoin).when(root).join("tenant", JoinType.LEFT);
+        doReturn(tenantNamePath).when(tenantJoin).get("name");
+        doReturn(String.class).when(tenantNamePath).getJavaType();
+        doReturn(lowerTenantName).when(criteriaBuilder).lower(tenantNamePath);
     }
 }

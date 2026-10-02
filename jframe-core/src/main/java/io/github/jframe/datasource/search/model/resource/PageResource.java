@@ -11,6 +11,8 @@ import java.util.List;
 
 import org.jspecify.annotations.NonNull;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * Resource file describing a Page of elements and associated Page metadata.
  *
@@ -54,6 +56,26 @@ public class PageResource<T> implements Iterable<T> {
         requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
     private List<T> content = new ArrayList<>();
+
+    @Schema(description = "The sort that was applied to this page")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private AppliedSort appliedSort;
+
+    /**
+     * Constructor with content but without appliedSort.
+     */
+    public PageResource(
+                        final long totalElements,
+                        final int totalPages,
+                        final int pageSize,
+                        final int pageNumber,
+                        final List<T> content) {
+        this.totalElements = totalElements;
+        this.totalPages = totalPages;
+        this.pageSize = pageSize;
+        this.pageNumber = pageNumber;
+        this.content = content;
+    }
 
     /**
      * Constructor without content — initializes content to an empty list.

@@ -117,9 +117,9 @@ class ObjectMappersTest extends UnitTest {
 
         // Then: Object is created with all field values
         assertThat(result, is(notNullValue()));
-        assertThat(result.name(), is("Alice"));
-        assertThat(result.age(), is(25));
-        assertThat(result.email(), is("alice@example.com"));
+        assertThat(result.getName(), is("Alice"));
+        assertThat(result.getAge(), is(25));
+        assertThat(result.getEmail(), is("alice@example.com"));
     }
 
     @Test
@@ -133,9 +133,9 @@ class ObjectMappersTest extends UnitTest {
 
         // Then: Object is created with non-null name and null other fields
         assertThat(result, is(notNullValue()));
-        assertThat(result.name(), is("Bob"));
-        assertThat(result.age(), is(nullValue()));
-        assertThat(result.email(), is(nullValue()));
+        assertThat(result.getName(), is("Bob"));
+        assertThat(result.getAge(), is(nullValue()));
+        assertThat(result.getEmail(), is(nullValue()));
     }
 
     @Test
@@ -149,9 +149,9 @@ class ObjectMappersTest extends UnitTest {
 
         // Then: Object is created with known fields, unknown field is ignored
         assertThat(result, is(notNullValue()));
-        assertThat(result.name(), is("Charlie"));
-        assertThat(result.age(), is(35));
-        assertThat(result.email(), is("charlie@example.com"));
+        assertThat(result.getName(), is("Charlie"));
+        assertThat(result.getAge(), is(35));
+        assertThat(result.getEmail(), is("charlie@example.com"));
     }
 
     @Test
@@ -165,8 +165,8 @@ class ObjectMappersTest extends UnitTest {
 
         // Then: Object is created with parsed LocalDateTime
         assertThat(result, is(notNullValue()));
-        assertThat(result.name(), is("Test"));
-        assertThat(result.dateTime(), is(LocalDateTime.of(2024, 1, 15, 10, 30, 45)));
+        assertThat(result.getName(), is("Test"));
+        assertThat(result.getDateTime(), is(LocalDateTime.of(2024, 1, 15, 10, 30, 45)));
     }
 
     @Test
@@ -191,10 +191,10 @@ class ObjectMappersTest extends UnitTest {
 
         // Then: List is created with two TestData objects
         assertThat(result, hasSize(2));
-        assertThat(result.get(0).name(), is("Alice"));
-        assertThat(result.get(0).age(), is(25));
-        assertThat(result.get(1).name(), is("Bob"));
-        assertThat(result.get(1).age(), is(30));
+        assertThat(result.get(0).getName(), is("Alice"));
+        assertThat(result.get(0).getAge(), is(25));
+        assertThat(result.get(1).getName(), is("Bob"));
+        assertThat(result.get(1).getAge(), is(30));
     }
 
     @Test
@@ -252,25 +252,50 @@ class ObjectMappersTest extends UnitTest {
 
         // Then: Object is created with nested object populated
         assertThat(result, is(notNullValue()));
-        assertThat(result.name(), is("Parent"));
-        assertThat(result.nested(), is(notNullValue()));
-        assertThat(result.nested().name(), is("Child"));
-        assertThat(result.nested().age(), is(10));
+        assertThat(result.getName(), is("Parent"));
+        assertThat(result.getNested(), is(notNullValue()));
+        assertThat(result.getNested().getName(), is("Child"));
+        assertThat(result.getNested().getAge(), is(10));
     }
 
     // Test data classes
-    record TestData(String name, Integer age, String email) {
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    static class TestData {
+
+        private String name;
+        private Integer age;
+        private String email;
     }
 
 
-    record TestDataWithDateTime(String name, LocalDateTime dateTime) {
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    static class TestDataWithDateTime {
+
+        private String name;
+        private LocalDateTime dateTime;
     }
 
 
-    record TestDataWithOffsetDateTime(String name, OffsetDateTime dateTime) {
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    static class TestDataWithOffsetDateTime {
+
+        private String name;
+        private OffsetDateTime dateTime;
     }
 
 
-    record TestDataWithNested(String name, TestData nested) {
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    static class TestDataWithNested {
+
+        private String name;
+        private TestData nested;
     }
 }

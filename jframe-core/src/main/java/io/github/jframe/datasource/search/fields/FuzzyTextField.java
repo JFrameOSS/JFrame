@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class FuzzyTextField extends SearchCriterium {
+public final class FuzzyTextField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 2309426883656091433L;

@@ -1,205 +1,73 @@
 package io.github.jframe.datasource.search.model;
 
 import io.github.jframe.datasource.search.PanacheSearchSpecification;
-import io.github.jframe.datasource.search.SearchType;
-import io.github.jframe.datasource.search.fields.BooleanField;
-import io.github.jframe.datasource.search.fields.DateField;
-import io.github.jframe.datasource.search.fields.EnumField;
-import io.github.jframe.datasource.search.fields.FuzzyTextField;
-import io.github.jframe.datasource.search.fields.MultiColumnFuzzyField;
-import io.github.jframe.datasource.search.fields.MultiEnumField;
-import io.github.jframe.datasource.search.fields.MultiFuzzyField;
-import io.github.jframe.datasource.search.fields.MultiNumericField;
-import io.github.jframe.datasource.search.fields.MultiTextField;
-import io.github.jframe.datasource.search.fields.NumericField;
-import io.github.jframe.datasource.search.fields.NumericRangeField;
-import io.github.jframe.datasource.search.fields.TextField;
-import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
 import io.github.jframe.datasource.search.model.input.SortablePageInput;
+import io.github.jframe.exception.page.InvalidPageException;
+import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import jakarta.persistence.criteria.Predicate;
-
-import org.apache.commons.collections4.CollectionUtils;
-
-import static java.util.Objects.nonNull;
+import java.util.Set;
 
 /**
- * Abstract metadata class defining search and sorting capabilities for Panache-based domain model objects.
+ * Quarkus/Panache search metadata adapter. Extends {@link AbstractSearchMetaData} with
+ * Panache {@link Sort}, {@link Page}, and {@link PanacheSearchSpecification} support.
  *
- * <p>Maps frontend field names to database columns and defines search behavior for each field.
- * Concrete implementations should extend this class and configure fields using the {@code addField} methods.
- *
- * <p>Thread-safe: Uses concurrent collections for field mappings.
- *
- * @see SearchType
- * @see SearchCriterium
- * @see SearchInput
+ * @see AbstractSearchMetaData
  */
-@Slf4j
-@Getter
-@SuppressWarnings(
-    {
-        "ClassDataAbstractionCoupling",
-        "ClassFanOutComplexity",
-        "PMD.ExcessiveImports"
-    }
-)
-public abstract class AbstractPanacheSearchMetaData {
+@SuppressWarnings("ClassDataAbstractionCoupling")
+public abstract class AbstractPanacheSearchMetaData extends AbstractSearchMetaData {
 
     private static final String DESCENDING = "DESC";
-
-    private final Map<String, SearchType> searchTypes = new ConcurrentHashMap<>();
-    private final Map<String, List<String>> columnNames = new ConcurrentHashMap<>();
-    private final List<String> sortableFields = new ArrayList<>();
-    private final Map<String, Class<?>> enumClasses = new ConcurrentHashMap<>();
-    private final EnumMap<SearchType, SearchCriteriumFactory> factories = new EnumMap<>(SearchType.class);
+    private static final String PAGE_NUMBER = "pageNumber";
 
     /**
-     * Constructor initializes default search criterium factories for each SearchType.
-     */
-    protected AbstractPanacheSearchMetaData() {
-        factories.put(
-            SearchType.NONE,
-            (c, i) -> null
-        );
-        factories.put(
-            SearchType.DATE,
-            (c, i) -> new DateField(c.getFirst(), i.getFromDateValue(), i.getToDateValue())
-        );
-        factories.put(
-            SearchType.NUMERIC,
-            (c, i) -> new NumericField(c.getFirst(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.BOOLEAN,
-            (c, i) -> new BooleanField(c.getFirst(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.ENUM,
-            (c, i) -> new EnumField(c.getFirst(), enumClasses.get(i.getFieldName()), i.getTextValue())
-        );
-        factories.put(
-            SearchType.MULTI_ENUM,
-            (c, i) -> new MultiEnumField(c.getFirst(), enumClasses.get(i.getFieldName()), i.getTextValueList())
-        );
-        factories.put(
-            SearchType.TEXT,
-            (c, i) -> new TextField(c.getFirst(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.MULTI_TEXT,
-            (c, i) -> new MultiTextField(c.getFirst(), i.getTextValueList())
-        );
-        factories.put(
-            SearchType.FUZZY_TEXT,
-            (c, i) -> new FuzzyTextField(c.getFirst(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.MULTI_FUZZY,
-            (c, i) -> new MultiFuzzyField(c.getFirst(), i.getOperator(), i.getTextValue())
-        );
-        factories.put(
-            SearchType.MULTI_COLUMN_FUZZY,
-            (c, i) -> new MultiColumnFuzzyField(c, i.getTextValue())
-        );
-        factories.put(
-            SearchType.MULTI_NUMERIC,
-            (c, i) -> new MultiNumericField(c.getFirst(), i.getTextValueList())
-        );
-        factories.put(
-            SearchType.NUMERIC_RANGE,
-            (c, i) -> new NumericRangeField(c.getFirst(), i.getFromNumericValue(), i.getToNumericValue())
-        );
-    }
-
-    /* -------------------------------------------------
-     *  Search & sorting helpers
-     * ------------------------------------------------- */
-
-    /**
-     * Convert a list of SearchInput objects into a list of SearchCriterium objects based on the defined metadata.
+     * Resolves the effective sort and paging from the input.
      *
-     * @param inputs List of SearchInput objects representing user search criteria.
-     * @return List of SearchCriterium objects for querying the database.
+     * @param input the sortable page input
+     * @return the resolved sort result
+     * @throws InvalidSortException when a sort field or direction is rejected
+     * @throws InvalidPageException when the page number is negative or offset overflows {@code int}
      */
-    public List<SearchCriterium> toSearchCriteria(final List<SearchInput> inputs) {
-        if (CollectionUtils.isEmpty(inputs)) {
-            return Collections.emptyList();
+    public PanacheResolvedSort resolveSort(final SortablePageInput input) {
+        final ResolvedSortCore core = resolveCore(input);
+
+        if ((long) core.getPageNumber() * core.getPageSize() > Integer.MAX_VALUE) {
+            throw new InvalidPageException(PAGE_NUMBER, core.getPageNumber());
+        }
+        final Page page = Page.of(core.getPageNumber(), core.getPageSize());
+
+        if (core.getColumns().isEmpty()) {
+            return new PanacheResolvedSort(page, Sort.empty(), null, Collections.emptyList(), false);
         }
 
-        return inputs.stream()
-            .map(this::getSearchCriterium)
-            .filter(Objects::nonNull)
-            .toList();
+        final Sort panacheSort = core.isVirtual() ? Sort.empty() : buildPanacheSort(core.getColumns());
+
+        return new PanacheResolvedSort(page, panacheSort, core.getAppliedSort(), core.getColumns(), core.isVirtual());
     }
 
     /**
-     * Convert a list of SortableColumn objects into a Panache Sort object based on the defined sortable fields.
+     * Convert sort columns into a Panache {@link Sort}.
      *
-     * <p>Non-sortable or unregistered columns are silently discarded with a WARN log; the method never throws.
-     * Returns {@link Sort#empty()} when the input list is null/empty or all columns are invalid.
+     * <p>Returns {@link Sort#empty()} for null/empty input.
+     * Unknown/non-sortable fields or invalid directions throw {@link InvalidSortException}.
      *
-     * @param sortOrders List of SortableColumn objects representing user-defined sort orders.
-     * @return Panache Sort object for querying the database; empty when all columns are invalid.
+     * @param sortOrders sort columns requested by the client
+     * @return Panache Sort
+     * @throws InvalidSortException when a column is rejected
      */
     public Sort toSort(final List<SortableColumn> sortOrders) {
-        if (CollectionUtils.isEmpty(sortOrders)) {
+        if (sortOrders == null || sortOrders.isEmpty()) {
             return Sort.empty();
         }
-
-        final List<SortableColumn> filtered = sortOrders.stream()
-            .filter(o -> sortableFields.contains(o.getName()))
-            .toList();
-
-        if (filtered.size() != sortOrders.size()) {
-            final List<String> discarded = sortOrders.stream()
-                .map(SortableColumn::getName)
-                .filter(name -> !sortableFields.contains(name))
-                .toList();
-            log.warn("Discarding non-sortable or unregistered sort columns: " + discarded);
-        }
-
-        return buildSort(filtered);
-    }
-
-    private Sort buildSort(final List<SortableColumn> columns) {
-        if (columns.isEmpty()) {
-            return Sort.empty();
-        }
-
-        final SortableColumn first = columns.getFirst();
-        Sort sort = Sort.by(columnNames.get(first.getName()).getFirst(), toDirection(first.getDirection()));
-
-        for (int i = 1; i < columns.size(); i++) {
-            final SortableColumn column = columns.get(i);
-            sort = sort.and(columnNames.get(column.getName()).getFirst(), toDirection(column.getDirection()));
-        }
-
-        return sort;
+        return buildPanacheSort(normalise(sortOrders));
     }
 
     /**
-     * Returns the default page size used when no page size is specified.
-     *
-     * @return default page size (20)
-     */
-    protected int getDefaultPageSize() {
-        return 20;
-    }
-
-    /**
-     * Convenience method to build a {@link PanacheSearchSpecification} from a {@link SortablePageInput}.
+     * Build a {@link PanacheSearchSpecification} from the search inputs in a {@link SortablePageInput}.
      *
      * @param <T>   the entity type
      * @param input the sortable page input containing search inputs
@@ -209,151 +77,34 @@ public abstract class AbstractPanacheSearchMetaData {
         return new PanacheSearchSpecification<>(toSearchCriteria(input.getSearchInputs()));
     }
 
-    /**
-     * Check if a given Predicate is empty (null or has no expressions).
-     *
-     * @param predicate the Predicate to check.
-     * @return true if the predicate is null or has no expressions; false otherwise.
-     */
-    public static boolean isEmptyPredicate(final Predicate predicate) {
-        return predicate == null
-            || predicate.getExpressions() == null
-            || predicate.getExpressions().isEmpty();
-    }
-
-    /* -------------------------------------------------
-     *  Search field registration
-     * ------------------------------------------------- */
-
-    /**
-     * Register a searchable and/or sortable field with the metadata.
-     *
-     * @param field      the frontend field name.
-     * @param column     the database column name.
-     * @param searchType the type of search to be performed on this field.
-     * @param sortable   whether the field is sortable.
-     */
-    protected void addField(
-        final String field,
-        final String column,
-        final SearchType searchType,
-        final boolean sortable) {
-        addField(field, List.of(column), searchType, sortable, false);
-    }
-
-    /**
-     * Register a searchable and/or sortable field with custom search logic.
-     *
-     * @param field    the frontend field name.
-     * @param column   the database column name.
-     * @param sortable whether the field is sortable.
-     */
-    protected void addField(
-        final String field,
-        final String column,
-        final boolean sortable) {
-        addField(field, List.of(column), SearchType.NONE, sortable, true);
-    }
-
-    /**
-     * Register a searchable and/or sortable enum field with the metadata.
-     *
-     * @param field      the frontend field name.
-     * @param column     the database column name.
-     * @param searchType the type of search to be performed on this field (must be ENUM or MULTI_ENUM).
-     * @param enumClass  the enum class associated with this field.
-     * @param sortable   whether the field is sortable.
-     * @throws IllegalArgumentException if searchType is not ENUM or MULTI_ENUM.
-     */
-    protected void addField(
-        final String field,
-        final String column,
-        final SearchType searchType,
-        final Class<?> enumClass,
-        final boolean sortable) {
-        if (searchType != SearchType.ENUM && searchType != SearchType.MULTI_ENUM) {
-            throw new IllegalArgumentException("SearchType must be ENUM or MULTI_ENUM");
-        }
-        enumClasses.put(field, enumClass);
-        addField(field, List.of(column), searchType, sortable, false);
-    }
-
-    /**
-     * Register a multi-column searchable field with the metadata.
-     *
-     * @param field      the frontend field name.
-     * @param columns    the database column names.
-     * @param searchType the type of search to be performed on this field (must be MULTI_COLUMN_FUZZY).
-     * @param sortable   whether the field is sortable.
-     * @throws IllegalArgumentException if searchType is not MULTI_COLUMN_FUZZY.
-     */
-    protected void addField(
-        final String field,
-        final List<String> columns,
-        final SearchType searchType,
-        final boolean sortable) {
-        if (searchType != SearchType.MULTI_COLUMN_FUZZY) {
-            throw new IllegalArgumentException("SearchType must be MULTI_COLUMN_FUZZY");
-        }
-        addField(field, columns, searchType, sortable, false);
-    }
-
-    /**
-     * Internal method to register a searchable and/or sortable field with the metadata.
-     *
-     * @param field          the frontend field name.
-     * @param columns        the database column names.
-     * @param searchType     the type of search to be performed on this field.
-     * @param sortable       whether the field is sortable.
-     * @param isCustomSearch whether this field uses custom search logic (excludes from searchTypes map).
-     */
-    protected void addField(
-        final String field,
-        final List<String> columns,
-        final SearchType searchType,
-        final boolean sortable,
-        final boolean isCustomSearch) {
-        if (!isCustomSearch) {
-            searchTypes.put(field, searchType);
-        }
-        if (nonNull(columns)) {
-            columnNames.put(field, columns);
-        }
-        if (sortable) {
-            sortableFields.add(field);
-        }
-    }
-
-    /* -------------------------------------------------
-     *  Search criterium creation
-     * ------------------------------------------------- */
-
-    /**
-     * Create a SearchCriterium based on the SearchInput and defined metadata.
-     *
-     * @param input the SearchInput containing user search criteria.
-     * @return the corresponding SearchCriterium, or null if no definition exists.
-     */
-    protected SearchCriterium getSearchCriterium(final SearchInput input) {
-        final String field = input.getFieldName();
-        final List<String> columns = columnNames.get(field);
-        final SearchType type = searchTypes.get(field);
-
-        if (CollectionUtils.isEmpty(columns)) {
-            log.info("No definition for search field '{}'", field);
-            return null;
+    /** Builds a Panache {@link Sort} with tiebreaker appended unless already present. */
+    private Sort buildPanacheSort(final List<SortableColumn> columns) {
+        if (columns.isEmpty()) {
+            return Sort.empty();
         }
 
-        return factories.getOrDefault(type, (c, i) -> null).create(columns, input);
-    }
+        Sort result = Sort.empty();
+        final Set<String> addedColumns = new LinkedHashSet<>();
 
-    /* -------------------------------------------------
-     *  Private helpers
-     * ------------------------------------------------- */
+        for (final SortableColumn col : columns) {
+            final List<String> dbCols = getColumnNames().get(col.getName());
+            if (dbCols == null) {
+                continue;
+            }
+            final Sort.Direction dir = DESCENDING.equalsIgnoreCase(col.getDirection())
+                ? Sort.Direction.Descending
+                : Sort.Direction.Ascending;
+            for (final String dbCol : dbCols) {
+                result = result.and(dbCol, dir);
+                addedColumns.add(dbCol);
+            }
+        }
 
-    private static Sort.Direction toDirection(final String direction) {
-        return DESCENDING.equalsIgnoreCase(direction)
-            ? Sort.Direction.Descending
-            : Sort.Direction.Ascending;
+        final String tiebreaker = tiebreakerProperty();
+        if (tiebreaker != null && !addedColumns.contains(tiebreaker)) {
+            result = result.and(tiebreaker, Sort.Direction.Ascending);
+        }
+
+        return result;
     }
 }

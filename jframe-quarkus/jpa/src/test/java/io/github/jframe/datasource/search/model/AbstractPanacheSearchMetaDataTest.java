@@ -18,6 +18,8 @@ import io.github.jframe.datasource.search.fields.TextField;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
 import io.github.jframe.datasource.search.model.input.SortablePageInput;
+import io.github.jframe.exception.search.InvalidSearchException;
+import io.github.jframe.exception.sort.InvalidSortException;
 import io.github.support.TestStatus;
 import io.github.support.UnitTest;
 import io.quarkus.panache.common.Sort;
@@ -42,9 +44,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -392,16 +394,21 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should return empty list when input field is not registered")
-    public void shouldReturnEmptyListWhenInputFieldIsNotRegistered() {
+    @DisplayName("Should throw InvalidSearchException when input field is not registered")
+    public void shouldThrowInvalidSearchExceptionWhenInputFieldIsNotRegistered() {
         // Given: A search input referencing an unregistered field
         final SearchInput input = aSearchInput("unknownField", "value");
 
         // When: Converting to search criteria
-        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+        final InvalidSearchException exception = assertThrows(
+            InvalidSearchException.class,
+            () -> fullMetaData.toSearchCriteria(List.of(input))
+        );
 
-        // Then: The unregistered field is filtered out, empty result
-        assertThat(result, is(empty()));
+        // Then: The field is rejected without a value and the searchable fields are listed
+        assertThat(exception.getRejectedField(), is("unknownField"));
+        assertThat(exception.getRejectedValue(), is(nullValue()));
+        assertThat(exception.getSearchableFields(), hasItems("name", "email", "status"));
     }
 
     @Test
@@ -599,18 +606,20 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should filter out unregistered fields from mixed input list")
-    public void shouldFilterOutUnregisteredFieldsFromMixedInputList() {
+    @DisplayName("Should throw InvalidSearchException when mixed input list contains an unregistered field")
+    public void shouldThrowInvalidSearchExceptionWhenMixedInputListContainsUnregisteredField() {
         // Given: One registered field and one unregistered field in input
         final SearchInput nameInput = aSearchInput("name", "John");
         final SearchInput unknownInput = aSearchInput("nonExistent", "value");
 
         // When: Converting to search criteria
-        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(nameInput, unknownInput));
+        final InvalidSearchException exception = assertThrows(
+            InvalidSearchException.class,
+            () -> fullMetaData.toSearchCriteria(List.of(nameInput, unknownInput))
+        );
 
-        // Then: Only the registered field produces a criterium
-        assertThat(result, hasSize(1));
-        assertThat(result.get(0), is(instanceOf(TextField.class)));
+        // Then: The unregistered field is rejected — no partial results
+        assertThat(exception.getRejectedField(), is("nonExistent"));
     }
 
     // =========================================================================
@@ -652,11 +661,13 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
         // When: Converting to Panache Sort
         final Sort sort = fullMetaData.toSort(columns);
 
-        // Then: A non-null Sort is returned
+        // Then: Sort contains the field column plus the 'id' tiebreaker
         assertThat(sort, is(notNullValue()));
-        assertThat(sort.getColumns(), hasSize(1));
+        assertThat(sort.getColumns(), hasSize(2));
         assertThat(sort.getColumns().get(0).getName(), is("u.name"));
         assertThat(sort.getColumns().get(0).getDirection(), is(Sort.Direction.Ascending));
+        assertThat(sort.getColumns().get(1).getName(), is("id"));
+        assertThat(sort.getColumns().get(1).getDirection(), is(Sort.Direction.Ascending));
     }
 
     @Test
@@ -668,11 +679,13 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
         // When: Converting to Panache Sort
         final Sort sort = fullMetaData.toSort(columns);
 
-        // Then: A non-null Sort with Descending direction is returned
+        // Then: Sort contains the field column plus the 'id' tiebreaker
         assertThat(sort, is(notNullValue()));
-        assertThat(sort.getColumns(), hasSize(1));
+        assertThat(sort.getColumns(), hasSize(2));
         assertThat(sort.getColumns().get(0).getName(), is("u.email"));
         assertThat(sort.getColumns().get(0).getDirection(), is(Sort.Direction.Descending));
+        assertThat(sort.getColumns().get(1).getName(), is("id"));
+        assertThat(sort.getColumns().get(1).getDirection(), is(Sort.Direction.Ascending));
     }
 
     @Test
@@ -687,13 +700,15 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
         // When: Converting to Panache Sort
         final Sort sort = fullMetaData.toSort(columns);
 
-        // Then: Sort contains two columns mapped to DB column names
+        // Then: Sort contains two field columns plus the 'id' tiebreaker
         assertThat(sort, is(notNullValue()));
-        assertThat(sort.getColumns(), hasSize(2));
+        assertThat(sort.getColumns(), hasSize(3));
         assertThat(sort.getColumns().get(0).getName(), is("u.name"));
         assertThat(sort.getColumns().get(0).getDirection(), is(Sort.Direction.Ascending));
         assertThat(sort.getColumns().get(1).getName(), is("u.status"));
         assertThat(sort.getColumns().get(1).getDirection(), is(Sort.Direction.Descending));
+        assertThat(sort.getColumns().get(2).getName(), is("id"));
+        assertThat(sort.getColumns().get(2).getDirection(), is(Sort.Direction.Ascending));
     }
 
     @Test
@@ -710,113 +725,78 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should discard non-sortable field and not throw — logs a warning naming the field")
-    public void shouldDiscardNonSortableFieldAndNotThrow() {
+    @DisplayName("Should throw InvalidSortException for non-sortable field")
+    public void shouldThrowForNonSortableField() {
         // Given: 'createdAt' is registered but marked non-sortable
         final List<SortableColumn> columns = List.of(aSortableColumn("createdAt", "ASC"));
 
-        // When: converting to Sort — must not throw
-        final Sort sort = fullMetaData.toSort(columns);
-
-        // Then: result is empty (non-sortable column discarded)
-        assertThat(sort.getColumns(), empty());
-
-        // And: a WARN log is emitted naming the offending column
-        final List<LogRecord> warnings = logCapture.warnings();
-        assertThat("expected at least one WARN log", warnings, hasSize(1));
-        assertThat(warnings.getFirst().getMessage(), containsString("createdAt"));
+        // When / Then: strict contract — throw, do not discard
+        final var ex = assertThrows(InvalidSortException.class, () -> fullMetaData.toSort(columns));
+        assertThat(ex.getRejectedField(), is("createdAt"));
     }
 
     @Test
-    @DisplayName("Should discard unregistered field and not throw — logs a warning naming the field")
-    public void shouldDiscardUnregisteredFieldAndNotThrow() {
+    @DisplayName("Should throw InvalidSortException for unregistered field")
+    public void shouldThrowForUnregisteredField() {
         // Given: 'unknownField' is not registered in metadata at all
         final List<SortableColumn> columns = List.of(aSortableColumn("unknownField", "ASC"));
 
-        // When: converting to Sort — must not throw
-        final Sort sort = fullMetaData.toSort(columns);
-
-        // Then: result is empty (unknown column discarded)
-        assertThat(sort.getColumns(), empty());
-
-        // And: a WARN log is emitted naming the offending column
-        final List<LogRecord> warnings = logCapture.warnings();
-        assertThat("expected at least one WARN log", warnings, hasSize(1));
-        assertThat(warnings.getFirst().getMessage(), containsString("unknownField"));
+        // When / Then: strict contract — throw, do not discard
+        final var ex = assertThrows(InvalidSortException.class, () -> fullMetaData.toSort(columns));
+        assertThat(ex.getRejectedField(), is("unknownField"));
     }
 
     @Test
-    @DisplayName("Should return only valid column when mix of sortable and non-sortable fields requested")
-    public void shouldReturnOnlyValidColumnsWhenMixOfSortableAndNonSortableFieldsRequested() {
-        // Given: 'name' is sortable, 'createdAt' is registered but non-sortable
+    @DisplayName("Should throw on first invalid when mix of sortable and non-sortable fields requested")
+    public void shouldThrowOnFirstInvalidInMixedRequest() {
+        // Given: 'name' is sortable but 'createdAt' is registered as non-sortable (comes second)
         final List<SortableColumn> columns = List.of(
-            aSortableColumn("name", "ASC"),
-            aSortableColumn("createdAt", "DESC")
+            aSortableColumn("createdAt", "DESC"),
+            aSortableColumn("name", "ASC")
         );
 
-        // When: converting to Sort — must not throw
-        final Sort sort = fullMetaData.toSort(columns);
-
-        // Then: only 'name' survives, direction is preserved, createdAt is gone
-        assertThat(sort.getColumns(), hasSize(1));
-        assertThat(sort.getColumns().getFirst().getName(), is("u.name"));
-        assertThat(sort.getColumns().getFirst().getDirection(), is(Sort.Direction.Ascending));
-
-        // And: a WARN log is emitted naming the discarded column, not the valid one
-        final List<LogRecord> warnings = logCapture.warnings();
-        assertThat("expected at least one WARN log", warnings, hasSize(1));
-        assertThat(warnings.getFirst().getMessage(), containsString("createdAt"));
+        // When / Then: throws on 'createdAt' — strict, no partial results
+        assertThrows(InvalidSortException.class, () -> fullMetaData.toSort(columns));
     }
 
     @Test
-    @DisplayName("Should not log a warning when all requested columns are valid")
-    public void shouldNotLogWarningWhenAllSortColumnsAreValid() {
+    @DisplayName("Should not throw when all requested columns are valid")
+    public void shouldNotThrowWhenAllSortColumnsAreValid() {
         // Given: both 'name' and 'status' are sortable
         final List<SortableColumn> columns = List.of(
             aSortableColumn("name", "ASC"),
             aSortableColumn("status", "DESC")
         );
 
-        // When: converting to Sort
+        // When / Then — no exception thrown
         fullMetaData.toSort(columns);
-
-        // Then: no WARN log is emitted
-        assertThat(logCapture.warnings(), empty());
     }
 
     @Test
-    @DisplayName("Should return empty sort and not throw when every requested column is invalid")
-    public void shouldReturnEmptySortAndNotThrowWhenEveryRequestedColumnIsInvalid() {
+    @DisplayName("Should throw InvalidSortException when every requested column is invalid")
+    public void shouldThrowWhenEveryRequestedColumnIsInvalid() {
         // Given: both 'unknownA' and 'unknownB' are not registered
         final List<SortableColumn> columns = List.of(
             aSortableColumn("unknownA", "ASC"),
             aSortableColumn("unknownB", "DESC")
         );
 
-        // When: converting to Sort — must not throw
-        final Sort sort = fullMetaData.toSort(columns);
-
-        // Then: result is empty
-        assertThat(sort.getColumns(), empty());
+        // When / Then
+        assertThrows(InvalidSortException.class, () -> fullMetaData.toSort(columns));
     }
 
     @Test
-    @DisplayName("Should preserve original requested order of surviving valid columns")
-    public void shouldPreserveOriginalOrderOfSurvivingValidColumns() {
-        // Given: 'status' then 'name' with an invalid column in between
+    @DisplayName("Should throw when unknown column appears inside a list of otherwise valid columns")
+    public void shouldThrowWhenUnknownColumnAppearsInsideValidList() {
+        // Given: 'status' valid, 'unknownField' invalid (in the middle), 'name' valid
         final List<SortableColumn> columns = List.of(
             aSortableColumn("status", "DESC"),
             aSortableColumn("unknownField", "ASC"),
             aSortableColumn("name", "ASC")
         );
 
-        // When: converting to Sort
-        final Sort sort = fullMetaData.toSort(columns);
-
-        // Then: 'status' is primary, 'name' is secondary — unknown is absent
-        assertThat(sort.getColumns(), hasSize(2));
-        assertThat(sort.getColumns().get(0).getName(), is("u.status"));
-        assertThat(sort.getColumns().get(1).getName(), is("u.name"));
+        // When / Then
+        assertThrows(InvalidSortException.class, () -> fullMetaData.toSort(columns));
     }
 
     @Test
@@ -836,29 +816,23 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should treat column names as case-sensitive — 'Name' does not match 'name'")
-    public void shouldTreatColumnNamesAsCaseSensitive() {
+    @DisplayName("Should throw for wrong-case column name — exact-match only")
+    public void shouldThrowForWrongCaseColumnName() {
         // Given: 'Name' with a capital N is not the registered field 'name'
         final List<SortableColumn> columns = List.of(aSortableColumn("Name", "ASC"));
 
-        // When: converting to Sort
-        final Sort sort = fullMetaData.toSort(columns);
-
-        // Then: 'Name' is treated as unknown, result is empty
-        assertThat(sort.getColumns(), empty());
+        // When / Then
+        assertThrows(InvalidSortException.class, () -> fullMetaData.toSort(columns));
     }
 
     @Test
-    @DisplayName("Should not log a warning when empty sort list is provided")
-    public void shouldNotLogWarningWhenEmptySortListProvided() {
+    @DisplayName("Should not throw when empty sort list is provided")
+    public void shouldNotThrowWhenEmptySortListProvided() {
         // Given: no sort columns requested
         final List<SortableColumn> columns = Collections.emptyList();
 
-        // When: converting to Sort
+        // When / Then — no exception thrown
         fullMetaData.toSort(columns);
-
-        // Then: no WARN log is emitted
-        assertThat(logCapture.warnings(), empty());
     }
 
     @Test
@@ -1129,19 +1103,20 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should produce MultiNumericField with empty values when all strings are unparseable")
-    public void shouldProduceMultiNumericFieldWithEmptyValuesWhenAllStringsAreUnparseable() {
+    @DisplayName("Should throw InvalidSearchException when MULTI_NUMERIC strings are unparseable")
+    public void shouldThrowInvalidSearchExceptionWhenMultiNumericStringsAreUnparseable() {
         // Given: A search input for the 'ids' MULTI_NUMERIC field with non-numeric strings
         final SearchInput input = aMultiValueSearchInput("ids", List.of("abc", "xyz"));
 
         // When: Converting to search criteria
-        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+        final InvalidSearchException exception = assertThrows(
+            InvalidSearchException.class,
+            () -> fullMetaData.toSearchCriteria(List.of(input))
+        );
 
-        // Then: A MultiNumericField is returned with empty values list
-        assertThat(result, hasSize(1));
-        assertThat(result.getFirst(), is(instanceOf(MultiNumericField.class)));
-        final MultiNumericField multiNumericField = (MultiNumericField) result.getFirst();
-        assertThat(multiNumericField.getValues(), is(empty()));
+        // Then: The first unparseable entry is rejected
+        assertThat(exception.getRejectedField(), is("ids"));
+        assertThat(exception.getRejectedValue(), is("abc"));
     }
 
     @Test
@@ -1356,10 +1331,10 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     @Test
     @DisplayName("Should delegate to toSearchCriteria using SortablePageInput searchInputs")
     public void shouldDelegateToToSearchCriteriaUsingSortablePageInputSearchInputs() {
-        // Given: A SortablePageInput with one known and one unknown field
+        // Given: A SortablePageInput with two known fields
         final SortablePageInput input = new SortablePageInput();
         input.addSearchInput(aSearchInput("name", "John"));
-        input.addSearchInput(aSearchInput("unknownField", "value"));
+        input.addSearchInput(aSearchInput("email", "john@"));
 
         // When: Building the spec via toSearchSpecification and via toSearchCriteria directly
         final PanacheSearchSpecification<?> specViaPageInput = fullMetaData.toSearchSpecification(input);
@@ -1367,8 +1342,7 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
 
         // Then: toSearchSpecification produces same criteria count as toSearchCriteria
         assertThat(specViaPageInput, is(notNullValue()));
-        // The spec wraps exactly criteriaViaDirect (1 known field — unknownField filtered out)
-        assertThat(criteriaViaDirect, hasSize(1));
+        assertThat(criteriaViaDirect, hasSize(2));
     }
 
 }

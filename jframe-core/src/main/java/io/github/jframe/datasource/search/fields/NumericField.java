@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class NumericField extends SearchCriterium {
+public final class NumericField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 2309426883656091433L;
@@ -27,25 +27,23 @@ public class NumericField extends SearchCriterium {
      * default constructor.
      *
      * @param columnName connected database column name.
+     * @param value      the integer value, optionally prefixed with {@code !}.
+     * @throws InvalidFieldValueException when the value is present but not an integer.
      */
-    @SuppressWarnings("PMD.EmptyCatchBlock")
     public NumericField(final String columnName, final String value) {
         super(columnName, SearchType.NUMERIC);
         if (StringUtils.isNotBlank(value)) {
-            if (value.startsWith("!")) {
-                setInverse(true);
-                try {
-                    this.value = Integer.parseInt(value.substring(1));
-                } catch (final NumberFormatException exception) {
-                    // ignore invalid number format, default to 0
-                }
-            } else {
-                try {
-                    this.value = Integer.parseInt(value);
-                } catch (final NumberFormatException exception) {
-                    // ignore invalid number format, default to 0
-                }
-            }
+            final boolean inverse = value.startsWith("!");
+            setInverse(inverse);
+            this.value = parse(inverse ? value.substring(1) : value, value);
+        }
+    }
+
+    private static int parse(final String number, final String raw) {
+        try {
+            return Integer.parseInt(number);
+        } catch (final NumberFormatException exception) {
+            throw new InvalidFieldValueException("Invalid integer value", raw, exception);
         }
     }
 

@@ -1,5 +1,6 @@
 package io.github.jframe.datasource.search;
 
+import io.github.jframe.datasource.search.model.resource.AppliedSort;
 import io.github.jframe.datasource.search.model.resource.PageResource;
 
 import java.util.ArrayList;
@@ -43,5 +44,28 @@ public final class QuarkusPageAdapter {
             pageNumber,
             new ArrayList<>(Objects.requireNonNullElse(content, List.of()))
         );
+    }
+
+    /**
+     * Converts raw page data to a {@link PageResource} with applied sort metadata.
+     *
+     * @param <T>           the type of content items
+     * @param content       the list of items for the current page, may be {@code null}
+     * @param totalElements the total number of elements across all pages
+     * @param totalPages    the total number of pages
+     * @param pageSize      the size of each page
+     * @param pageNumber    the current page number (0-based)
+     * @param appliedSort   the sort that was applied; may be {@code null}
+     * @return a populated {@link PageResource}
+     */
+    public static <T> PageResource<T> toPageResource(final List<T> content,
+        final long totalElements,
+        final int totalPages,
+        final int pageSize,
+        final int pageNumber,
+        final AppliedSort appliedSort) {
+        final PageResource<T> resource = toPageResource(content, totalElements, totalPages, pageSize, pageNumber);
+        resource.setAppliedSort(appliedSort);
+        return resource;
     }
 }

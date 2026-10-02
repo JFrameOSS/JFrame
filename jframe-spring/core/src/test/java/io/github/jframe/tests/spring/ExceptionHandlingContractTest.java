@@ -59,10 +59,10 @@ class ExceptionHandlingContractTest {
     void shouldReturnCorrectStatusForExceptionScenario(final ExceptionScenario scenario) throws Exception {
         // Given: An exception scenario from contract fixtures
         // When: Calling the endpoint that throws this exception
-        final MvcResult result = mockMvc.perform(get("/test" + scenario.endpoint()))
+        final MvcResult result = mockMvc.perform(get("/test" + scenario.getEndpoint()))
             .andReturn();
 
         // Then: Response status matches expected
-        assertThat(result.getResponse().getStatus(), is(scenario.expectedStatusCode()));
+        assertThat(result.getResponse().getStatus(), is(scenario.getExpectedStatusCode()));
     }
 }

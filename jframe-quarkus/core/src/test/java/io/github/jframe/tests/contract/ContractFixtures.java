@@ -105,81 +105,67 @@ public final class ContractFixtures {
     }
 
     // ============================================================
-    // Fixture model records
+    // Fixture model classes
     // ============================================================
 
-    /**
-     * Represents a single validation-input test scenario.
-     *
-     * @param name           unique scenario identifier
-     * @param input          raw input fields as a generic map (field name → raw value)
-     * @param expectedErrors list of validation error descriptors that should be produced
-     */
-    public record ValidationInputScenario(
-        String name,
-        Map<String, Object> input,
-        List<ValidationErrorDescriptor> expectedErrors) {
+    /** A single validation-input test scenario. */
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class ValidationInputScenario {
+
+        private String name;
+        private Map<String, Object> input;
+        private List<ValidationErrorDescriptor> expectedErrors;
     }
 
 
-    /**
-     * Describes a single expected validation error loaded from a fixture file.
-     *
-     * <p>Uses a record so that Jackson can deserialise it without annotations.
-     * Consumers may compare instances against {@code io.github.jframe.validation.ValidationError}
-     * by comparing the {@code field} and {@code code} fields directly.
-     *
-     * @param field the field that failed validation, may be {@code null} for object-level errors
-     * @param code  the validation error code (e.g. {@code "REQUIRED"})
-     */
-    public record ValidationErrorDescriptor(String field, String code) {
+    /** A single expected validation error. */
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class ValidationErrorDescriptor {
+
+        private String field;
+        private String code;
     }
 
 
-    /**
-     * Represents a single search-criteria test scenario.
-     *
-     * @param name                scenario identifier
-     * @param criteria            the search criterium descriptor
-     * @param expectedDescription human-readable description of the expected search behaviour
-     */
-    public record SearchCriteriaScenario(
-        String name,
-        SearchCriteriumDescriptor criteria,
-        String expectedDescription) {
+    /** A single search-criteria test scenario. */
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class SearchCriteriaScenario {
+
+        private String name;
+        private SearchCriteriumDescriptor criteria;
+        private String expectedDescription;
     }
 
 
-    /**
-     * Describes a search criterium used inside a {@link SearchCriteriaScenario}.
-     *
-     * @param fieldName name of the field being searched
-     * @param fieldType type of the field (e.g. {@code TEXT}, {@code ENUM})
-     * @param value     the search value
-     */
-    public record SearchCriteriumDescriptor(
-        String fieldName,
-        String fieldType,
-        String value) {
+    /** A search criterium used inside a {@link SearchCriteriaScenario}. */
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class SearchCriteriumDescriptor {
+
+        private String fieldName;
+        private String fieldType;
+        private String value;
     }
 
 
-    /**
-     * Represents a single exception-scenario fixture entry.
-     *
-     * @param name                 unique scenario identifier
-     * @param exceptionType        simple class name of the exception (e.g. {@code BadRequestException})
-     * @param endpoint             relative URL path used by HTTP-based test clients (e.g. {@code /bad-request})
-     * @param message              the message passed to the exception constructor
-     * @param expectedStatusCode   HTTP status code expected in the error response
-     * @param expectedErrorMessage error message expected in the error response body
-     */
-    public record ExceptionScenario(
-        String name,
-        String exceptionType,
-        String endpoint,
-        String message,
-        int expectedStatusCode,
-        String expectedErrorMessage) {
+    /** A single exception-scenario fixture entry. */
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class ExceptionScenario {
+
+        private String name;
+        private String exceptionType;
+        private String endpoint;
+        private String message;
+        private int expectedStatusCode;
+        private String expectedErrorMessage;
     }
 }

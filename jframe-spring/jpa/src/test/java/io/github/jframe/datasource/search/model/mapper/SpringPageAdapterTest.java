@@ -291,4 +291,42 @@ public class SpringPageAdapterTest extends UnitTest {
         assertThat(result.getContent(), hasSize(1));
         assertThat(result.getContent().get(0), is(equalTo("only-item")));
     }
+
+    @Test
+    @DisplayName("Should set appliedSort on PageResource when provided")
+    public void shouldSetAppliedSortOnPageResource() {
+        // Given
+        when(page.getTotalElements()).thenReturn(5L);
+        when(page.getTotalPages()).thenReturn(1);
+        when(page.getSize()).thenReturn(25);
+        when(page.getNumber()).thenReturn(0);
+        when(page.getContent()).thenReturn(List.of("a", "b", "c", "d", "e"));
+        final var appliedSort = new io.github.jframe.datasource.search.model.resource.AppliedSort("name", "ASC", false);
+
+        // When
+        final PageResource<String> result = SpringPageAdapter.toPageResource(page, appliedSort);
+
+        // Then
+        assertThat(result.getAppliedSort(), is(notNullValue()));
+        assertThat(result.getAppliedSort().getField(), is(equalTo("name")));
+        assertThat(result.getAppliedSort().getDirection(), is(equalTo("ASC")));
+        assertThat(result.getAppliedSort().isDefault(), is(false));
+    }
+
+    @Test
+    @DisplayName("Should set appliedSort null when null is passed to overload")
+    public void shouldSetAppliedSortNullWhenNullPassed() {
+        // Given
+        when(page.getTotalElements()).thenReturn(0L);
+        when(page.getTotalPages()).thenReturn(0);
+        when(page.getSize()).thenReturn(25);
+        when(page.getNumber()).thenReturn(0);
+        when(page.getContent()).thenReturn(List.of());
+
+        // When
+        final PageResource<String> result = SpringPageAdapter.toPageResource(page, null);
+
+        // Then
+        assertThat(result.getAppliedSort(), is(org.hamcrest.Matchers.nullValue()));
+    }
 }

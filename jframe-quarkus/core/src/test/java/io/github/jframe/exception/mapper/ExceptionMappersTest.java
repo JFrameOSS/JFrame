@@ -4,12 +4,16 @@ import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.core.BadRequestException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
+import io.github.jframe.exception.page.InvalidPageException;
+import io.github.jframe.exception.search.InvalidSearchException;
+import io.github.jframe.exception.sort.InvalidSortException;
 import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;
 import io.github.support.UnitTest;
 import io.github.support.fixtures.TestApiError;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.DisplayName;
@@ -193,6 +197,72 @@ public class ExceptionMappersTest extends UnitTest {
         // Then: X-RateLimit-Reset header is absent
         assertThat(response.getStatus(), is(equalTo(429)));
         assertThat(response.getHeaderString("X-RateLimit-Reset"), is(equalTo(null)));
+    }
+
+    // -------------------------------------------------------------------------
+    // InvalidSortExceptionMapper
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Should map InvalidSortException to BAD_REQUEST status")
+    public void shouldMapInvalidSortExceptionToBadRequestStatus() {
+        // Given
+        final InvalidSortExceptionMapper mapper = new InvalidSortExceptionMapper();
+        final var ex = new InvalidSortException("badField", List.of("name", "createdAt"));
+
+        // When
+        final Response response = mapper.toResponse(ex);
+
+        // Then
+        assertThat(response.getStatus(), is(equalTo(Response.Status.BAD_REQUEST.getStatusCode())));
+    }
+
+    @Test
+    @DisplayName("Should include a non-null response body for InvalidSortException")
+    public void shouldIncludeNonNullBodyForInvalidSortException() {
+        // Given
+        final InvalidSortExceptionMapper mapper = new InvalidSortExceptionMapper();
+        final var ex = new InvalidSortException("unknownField", List.of("id", "name"));
+
+        // When
+        final Response response = mapper.toResponse(ex);
+
+        // Then: entity is present (CDI not wired in unit test — falls back to ErrorResponseResource)
+        assertThat(response.getEntity(), is(notNullValue()));
+    }
+
+    // -------------------------------------------------------------------------
+    // InvalidSearchExceptionMapper / InvalidPageExceptionMapper
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Should map InvalidSearchException to BAD_REQUEST with body")
+    public void shouldMapInvalidSearchExceptionToBadRequestWithBody() {
+        // Given: An InvalidSearchException
+        final InvalidSearchExceptionMapper mapper = new InvalidSearchExceptionMapper();
+        final InvalidSearchException exception = new InvalidSearchException("age", "abc", List.of("age"));
+
+        // When: Mapping
+        final Response response = mapper.toResponse(exception);
+
+        // Then: 400 with a body
+        assertThat(response.getStatus(), is(equalTo(Response.Status.BAD_REQUEST.getStatusCode())));
+        assertThat(response.getEntity(), is(notNullValue()));
+    }
+
+    @Test
+    @DisplayName("Should map InvalidPageException to BAD_REQUEST with body")
+    public void shouldMapInvalidPageExceptionToBadRequestWithBody() {
+        // Given: An InvalidPageException
+        final InvalidPageExceptionMapper mapper = new InvalidPageExceptionMapper();
+        final InvalidPageException exception = new InvalidPageException("pageNumber", -5);
+
+        // When: Mapping
+        final Response response = mapper.toResponse(exception);
+
+        // Then: 400 with a body
+        assertThat(response.getStatus(), is(equalTo(Response.Status.BAD_REQUEST.getStatusCode())));
+        assertThat(response.getEntity(), is(notNullValue()));
     }
 
     // -------------------------------------------------------------------------

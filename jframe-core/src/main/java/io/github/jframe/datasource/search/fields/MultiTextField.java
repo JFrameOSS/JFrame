@@ -18,7 +18,7 @@ import org.apache.commons.collections4.CollectionUtils;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class MultiTextField extends SearchCriterium {
+public final class MultiTextField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 4790820671565424226L;

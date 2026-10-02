@@ -1,5 +1,6 @@
 package io.github.jframe.datasource.search;
 
+import io.github.jframe.datasource.search.model.resource.AppliedSort;
 import io.github.jframe.datasource.search.model.resource.PageResource;
 import io.github.support.UnitTest;
 
@@ -120,5 +121,35 @@ public class QuarkusPageMapperTest extends UnitTest {
         // Then: Single item is transformed
         assertThat(result.getContent(), hasSize(1));
         assertThat(result.getContent().get(0), is(equalTo("HELLO")));
+    }
+
+    @Test
+    @DisplayName("Should set appliedSort on PageResource when provided")
+    public void shouldSetAppliedSortOnPageResource() {
+        // Given
+        final StringUppercasePageMapper mapper = new StringUppercasePageMapper();
+        final var appliedSort = new AppliedSort("name", "DESC", true);
+
+        // When
+        final PageResource<String> result = mapper.map(List.of("hello"), 1L, 1, 25, 0, appliedSort);
+
+        // Then
+        assertThat(result.getAppliedSort(), is(notNullValue()));
+        assertThat(result.getAppliedSort().getField(), is(equalTo("name")));
+        assertThat(result.getAppliedSort().getDirection(), is(equalTo("DESC")));
+        assertThat(result.getAppliedSort().isDefault(), is(true));
+    }
+
+    @Test
+    @DisplayName("Should set null appliedSort when null is passed to overload")
+    public void shouldSetNullAppliedSortWhenNullPassed() {
+        // Given
+        final StringUppercasePageMapper mapper = new StringUppercasePageMapper();
+
+        // When
+        final PageResource<String> result = mapper.map(List.of(), 0L, 0, 25, 0, null);
+
+        // Then
+        assertThat(result.getAppliedSort(), is(org.hamcrest.Matchers.nullValue()));
     }
 }

@@ -9,6 +9,6 @@ public class TestEntityCache extends RequestScopedCache<Long, TestEntity> {
 
     @Override
     protected Long getId(final TestEntity entity) {
-        return entity.id();
+        return entity.getId();
     }
 }

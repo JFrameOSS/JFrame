@@ -64,7 +64,7 @@ class ExceptionHandlingContractTest {
         final Response response = mapScenarioToResponse(scenario);
 
         // Then: Response status matches expected status code from contract
-        assertThat(response.getStatus(), is(scenario.expectedStatusCode()));
+        assertThat(response.getStatus(), is(scenario.getExpectedStatusCode()));
     }
 
     /**
@@ -75,7 +75,7 @@ class ExceptionHandlingContractTest {
      * @throws IllegalArgumentException if the exception type is unknown
      */
     private Response mapScenarioToResponse(final ExceptionScenario scenario) {
-        return switch (scenario.exceptionType()) {
+        return switch (scenario.getExceptionType()) {
             case "BadRequestException" ->
                 httpExceptionMapper.toResponse(new BadRequestException());
             case "ResourceNotFoundException" ->
@@ -83,7 +83,7 @@ class ExceptionHandlingContractTest {
             case "RateLimitExceededException" ->
                 rateLimitMapper.toResponse(new RateLimitExceededException(100, 0, OffsetDateTime.now().plusHours(1)));
             default ->
-                throw new IllegalArgumentException("Unknown exception type: " + scenario.exceptionType());
+                throw new IllegalArgumentException("Unknown exception type: " + scenario.getExceptionType());
         };
     }
 }

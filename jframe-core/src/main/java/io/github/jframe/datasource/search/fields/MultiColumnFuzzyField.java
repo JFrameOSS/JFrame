@@ -18,7 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class MultiColumnFuzzyField extends SearchCriterium {
+public final class MultiColumnFuzzyField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 4790820671565424226L;

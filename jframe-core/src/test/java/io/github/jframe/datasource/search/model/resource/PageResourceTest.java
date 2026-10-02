@@ -153,4 +153,35 @@ class PageResourceTest extends UnitTest {
         // Then: Content is null — the 5-arg constructor does not auto-initialize
         assertThat(pageResource.getContent(), is(nullValue()));
     }
+
+    // -------------------------------------------------------------------------
+    // appliedSort — nullable, omitted from JSON when null
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Should have null appliedSort by default")
+    void shouldHaveNullAppliedSortByDefault() {
+        // Given / When
+        final PageResource<String> pageResource = new PageResource<>(0L, 0, 25, 0);
+
+        // Then
+        assertThat(pageResource.getAppliedSort(), is(nullValue()));
+    }
+
+    @Test
+    @DisplayName("Should store appliedSort when set")
+    void shouldStoreAppliedSort() {
+        // Given
+        final PageResource<String> pageResource = new PageResource<>(10L, 1, 25, 0);
+        final AppliedSort appliedSort = new AppliedSort("name", "ASC", false);
+
+        // When
+        pageResource.setAppliedSort(appliedSort);
+
+        // Then
+        assertThat(pageResource.getAppliedSort(), is(notNullValue()));
+        assertThat(pageResource.getAppliedSort().getField(), is(equalTo("name")));
+        assertThat(pageResource.getAppliedSort().getDirection(), is(equalTo("ASC")));
+        assertThat(pageResource.getAppliedSort().isDefault(), is(false));
+    }
 }

@@ -20,7 +20,7 @@ import static java.util.Arrays.stream;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class MultiEnumField extends SearchCriterium {
+public final class MultiEnumField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 482074504831496597L;
@@ -34,11 +34,18 @@ public class MultiEnumField extends SearchCriterium {
      *
      * @param columnName connected database column name.A
      * @param enumClass  the enum class to search on.
+     * @param values     the enum constant names.
+     * @throws InvalidFieldValueException when any value matches no enum constant.
      */
     public MultiEnumField(final String columnName, final Class<?> enumClass, final List<String> values) {
         super(columnName, SearchType.MULTI_ENUM);
         this.enumClass = enumClass;
         this.values = CollectionUtils.isEmpty(values) ? Collections.emptyList() : values;
+        for (final String value : this.values) {
+            if (stream(enumClass.getEnumConstants()).noneMatch(enumValue -> enumValue.toString().equals(value))) {
+                throw new InvalidFieldValueException("Unknown enum value", value);
+            }
+        }
     }
 
     /**

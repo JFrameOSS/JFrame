@@ -9,8 +9,9 @@ import lombok.Setter;
 import java.io.Serial;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
-import static java.util.Objects.nonNull;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Indicates the search criterium is a date field.
@@ -18,7 +19,7 @@ import static java.util.Objects.nonNull;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class DateField extends SearchCriterium {
+public final class DateField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 8496928048956001967L;
@@ -31,14 +32,24 @@ public class DateField extends SearchCriterium {
      * default constructor.
      *
      * @param columnName connected database column name.
+     * @param fromDate   ISO date-time lower bound; blank means no bound.
+     * @param toDate     ISO date-time upper bound; blank means no bound.
+     * @throws InvalidFieldValueException when a bound is present but not an ISO date-time.
      */
     public DateField(final String columnName, final String fromDate, final String toDate) {
         super(columnName, SearchType.DATE);
-        if (nonNull(fromDate)) {
-            this.fromDate = LocalDateTime.parse(fromDate, DateTimeFormatter.ISO_DATE_TIME);
+        this.fromDate = parse(fromDate);
+        this.toDate = parse(toDate);
+    }
+
+    private static LocalDateTime parse(final String value) {
+        if (StringUtils.isBlank(value)) {
+            return null;
         }
-        if (nonNull(toDate)) {
-            this.toDate = LocalDateTime.parse(toDate, DateTimeFormatter.ISO_DATE_TIME);
+        try {
+            return LocalDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME);
+        } catch (final DateTimeParseException exception) {
+            throw new InvalidFieldValueException("Invalid ISO date-time", value, exception);
         }
     }
 }

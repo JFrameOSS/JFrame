@@ -14,7 +14,7 @@ import java.io.Serial;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class NumericRangeField extends SearchCriterium {
+public final class NumericRangeField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 7496928048956001967L;

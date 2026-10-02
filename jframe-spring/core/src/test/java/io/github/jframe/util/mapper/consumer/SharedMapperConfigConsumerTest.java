@@ -60,22 +60,48 @@ class SharedMapperConfigConsumerTest {
     // =========================================================================
 
     /** Source type for the base consumer mapper (no DateTimeMapper). */
-    record BaseSource(UUID id, BigDecimal amount, LocalDateTime createdAt) {
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    static class BaseSource {
+
+        private UUID id;
+        private BigDecimal amount;
+        private LocalDateTime createdAt;
     }
 
 
     /** Target type for the base consumer mapper. */
-    record BaseTarget(String id, BigDecimal amount, ZonedDateTime createdAt) {
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    static class BaseTarget {
+
+        private String id;
+        private BigDecimal amount;
+        private ZonedDateTime createdAt;
     }
 
 
     /** Source type for the opt-in consumer that also uses DateTimeMapper. */
-    record ExtendedSource(UUID id, LocalDateTime createdAt) {
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    static class ExtendedSource {
+
+        private UUID id;
+        private LocalDateTime createdAt;
     }
 
 
     /** Target type for the opt-in consumer. */
-    record ExtendedTarget(String id, ZonedDateTime createdAt) {
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    static class ExtendedTarget {
+
+        private String id;
+        private ZonedDateTime createdAt;
     }
 
     // =========================================================================
@@ -213,7 +239,7 @@ class SharedMapperConfigConsumerTest {
 
         // Then: UUID was converted to String automatically via UuidMapper in uses registry
         assertThat(target, is(notNullValue()));
-        assertThat(target.id(), is("550e8400-e29b-41d4-a716-446655440000"));
+        assertThat(target.getId(), is("550e8400-e29b-41d4-a716-446655440000"));
     }
 
     @Test
@@ -228,7 +254,7 @@ class SharedMapperConfigConsumerTest {
 
         // Then: null UUID maps to null String (null-safe via UuidMapper)
         assertThat(target, is(notNullValue()));
-        assertThat(target.id(), is(nullValue()));
+        assertThat(target.getId(), is(nullValue()));
     }
 
     // =========================================================================
@@ -255,10 +281,10 @@ class SharedMapperConfigConsumerTest {
             "CRITICAL: amount should pass through UNCHANGED (scale 0, not normalised to 2). "
                 + "If this fails, AmountMapper.normalizeAmount is auto-applying for same-type "
                 + "BigDecimal→BigDecimal which would be a critical implicit-conversion finding.",
-            target.amount().scale(),
+            target.getAmount().scale(),
             is(0)
         );
-        assertThat(target.amount().toPlainString(), is("10"));
+        assertThat(target.getAmount().toPlainString(), is("10"));
     }
 
     // =========================================================================
@@ -289,7 +315,7 @@ class SharedMapperConfigConsumerTest {
                 + "W3.6 finding: without DateTimeMapper in uses, MapStruct fails at compile time "
                 + "(not runtime) — ReportingPolicy.IGNORE does not save type-mismatch errors, "
                 + "only unmapped-target-field warnings.",
-            target.createdAt(),
+            target.getCreatedAt(),
             is(nullValue())
         );
     }
@@ -312,16 +338,16 @@ class SharedMapperConfigConsumerTest {
 
         // Then: LocalDateTime is converted to ZonedDateTime in UTC via DateTimeMapper
         assertThat(target, is(notNullValue()));
-        assertThat(target.createdAt(), is(notNullValue()));
-        assertThat(target.createdAt().getYear(), is(2025));
-        assertThat(target.createdAt().getMonthValue(), is(6));
-        assertThat(target.createdAt().getDayOfMonth(), is(15));
-        assertThat(target.createdAt().getHour(), is(12));
+        assertThat(target.getCreatedAt(), is(notNullValue()));
+        assertThat(target.getCreatedAt().getYear(), is(2025));
+        assertThat(target.getCreatedAt().getMonthValue(), is(6));
+        assertThat(target.getCreatedAt().getDayOfMonth(), is(15));
+        assertThat(target.getCreatedAt().getHour(), is(12));
         // W3.6 empirical finding: ZoneOffset.UTC.getId() returns "Z", not "UTC".
         // Both represent UTC (offset zero) but Java's ZoneOffset uses the ISO-8601 "Z" designator.
         // The underlying behaviour is correct — the timestamp IS UTC — the predicted string "UTC"
         // was wrong; the actual identifier is "Z".
-        assertThat(target.createdAt().getZone().getId(), is("Z"));
+        assertThat(target.getCreatedAt().getZone().getId(), is("Z"));
     }
 
     @Test
@@ -338,6 +364,6 @@ class SharedMapperConfigConsumerTest {
         // Then: UUID still converts to String proving config-level uses was NOT replaced by
         //       consumer-level uses (merge semantics confirmed).
         assertThat(target, is(notNullValue()));
-        assertThat(target.id(), is("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
+        assertThat(target.getId(), is("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
     }
 }
