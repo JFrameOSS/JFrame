@@ -21,7 +21,7 @@ import static java.util.Objects.nonNull;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class MultiFuzzyField extends SearchCriterium {
+public final class MultiFuzzyField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 4790820671565424226L;

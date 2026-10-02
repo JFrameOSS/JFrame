@@ -15,6 +15,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("Unit Test - MultiNumericField")
 class MultiNumericFieldTest extends UnitTest {
@@ -85,30 +86,17 @@ class MultiNumericFieldTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should ignore unparseable strings and keep only valid integers")
-    void shouldIgnoreUnparseableStringsAndKeepOnlyValidIntegers() {
+    @DisplayName("Should throw IllegalArgumentException when any entry is not an integer")
+    void shouldThrowWhenAnyEntryIsNotAnInteger() {
         // Given: A mixed list of valid and invalid numeric strings
-        final List<String> input = List.of("1", "abc", "3", "not-a-number", "5");
+        final List<String> input = List.of("1", "abc", "3");
 
-        // When: Creating a MultiNumericField
-        final MultiNumericField field = new MultiNumericField("age", input);
-
-        // Then: Only valid integers are stored
-        assertThat(field.getValues(), hasSize(3));
-        assertThat(field.getValues(), contains(1, 3, 5));
-    }
-
-    @Test
-    @DisplayName("Should return empty list when all strings are unparseable")
-    void shouldReturnEmptyListWhenAllStringsAreUnparseable() {
-        // Given: A list of all invalid numeric strings
-        final List<String> input = List.of("abc", "xyz", "not-a-number");
-
-        // When: Creating a MultiNumericField
-        final MultiNumericField field = new MultiNumericField("age", input);
-
-        // Then: Values list is empty
-        assertThat(field.getValues(), is(empty()));
+        // When / Then: Construction fails fast
+        final InvalidFieldValueException exception = assertThrows(
+            InvalidFieldValueException.class,
+            () -> new MultiNumericField("age", input)
+        );
+        assertThat(exception.getRejectedValue(), is(equalTo("abc")));
     }
 
     @Test

@@ -3,15 +3,20 @@ package io.github.jframe.exception.factory;
 import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
+import io.github.jframe.exception.page.InvalidPageErrorResponseResource;
+import io.github.jframe.exception.page.InvalidPageException;
 import io.github.jframe.exception.resource.ConstraintViolationResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
+import io.github.jframe.exception.search.InvalidSearchErrorResponseResource;
+import io.github.jframe.exception.search.InvalidSearchException;
 import io.github.jframe.validation.ValidationResult;
 import io.github.support.UnitTest;
 import io.github.support.fixtures.TestApiError;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.Response;
 
@@ -164,5 +169,59 @@ public class DefaultErrorResponseFactoryTest extends UnitTest {
 
         // Then: Resource holds reference to throwable
         assertThat(resource.getThrowable(), is(notNullValue()));
+    }
+
+    @Test
+    @DisplayName("Should create InvalidSearchErrorResponseResource for InvalidSearchException")
+    public void shouldCreateInvalidSearchErrorResponseResourceForInvalidSearchException() {
+        // Given: An InvalidSearchException
+        final InvalidSearchException exception = new InvalidSearchException("age", "abc", List.of("age", "name"));
+
+        // When: Creating error response resource
+        final ErrorResponseResource resource = factory.create(exception);
+
+        // Then: Resource is InvalidSearchErrorResponseResource
+        assertThat(resource, is(instanceOf(InvalidSearchErrorResponseResource.class)));
+    }
+
+    @Test
+    @DisplayName("Should traverse cause chain and find InvalidSearchException")
+    public void shouldTraverseCauseChainAndFindInvalidSearchException() {
+        // Given: An InvalidSearchException wrapped in a RuntimeException
+        final InvalidSearchException cause = new InvalidSearchException("unknown", null, List.of("name"));
+        final RuntimeException wrapped = new RuntimeException("Outer exception", cause);
+
+        // When: Creating error response resource
+        final ErrorResponseResource resource = factory.create(wrapped);
+
+        // Then: Resource is InvalidSearchErrorResponseResource
+        assertThat(resource, is(instanceOf(InvalidSearchErrorResponseResource.class)));
+    }
+
+    @Test
+    @DisplayName("Should create InvalidPageErrorResponseResource for InvalidPageException")
+    public void shouldCreateInvalidPageErrorResponseResourceForInvalidPageException() {
+        // Given: An InvalidPageException
+        final InvalidPageException exception = new InvalidPageException("pageNumber", -5);
+
+        // When: Creating error response resource
+        final ErrorResponseResource resource = factory.create(exception);
+
+        // Then: Resource is InvalidPageErrorResponseResource
+        assertThat(resource, is(instanceOf(InvalidPageErrorResponseResource.class)));
+    }
+
+    @Test
+    @DisplayName("Should traverse cause chain and find InvalidPageException")
+    public void shouldTraverseCauseChainAndFindInvalidPageException() {
+        // Given: An InvalidPageException wrapped in a RuntimeException
+        final InvalidPageException cause = new InvalidPageException("pageNumber", -1);
+        final RuntimeException wrapped = new RuntimeException("Outer exception", cause);
+
+        // When: Creating error response resource
+        final ErrorResponseResource resource = factory.create(wrapped);
+
+        // Then: Resource is InvalidPageErrorResponseResource
+        assertThat(resource, is(instanceOf(InvalidPageErrorResponseResource.class)));
     }
 }

@@ -18,7 +18,7 @@ import static java.util.Arrays.stream;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class EnumField extends SearchCriterium {
+public final class EnumField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 482074504831496597L;
@@ -32,6 +32,8 @@ public class EnumField extends SearchCriterium {
      *
      * @param columnName connected database column name.
      * @param enumClass  the enum class to search on.
+     * @param value      the enum constant name, optionally prefixed with {@code !}.
+     * @throws InvalidFieldValueException when the value matches no enum constant.
      */
     public EnumField(final String columnName, final Class<?> enumClass, final String value) {
         super(columnName, SearchType.ENUM);
@@ -42,6 +44,9 @@ public class EnumField extends SearchCriterium {
                 this.value = value.substring(1);
             } else {
                 this.value = value;
+            }
+            if (getEnum() == null) {
+                throw new InvalidFieldValueException("Unknown enum value", value);
             }
         } else {
             this.value = null;

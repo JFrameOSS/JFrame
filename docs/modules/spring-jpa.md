@@ -135,6 +135,8 @@ public class UserService extends PagedSearchingService {
 }
 ```
 
+> **Since 1.7.0:** Both `searchPage` overloads call `metaData.resolveSort(input)` internally. Sort validation, default sort, and tiebreaker all apply automatically.
+
 **Scoped queries** — restrict results to a tenant, organization, or parent entity:
 
 ```java
@@ -214,15 +216,16 @@ public class AdminUserController {
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `resolveSort(SortablePageInput)` | `ResolvedSort` | **Preferred.** Resolves the full sort contract: validates input (throws `InvalidSortException` on unknown field or invalid direction), applies `defaultSort()` when empty, appends tiebreaker, returns `ResolvedSort` with pageable, `AppliedSort`, columns, and virtual flag. |
-| `toPageable(SortablePageInput)` | `Pageable` | Delegates to `resolveSort()`. Throws `InvalidSortException` on invalid input. Falls back to `getDefaultPageSize()` when page size ≤ 0. |
+| `resolveSort(SortablePageInput)` | `ResolvedSort` | **Preferred.** Validates sort and page (throws `InvalidSortException` / `InvalidPageException`), applies `defaultSort()` when empty, appends tiebreaker, returns `ResolvedSort` with pageable, `AppliedSort`, columns, and virtual flag. |
+| `toPageable(SortablePageInput)` | `Pageable` | Delegates to `resolveSort()`. Throws `InvalidSortException` / `InvalidPageException` on invalid input. Falls back to `getDefaultPageSize()` when page size ≤ 0. |
 | `toSort(List<SortableColumn>)` | `Sort` | Strict: unknown field or invalid direction → `InvalidSortException`. Returns `Sort.unsorted()` for null/empty input after applying tiebreaker rules. |
 | `toSearchSpecification(SortablePageInput)` | `JpaSearchSpecification<T>` | Builds a specification from the input's search criteria. |
 | `toSearchSpecification(SortablePageInput, String, Object)` | `Specification<T>` | Same as above, ANDed with an equality predicate on the given field path. Supports nested paths (`"tenant.id"`). |
-| `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. |
+| `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. Applied when `pageSize <= 0`. |
 | `getAllowedSortFields()` | `List<String>` | Returns sortable fields plus virtual fields. |
 | `rejectAnySort(List<SortableColumn>)` | `void` (static) | Throws `InvalidSortException` if the list is non-empty. Use on fixed-order endpoints. |
-| `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. |
+| `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. Throws `InvalidSearchException` (400) for unknown field names or invalid values. |
+| `getSearchableFields()` | `List<String>` | Returns the registered searchable field names (included in `InvalidSearchException` response). |
 
 ### Sort hooks
 
@@ -257,7 +260,7 @@ PageResource<UserDto> resource = SpringPageAdapter.toPageResource(page, resolved
 // resource.getAppliedSort() → { field, direction, isDefault }
 ```
 
-### Overriding the default page size
+### Overriding page size defaults
 
 ```java
 @Component
@@ -265,7 +268,7 @@ public class UserSearchMetaData extends AbstractSortSearchMetaData {
 
     @Override
     protected int getDefaultPageSize() {
-        return 50;  // instead of 20
+        return 50;  // instead of 20 — used when pageSize <= 0
     }
 
     // ... addField() calls
@@ -343,10 +346,10 @@ Generates `role != 'DISABLED'` instead of `role = 'DISABLED'`.
 | SearchType | SQL equivalent | Typical use |
 |-----------|---------------|-------------|
 | `TEXT` | `= ?` | Exact match (email, username) |
-| `FUZZY_TEXT` | `LOWER(col) LIKE LOWER(%?%)` | Case-insensitive contains |
+| `FUZZY_TEXT` | `LOWER(col) LIKE LOWER(%?%) ESCAPE '\'` | Case-insensitive contains; `%`, `_`, `\` matched literally |
 | `MULTI_TEXT` | `IN (?, ?, ...)` | Multiple exact values |
-| `MULTI_FUZZY` | `LIKE %?% AND/OR LIKE %?%` | Multiple fuzzy terms |
-| `MULTI_COLUMN_FUZZY` | `col1 LIKE %?% OR col2 LIKE %?%` | Global search box |
+| `MULTI_FUZZY` | `LIKE %?% ESCAPE '\' AND/OR LIKE %?% ESCAPE '\'` | Multiple fuzzy terms; `%`, `_`, `\` matched literally |
+| `MULTI_COLUMN_FUZZY` | `col1 LIKE %?% ESCAPE '\' OR col2 LIKE %?% ESCAPE '\'` | Global search box; `%`, `_`, `\` matched literally |
 | `NUMERIC` | `= ?` | Numeric equality |
 | `MULTI_NUMERIC` | `IN (?, ?, ...)` | Multiple numeric values |
 | `NUMERIC_RANGE` | `>= ? AND/OR <= ?` | Numeric range (from/to, both nullable) |

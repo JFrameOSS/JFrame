@@ -6,7 +6,6 @@ import io.github.jframe.datasource.search.model.PageableItem;
 import io.github.jframe.datasource.search.model.input.SortablePageInput;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
@@ -33,8 +32,8 @@ public abstract class PagedSearchingService {
      * @param metaData   domain-specific metadata for search criteria and sort configuration. Must not be {@code null}.
      * @param repository JPA repository for query execution. Must not be {@code null}.
      * @return page containing matching entities and pagination metadata. Never {@code null}.
-     * @throws IllegalArgumentException                    if any parameter is {@code null}
-     * @throws org.springframework.dao.DataAccessException if database access fails
+     * @throws io.github.jframe.exception.search.InvalidSearchException if a search field or value is invalid
+     * @throws org.springframework.dao.DataAccessException              if database access fails
      */
     protected <T extends PageableItem> Page<T> searchPage(final SortablePageInput input,
         final AbstractSortSearchMetaData metaData,
@@ -53,14 +52,15 @@ public abstract class PagedSearchingService {
      * @param searchSpecification JPA specification defining the query criteria. Must not be {@code null}.
      * @param repository          JPA repository for query execution. Must not be {@code null}.
      * @return page containing matching entities and pagination metadata. Never {@code null}.
-     * @throws IllegalArgumentException                    if any parameter is {@code null} or pagination parameters are invalid
-     * @throws org.springframework.dao.DataAccessException if database access fails
+     * @throws io.github.jframe.exception.page.InvalidPageException if pagination parameters are invalid
+     * @throws io.github.jframe.exception.sort.InvalidSortException if the sort order is invalid
+     * @throws org.springframework.dao.DataAccessException          if database access fails
      */
     protected <T extends PageableItem> Page<T> searchPage(final SortablePageInput input,
         final AbstractSortSearchMetaData metaData,
         final JpaSearchSpecification<T> searchSpecification,
         final JpaSpecificationExecutor<T> repository) {
-        final Pageable page = PageRequest.of(input.getPageNumber(), input.getPageSize(), metaData.toSort(input.getSortOrder()));
+        final Pageable page = metaData.resolveSort(input).getPageable();
         return repository.findAll(searchSpecification, page);
     }
 }

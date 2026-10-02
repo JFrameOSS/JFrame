@@ -123,10 +123,8 @@ public class UserService {
 
     public PageResource<User> searchUsers(SortablePageInput input) {
         PanacheSearchSpecification<User> spec = userMetaData.toSearchSpecification(input);
-        Sort sort = userMetaData.toSort(input.getSortOrder());
-        int pageSize = input.getPageSize() > 0
-            ? input.getPageSize() : userMetaData.getDefaultPageSize();
-        return userRepository.searchPage(spec, input.getPageNumber(), pageSize, sort);
+        PanacheResolvedSort resolved = userMetaData.resolveSort(input);
+        return userRepository.searchPage(spec, resolved.getPage().index, resolved.getPage().size, resolved.getSort());
     }
 }
 ```
@@ -206,15 +204,16 @@ public class AdminUserResource {
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `resolveSort(SortablePageInput)` | `PanacheResolvedSort` | **Preferred.** Validates input (throws `InvalidSortException` on unknown field or invalid direction), applies `defaultSort()` when empty, appends tiebreaker. Returns `PanacheResolvedSort` with page, sort, `AppliedSort`, columns, and virtual flag. |
+| `resolveSort(SortablePageInput)` | `PanacheResolvedSort` | **Preferred.** Validates sort and page (throws `InvalidSortException` / `InvalidPageException`), applies `defaultSort()` when empty, appends tiebreaker. Returns `PanacheResolvedSort` with page, sort, `AppliedSort`, columns, and virtual flag. |
 | `toSort(List<SortableColumn>)` | `Sort` | Strict: unknown field or invalid direction → `InvalidSortException`. Returns `Sort.empty()` for null/empty input. |
 | `toSearchSpecification(SortablePageInput)` | `PanacheSearchSpecification<T>` | Builds a specification from the input's search criteria. |
-| `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. |
+| `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. Throws `InvalidSearchException` (400) for unknown field names or invalid values. |
+| `getSearchableFields()` | `List<String>` | Returns the registered searchable field names (included in `InvalidSearchException` response). |
+| `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. Applied when `pageSize <= 0`. |
 | `getAllowedSortFields()` | `List<String>` | Returns sortable fields plus virtual fields. |
 | `rejectAnySort(List<SortableColumn>)` | `void` (static) | Throws `InvalidSortException` if the list is non-empty. |
-| `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. |
 
-### Overriding the default page size
+### Overriding page size defaults
 
 ```java
 @ApplicationScoped
@@ -222,7 +221,7 @@ public class UserSearchMetaData extends AbstractPanacheSearchMetaData {
 
     @Override
     protected int getDefaultPageSize() {
-        return 50;  // instead of 20
+        return 50;  // instead of 20 — used when pageSize <= 0
     }
 
     // ... addField() calls
@@ -309,4 +308,14 @@ Sort sort = PanacheSortAdapter.toSort(input.getSortOrder());
 
 This is handled automatically by `AbstractPanacheSearchMetaData.toSort()` — you only need `PanacheSortAdapter` for custom queries outside the search framework.
 
-> **Strict:** `toSort()` returns `Sort.empty()` for null/empty input. Unknown fields or invalid directions throw `InvalidSortException` (400). Prefer `resolveSort()` for full sort resolution including tiebreaker and `AppliedSort`.
+> **Strict:** `toSort()` returns `Sort.empty()` for null/empty input. Unknown fields or invalid directions throw `InvalidSortException` (400). Prefer `resolveSort()` for full sort resolution including tiebreaker, page validation, and `AppliedSort`.
+
+## Sort behaviour
+
+`PanacheSearchRepository.searchPage` applies the same ordering rules as Spring:
+
+- **String columns** are sorted case-insensitively via `lower()`.
+- **Nulls** sort last on every column, including the tiebreaker.
+- **Dotted nested paths** (e.g. `"tenant.name"`) are resolved via LEFT joins.
+
+> **`searchPage` paging validation:** rejects negative `pageNumber` and offsets beyond `Integer.MAX_VALUE` with `InvalidPageException`.

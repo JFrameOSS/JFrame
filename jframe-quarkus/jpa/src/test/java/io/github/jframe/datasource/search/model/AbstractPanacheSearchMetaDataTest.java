@@ -18,6 +18,7 @@ import io.github.jframe.datasource.search.fields.TextField;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
 import io.github.jframe.datasource.search.model.input.SortablePageInput;
+import io.github.jframe.exception.search.InvalidSearchException;
 import io.github.jframe.exception.sort.InvalidSortException;
 import io.github.support.TestStatus;
 import io.github.support.UnitTest;
@@ -45,6 +46,7 @@ import org.mockito.Mock;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -392,16 +394,21 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should return empty list when input field is not registered")
-    public void shouldReturnEmptyListWhenInputFieldIsNotRegistered() {
+    @DisplayName("Should throw InvalidSearchException when input field is not registered")
+    public void shouldThrowInvalidSearchExceptionWhenInputFieldIsNotRegistered() {
         // Given: A search input referencing an unregistered field
         final SearchInput input = aSearchInput("unknownField", "value");
 
         // When: Converting to search criteria
-        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+        final InvalidSearchException exception = assertThrows(
+            InvalidSearchException.class,
+            () -> fullMetaData.toSearchCriteria(List.of(input))
+        );
 
-        // Then: The unregistered field is filtered out, empty result
-        assertThat(result, is(empty()));
+        // Then: The field is rejected without a value and the searchable fields are listed
+        assertThat(exception.getRejectedField(), is("unknownField"));
+        assertThat(exception.getRejectedValue(), is(nullValue()));
+        assertThat(exception.getSearchableFields(), hasItems("name", "email", "status"));
     }
 
     @Test
@@ -599,18 +606,20 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should filter out unregistered fields from mixed input list")
-    public void shouldFilterOutUnregisteredFieldsFromMixedInputList() {
+    @DisplayName("Should throw InvalidSearchException when mixed input list contains an unregistered field")
+    public void shouldThrowInvalidSearchExceptionWhenMixedInputListContainsUnregisteredField() {
         // Given: One registered field and one unregistered field in input
         final SearchInput nameInput = aSearchInput("name", "John");
         final SearchInput unknownInput = aSearchInput("nonExistent", "value");
 
         // When: Converting to search criteria
-        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(nameInput, unknownInput));
+        final InvalidSearchException exception = assertThrows(
+            InvalidSearchException.class,
+            () -> fullMetaData.toSearchCriteria(List.of(nameInput, unknownInput))
+        );
 
-        // Then: Only the registered field produces a criterium
-        assertThat(result, hasSize(1));
-        assertThat(result.get(0), is(instanceOf(TextField.class)));
+        // Then: The unregistered field is rejected — no partial results
+        assertThat(exception.getRejectedField(), is("nonExistent"));
     }
 
     // =========================================================================
@@ -1094,19 +1103,20 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should produce MultiNumericField with empty values when all strings are unparseable")
-    public void shouldProduceMultiNumericFieldWithEmptyValuesWhenAllStringsAreUnparseable() {
+    @DisplayName("Should throw InvalidSearchException when MULTI_NUMERIC strings are unparseable")
+    public void shouldThrowInvalidSearchExceptionWhenMultiNumericStringsAreUnparseable() {
         // Given: A search input for the 'ids' MULTI_NUMERIC field with non-numeric strings
         final SearchInput input = aMultiValueSearchInput("ids", List.of("abc", "xyz"));
 
         // When: Converting to search criteria
-        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+        final InvalidSearchException exception = assertThrows(
+            InvalidSearchException.class,
+            () -> fullMetaData.toSearchCriteria(List.of(input))
+        );
 
-        // Then: A MultiNumericField is returned with empty values list
-        assertThat(result, hasSize(1));
-        assertThat(result.getFirst(), is(instanceOf(MultiNumericField.class)));
-        final MultiNumericField multiNumericField = (MultiNumericField) result.getFirst();
-        assertThat(multiNumericField.getValues(), is(empty()));
+        // Then: The first unparseable entry is rejected
+        assertThat(exception.getRejectedField(), is("ids"));
+        assertThat(exception.getRejectedValue(), is("abc"));
     }
 
     @Test
@@ -1321,10 +1331,10 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
     @Test
     @DisplayName("Should delegate to toSearchCriteria using SortablePageInput searchInputs")
     public void shouldDelegateToToSearchCriteriaUsingSortablePageInputSearchInputs() {
-        // Given: A SortablePageInput with one known and one unknown field
+        // Given: A SortablePageInput with two known fields
         final SortablePageInput input = new SortablePageInput();
         input.addSearchInput(aSearchInput("name", "John"));
-        input.addSearchInput(aSearchInput("unknownField", "value"));
+        input.addSearchInput(aSearchInput("email", "john@"));
 
         // When: Building the spec via toSearchSpecification and via toSearchCriteria directly
         final PanacheSearchSpecification<?> specViaPageInput = fullMetaData.toSearchSpecification(input);
@@ -1332,8 +1342,7 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
 
         // Then: toSearchSpecification produces same criteria count as toSearchCriteria
         assertThat(specViaPageInput, is(notNullValue()));
-        // The spec wraps exactly criteriaViaDirect (1 known field — unknownField filtered out)
-        assertThat(criteriaViaDirect, hasSize(1));
+        assertThat(criteriaViaDirect, hasSize(2));
     }
 
 }

@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class TextField extends SearchCriterium {
+public final class TextField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 482074504831496597L;

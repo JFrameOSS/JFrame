@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class BooleanField extends SearchCriterium {
+public final class BooleanField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 482074504831496597L;
@@ -27,10 +27,18 @@ public class BooleanField extends SearchCriterium {
      * default constructor.
      *
      * @param columnName connected database column name.
+     * @param value      {@code true} or {@code false}, case-insensitive; blank means false.
+     * @throws InvalidFieldValueException when the value is present but not true/false.
      */
     public BooleanField(final String columnName, final String value) {
         super(columnName, SearchType.BOOLEAN);
-        this.value = StringUtils.isNotBlank(value) && Boolean.parseBoolean(value);
+        if (StringUtils.isBlank(value)) {
+            this.value = false;
+        } else if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+            this.value = Boolean.parseBoolean(value);
+        } else {
+            throw new InvalidFieldValueException("Invalid boolean value", value);
+        }
     }
 
     /**

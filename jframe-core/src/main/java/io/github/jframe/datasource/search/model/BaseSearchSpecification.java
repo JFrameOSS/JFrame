@@ -21,6 +21,7 @@ import java.io.Serial;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Join;
@@ -45,11 +46,18 @@ import static io.github.jframe.util.constants.Constants.Characters.PERCENTAGE;
  */
 @Slf4j
 @RequiredArgsConstructor
-@SuppressWarnings("PMD.CouplingBetweenObjects")
+@SuppressWarnings(
+    {
+        "PMD.CouplingBetweenObjects",
+        "PMD.ExcessiveImports"
+    }
+)
 public class BaseSearchSpecification<T> implements SearchSpecification<T> {
 
     @Serial
     private static final long serialVersionUID = 4048263278292967348L;
+
+    private static final char ESCAPE_CHAR = '\\';
 
     private final List<SearchCriterium> searchCriteria;
 
@@ -144,23 +152,13 @@ public class BaseSearchSpecification<T> implements SearchSpecification<T> {
             }
             case FUZZY_TEXT -> {
                 final FuzzyTextField f = (FuzzyTextField) crit;
-                predicates.add(
-                    cb.like(
-                        cb.lower(path),
-                        PERCENTAGE + f.getValue().toLowerCase() + PERCENTAGE
-                    )
-                );
+                predicates.add(cb.like(cb.lower(path), toLikePattern(f.getValue()), ESCAPE_CHAR));
             }
             case MULTI_FUZZY -> {
                 final MultiFuzzyField f = (MultiFuzzyField) crit;
                 final Path<String> finalPath = path;
                 final List<Predicate> likes = f.getSearchTerms().stream()
-                    .map(
-                        term -> cb.like(
-                            cb.lower(finalPath),
-                            PERCENTAGE + term.toLowerCase() + PERCENTAGE
-                        )
-                    )
+                    .map(term -> cb.like(cb.lower(finalPath), toLikePattern(term), ESCAPE_CHAR))
                     .toList();
 
                 final Predicate combined = switch (f.getOperator()) {
@@ -180,12 +178,7 @@ public class BaseSearchSpecification<T> implements SearchSpecification<T> {
                     final List<Predicate> columnPredicates = new ArrayList<>();
                     for (final String colName : columns) {
                         final Path<String> colPath = getColumnPath(root, colName);
-                        columnPredicates.add(
-                            cb.like(
-                                cb.lower(colPath),
-                                PERCENTAGE + term.toLowerCase() + PERCENTAGE
-                            )
-                        );
+                        columnPredicates.add(cb.like(cb.lower(colPath), toLikePattern(term), ESCAPE_CHAR));
                     }
                     termPredicates.add(cb.or(columnPredicates.toArray(new Predicate[0])));
                 }
@@ -193,6 +186,15 @@ public class BaseSearchSpecification<T> implements SearchSpecification<T> {
                 predicates.add(cb.and(termPredicates.toArray(new Predicate[0])));
             }
         }
+    }
+
+    /** Builds a lowercase {@code %term%} LIKE pattern with {@code \\}, {@code %} and {@code _} escaped. */
+    private static String toLikePattern(final String term) {
+        final String escaped = term.toLowerCase(Locale.ROOT)
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_");
+        return PERCENTAGE + escaped + PERCENTAGE;
     }
 
     /**

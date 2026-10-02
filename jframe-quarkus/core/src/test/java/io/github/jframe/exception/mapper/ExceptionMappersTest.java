@@ -4,6 +4,8 @@ import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.core.BadRequestException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
+import io.github.jframe.exception.page.InvalidPageException;
+import io.github.jframe.exception.search.InvalidSearchException;
 import io.github.jframe.exception.sort.InvalidSortException;
 import io.github.jframe.validation.ValidationError;
 import io.github.jframe.validation.ValidationResult;
@@ -226,6 +228,40 @@ public class ExceptionMappersTest extends UnitTest {
         final Response response = mapper.toResponse(ex);
 
         // Then: entity is present (CDI not wired in unit test — falls back to ErrorResponseResource)
+        assertThat(response.getEntity(), is(notNullValue()));
+    }
+
+    // -------------------------------------------------------------------------
+    // InvalidSearchExceptionMapper / InvalidPageExceptionMapper
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Should map InvalidSearchException to BAD_REQUEST with body")
+    public void shouldMapInvalidSearchExceptionToBadRequestWithBody() {
+        // Given: An InvalidSearchException
+        final InvalidSearchExceptionMapper mapper = new InvalidSearchExceptionMapper();
+        final InvalidSearchException exception = new InvalidSearchException("age", "abc", List.of("age"));
+
+        // When: Mapping
+        final Response response = mapper.toResponse(exception);
+
+        // Then: 400 with a body
+        assertThat(response.getStatus(), is(equalTo(Response.Status.BAD_REQUEST.getStatusCode())));
+        assertThat(response.getEntity(), is(notNullValue()));
+    }
+
+    @Test
+    @DisplayName("Should map InvalidPageException to BAD_REQUEST with body")
+    public void shouldMapInvalidPageExceptionToBadRequestWithBody() {
+        // Given: An InvalidPageException
+        final InvalidPageExceptionMapper mapper = new InvalidPageExceptionMapper();
+        final InvalidPageException exception = new InvalidPageException("pageNumber", -5);
+
+        // When: Mapping
+        final Response response = mapper.toResponse(exception);
+
+        // Then: 400 with a body
+        assertThat(response.getStatus(), is(equalTo(Response.Status.BAD_REQUEST.getStatusCode())));
         assertThat(response.getEntity(), is(notNullValue()));
     }
 

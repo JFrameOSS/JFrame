@@ -4,10 +4,14 @@ import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.JFrameException;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.core.ValidationException;
+import io.github.jframe.exception.page.InvalidPageErrorResponseResource;
+import io.github.jframe.exception.page.InvalidPageException;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
+import io.github.jframe.exception.search.InvalidSearchErrorResponseResource;
+import io.github.jframe.exception.search.InvalidSearchException;
 import io.github.jframe.exception.sort.InvalidSortErrorResponseResource;
 import io.github.jframe.exception.sort.InvalidSortException;
 
@@ -64,6 +68,8 @@ public class DefaultExceptionResponseFactory implements ExceptionResponseFactory
     private static ErrorResponseResource getErrorResponseResource(final Throwable throwable) {
         return switch (throwable) {
             case final InvalidSortException invalidSortException -> new InvalidSortErrorResponseResource(invalidSortException);
+            case final InvalidSearchException invalidSearchException -> new InvalidSearchErrorResponseResource(invalidSearchException);
+            case final InvalidPageException invalidPageException -> new InvalidPageErrorResponseResource(invalidPageException);
             case final MethodArgumentNotValidException methodArgumentNotValidException -> new MethodArgumentNotValidResponseResource(
                 methodArgumentNotValidException
             );

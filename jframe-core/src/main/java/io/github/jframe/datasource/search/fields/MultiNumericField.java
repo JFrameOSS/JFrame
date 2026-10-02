@@ -19,7 +19,7 @@ import org.apache.commons.collections4.CollectionUtils;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-public class MultiNumericField extends SearchCriterium {
+public final class MultiNumericField extends SearchCriterium {
 
     @Serial
     private static final long serialVersionUID = 3920481672565424226L;
@@ -30,7 +30,8 @@ public class MultiNumericField extends SearchCriterium {
      * default constructor.
      *
      * @param columnName connected database column name.
-     * @param values     list of string values to parse as integers; unparseable values are skipped.
+     * @param values     list of string values to parse as integers.
+     * @throws InvalidFieldValueException when any entry is not an integer.
      */
     public MultiNumericField(final String columnName, final List<String> values) {
         super(columnName, SearchType.MULTI_NUMERIC);
@@ -39,13 +40,17 @@ public class MultiNumericField extends SearchCriterium {
         } else {
             final List<Integer> parsed = new ArrayList<>();
             for (final String value : values) {
-                try {
-                    parsed.add(Integer.valueOf(value));
-                } catch (final NumberFormatException ignored) {
-                    // skip unparseable values
-                }
+                parsed.add(parse(value));
             }
             this.values = parsed;
+        }
+    }
+
+    private static Integer parse(final String value) {
+        try {
+            return Integer.valueOf(value);
+        } catch (final NumberFormatException exception) {
+            throw new InvalidFieldValueException("Invalid integer value", value, exception);
         }
     }
 }

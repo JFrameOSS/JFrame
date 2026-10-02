@@ -12,8 +12,13 @@ RuntimeException
     │   ├── ResourceNotFoundException     (404)
     │   ├── RateLimitExceededException    (429, + limit/remaining/resetDate)
     │   ├── SearchCriteriumException      (400, in datasource pkg)
-    │   └── InvalidSortException          (400, + rejectedField, + sortableFields)
+    │   ├── InvalidSortException          (400, + rejectedField, + sortableFields)
+    │   ├── InvalidSearchException        (400, + rejectedField, + rejectedValue, + searchableFields; keeps parse cause)
+    │   └── InvalidPageException          (400, + rejectedParameter, + rejectedValue)
     └── ValidationException (+ ValidationResult)
+
+IllegalArgumentException
+└── InvalidFieldValueException           (+ rejectedValue truncated to 100 chars — thrown by field types, not HTTP)
 ```
 
 ### ApiError interface
@@ -57,7 +62,10 @@ public enum JFrameErrorCode implements ApiError {
     RATE_LIMIT_EXCEEDED("RATE_LIMIT_EXCEEDED", "Rate limit exceeded", Response.Status.TOO_MANY_REQUESTS),
     VALIDATION_ERROR("VALIDATION_ERROR", "Validation failed", Response.Status.BAD_REQUEST),
     INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR", "Internal server error", Response.Status.INTERNAL_SERVER_ERROR),
-    HTTP_ERROR("HTTP_ERROR", "HTTP error", Response.Status.BAD_REQUEST);
+    HTTP_ERROR("HTTP_ERROR", "HTTP error", Response.Status.BAD_REQUEST),
+    INVALID_SORT("INVALID_SORT", "Invalid sort field or direction", Response.Status.BAD_REQUEST),
+    INVALID_SEARCH("INVALID_SEARCH", "Invalid search field or value", Response.Status.BAD_REQUEST),
+    INVALID_PAGE("INVALID_PAGE", "Invalid page number or size", Response.Status.BAD_REQUEST);
 }
 ```
 
@@ -171,13 +179,15 @@ public interface SearchSpecification<T> {
 
 ### Field types
 
+All classes in `io.github.jframe.datasource.search.fields` are `final`.
+
 | Type | Class | SQL |
 |------|-------|-----|
 | Exact text | `TextField` | `= ?` |
-| Fuzzy text | `FuzzyTextField` | `LIKE %?%` |
+| Fuzzy text | `FuzzyTextField` | `LOWER(col) LIKE LOWER(%?%) ESCAPE '\'` |
 | Multi text | `MultiTextField` | `IN (...)` |
-| Multi fuzzy | `MultiFuzzyField` | `LIKE %?% AND/OR LIKE %?%` |
-| Multi-column fuzzy | `MultiColumnFuzzyField` | `col1 LIKE %?% OR col2 LIKE %?%` |
+| Multi fuzzy | `MultiFuzzyField` | `LIKE %?% ESCAPE '\' AND/OR LIKE %?% ESCAPE '\'` |
+| Multi-column fuzzy | `MultiColumnFuzzyField` | `col1 LIKE %?% ESCAPE '\' OR col2 LIKE %?% ESCAPE '\'` |
 | Numeric | `NumericField` | `= ?` |
 | Boolean | `BooleanField` | `= ?` |
 | Date | `DateField` | `BETWEEN ? AND ?` |
@@ -185,6 +195,14 @@ public interface SearchSpecification<T> {
 | Multi enum | `MultiEnumField` | `IN (...)` |
 
 All support inverse (`!` prefix) for negation.
+
+> **Fuzzy escaping (since 1.7.0):** `%`, `_`, and `\` in user-supplied terms are escaped before the `LIKE` predicate, so they match literally. Lowercasing uses `Locale.ROOT`.
+
+> **Strict since 1.7.0:** Field types throw `InvalidFieldValueException` for unparseable values. `toSearchCriteria()` catches these and re-throws as `InvalidSearchException` (400). Unknown field names are also rejected. Null/blank values still produce no filter.
+
+### Search metadata base
+
+`AbstractSearchMetaData` (`io.github.jframe.datasource.search.model`) is the framework-agnostic base for field registration and search criteria resolution. `AbstractSortSearchMetaData` (Spring) and `AbstractPanacheSearchMetaData` (Quarkus) extend it — consumer API is unchanged.
 
 ### Pagination models
 

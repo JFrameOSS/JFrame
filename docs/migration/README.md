@@ -2,6 +2,12 @@
 
 Every breaking or behaviour-changing release has a guide. Read the guides for each version between the one you are on and the one you are moving to, oldest first.
 
+## 1.7.0
+
+| Guide | What changed |
+|-------|--------------|
+| [Strict Search Input](./1.7.0-strict-sort.md) | Sort, filtering, and paging are now strictly validated — unknown fields, invalid values, and negative page numbers throw 400 instead of being silently dropped or coerced; fuzzy search terms (`%`, `_`, `\`) now match literally; Quarkus sort now matches Spring (case-insensitive, nulls last, dotted paths) |
+
 ## 1.6.2
 
 | Guide | What changed |
