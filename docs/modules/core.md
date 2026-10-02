@@ -11,7 +11,8 @@ RuntimeException
     │   ├── BadRequestException           (400)
     │   ├── ResourceNotFoundException     (404)
     │   ├── RateLimitExceededException    (429, + limit/remaining/resetDate)
-    │   └── SearchCriteriumException      (400, in datasource pkg)
+    │   ├── SearchCriteriumException      (400, in datasource pkg)
+    │   └── InvalidSortException          (400, + rejectedField, + sortableFields)
     └── ValidationException (+ ValidationResult)
 ```
 
@@ -207,9 +208,12 @@ page.getTotalPages();     // 8
 page.getPageSize();       // 20
 page.getPageNumber();     // 0
 page.getContent();        // List<UserDto> — never null, empty list when no results
+page.getAppliedSort();    // AppliedSort or null (omitted from JSON when null)
 ```
 
-> **Null-safety:** `PageResource.content` is always initialized to an empty list. The `iterator()` method is safe to call on any `PageResource` instance, including empty pages.
+`AppliedSort` fields: `field` (String), `direction` ("ASC"/"DESC"), `isDefault` (boolean — `true` when the server's `defaultSort()` was applied, not the client's choice).
+
+> **Null-safety:** `PageResource.content` is always initialized to an empty list. `PageResource.appliedSort` is `null` unless explicitly set via the `SpringPageAdapter` / `QuarkusPageAdapter` overload.
 
 ## Request context (ThreadLocal)
 

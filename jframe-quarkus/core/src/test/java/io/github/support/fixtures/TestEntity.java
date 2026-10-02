@@ -1,6 +1,16 @@
 package io.github.support.fixtures;
 
-/**
- * A simple test entity with an ID and a name.
- */
-public record TestEntity(Long id, String name) {}
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/** Simple test entity with an id and a name. */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class TestEntity {
+
+    private Long id;
+
+    private String name;
+}

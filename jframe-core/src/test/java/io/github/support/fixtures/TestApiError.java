@@ -4,15 +4,31 @@ import io.github.jframe.exception.ApiError;
 
 import jakarta.ws.rs.core.Response;
 
-/**
- * Test implementation of {@link ApiError} for testing purposes.
- *
- * <p>This class provides a simple implementation of the ApiError interface
- * that can be used across multiple test classes.
- *
- * @param getErrorCode  the error code
- * @param getReason     the error reason
- * @param getHttpStatus the HTTP status
- */
-public record TestApiError(String getErrorCode, String getReason, Response.Status getHttpStatus) implements ApiError {
+/** Test implementation of {@link ApiError}. */
+public class TestApiError implements ApiError {
+
+    private final String errorCode;
+    private final String reason;
+    private final Response.Status httpStatus;
+
+    public TestApiError(final String errorCode, final String reason, final Response.Status httpStatus) {
+        this.errorCode = errorCode;
+        this.reason = reason;
+        this.httpStatus = httpStatus;
+    }
+
+    @Override
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    @Override
+    public String getReason() {
+        return reason;
+    }
+
+    @Override
+    public Response.Status getHttpStatus() {
+        return httpStatus;
+    }
 }

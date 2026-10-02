@@ -206,9 +206,12 @@ public class AdminUserResource {
 
 | Method | Returns | Description |
 |--------|---------|-------------|
+| `resolveSort(SortablePageInput)` | `PanacheResolvedSort` | **Preferred.** Validates input (throws `InvalidSortException` on unknown field or invalid direction), applies `defaultSort()` when empty, appends tiebreaker. Returns `PanacheResolvedSort` with page, sort, `AppliedSort`, columns, and virtual flag. |
+| `toSort(List<SortableColumn>)` | `Sort` | Strict: unknown field or invalid direction → `InvalidSortException`. Returns `Sort.empty()` for null/empty input. |
 | `toSearchSpecification(SortablePageInput)` | `PanacheSearchSpecification<T>` | Builds a specification from the input's search criteria. |
 | `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. |
-| `toSort(List<SortableColumn>)` | `Sort` | Returns `Sort.empty()` for null/empty input. Invalid or non-sortable columns are logged at WARN and discarded; if all requested columns are invalid the query runs unsorted. Paginated reads over an all-invalid sort may return overlapping or skipped rows. |
+| `getAllowedSortFields()` | `List<String>` | Returns sortable fields plus virtual fields. |
+| `rejectAnySort(List<SortableColumn>)` | `void` (static) | Throws `InvalidSortException` if the list is non-empty. |
 | `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. |
 
 ### Overriding the default page size
@@ -306,4 +309,4 @@ Sort sort = PanacheSortAdapter.toSort(input.getSortOrder());
 
 This is handled automatically by `AbstractPanacheSearchMetaData.toSort()` — you only need `PanacheSortAdapter` for custom queries outside the search framework.
 
-> **Null-safety:** `toSort()` returns `Sort.empty()` (not `null`) when the input is null or empty. Invalid or non-sortable columns are discarded with a WARN log rather than thrown.
+> **Strict:** `toSort()` returns `Sort.empty()` for null/empty input. Unknown fields or invalid directions throw `InvalidSortException` (400). Prefer `resolveSort()` for full sort resolution including tiebreaker and `AppliedSort`.

@@ -20,7 +20,8 @@ public enum JFrameErrorCode implements ApiError {
         "Internal server error",
         Response.Status.INTERNAL_SERVER_ERROR
     ),
-    HTTP_ERROR("HTTP_ERROR", "HTTP error", Response.Status.BAD_REQUEST);
+    HTTP_ERROR("HTTP_ERROR", "HTTP error", Response.Status.BAD_REQUEST),
+    INVALID_SORT("INVALID_SORT", "Invalid sort field or direction", Response.Status.BAD_REQUEST);
 
     private final String errorCode;
     private final String reason;

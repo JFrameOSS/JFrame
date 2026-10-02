@@ -1,5 +1,6 @@
 package io.github.jframe.datasource.search;
 
+import io.github.jframe.datasource.search.model.resource.AppliedSort;
 import io.github.jframe.datasource.search.model.resource.PageResource;
 
 import java.util.List;
@@ -38,6 +39,30 @@ public abstract class QuarkusPageMapper<S, T> {
             .map(this::mapItem)
             .toList();
         return QuarkusPageAdapter.toPageResource(mapped, totalElements, totalPages, pageSize, pageNumber);
+    }
+
+    /**
+     * Maps a page of source items to a {@link PageResource} with applied sort metadata.
+     *
+     * @param items         the source items for this page, may be {@code null}
+     * @param totalElements the total element count across all pages
+     * @param totalPages    the total page count
+     * @param pageSize      the size of each page
+     * @param pageNumber    the current page number (0-based)
+     * @param appliedSort   the sort applied to this page; may be {@code null}
+     * @return a populated {@link PageResource}, or {@code null} if {@code items} is {@code null}
+     */
+    public PageResource<T> map(final List<S> items,
+        final long totalElements,
+        final int totalPages,
+        final int pageSize,
+        final int pageNumber,
+        final AppliedSort appliedSort) {
+        final PageResource<T> resource = map(items, totalElements, totalPages, pageSize, pageNumber);
+        if (resource != null) {
+            resource.setAppliedSort(appliedSort);
+        }
+        return resource;
     }
 
     /**

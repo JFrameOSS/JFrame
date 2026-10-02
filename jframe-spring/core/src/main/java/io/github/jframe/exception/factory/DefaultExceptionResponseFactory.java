@@ -8,6 +8,8 @@ import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
+import io.github.jframe.exception.sort.InvalidSortErrorResponseResource;
+import io.github.jframe.exception.sort.InvalidSortException;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -61,6 +63,7 @@ public class DefaultExceptionResponseFactory implements ExceptionResponseFactory
      */
     private static ErrorResponseResource getErrorResponseResource(final Throwable throwable) {
         return switch (throwable) {
+            case final InvalidSortException invalidSortException -> new InvalidSortErrorResponseResource(invalidSortException);
             case final MethodArgumentNotValidException methodArgumentNotValidException -> new MethodArgumentNotValidResponseResource(
                 methodArgumentNotValidException
             );

@@ -17,6 +17,8 @@ import io.github.jframe.datasource.search.fields.TextField;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
 import io.github.jframe.datasource.search.model.input.SortablePageInput;
+import io.github.jframe.datasource.search.model.resource.AppliedSort;
+import io.github.jframe.exception.sort.InvalidSortException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +28,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
@@ -56,7 +59,10 @@ import static java.util.Objects.nonNull;
     {
         "ClassDataAbstractionCoupling",
         "ClassFanOutComplexity",
-        "PMD.ExcessiveImports"
+        "PMD.ExcessiveImports",
+        "PMD.GodClass",
+        "PMD.CouplingBetweenObjects",
+        "PMD.TooManyMethods"
     }
 )
 public abstract class AbstractSortSearchMetaData {
@@ -109,33 +115,111 @@ public abstract class AbstractSortSearchMetaData {
             .toList();
     }
 
+
     /**
-     * Convert a list of SortableColumn objects into a Spring Data Sort object based on the defined sortable fields.
+     * The default sort applied when the request carries no sort order.
+     * Override to provide endpoint-specific defaults; return an empty list for unsorted.
      *
-     * <p>Non-sortable or unregistered columns are silently discarded with a WARN log; the method never throws.
+     * @return default sort columns (never {@code null})
+     */
+    protected List<SortableColumn> defaultSort() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * The tiebreaker column appended ASC to every sort unless already present.
+     * Override and return {@code null} to disable tiebreaker.
      *
-     * @param sortOrders List of SortableColumn objects representing user-defined sort orders.
-     * @return Spring Data Sort object for querying the database; unsorted when all columns are invalid.
+     * @return tiebreaker column name, default {@code "id"}
+     */
+    protected String tiebreakerProperty() {
+        return "id";
+    }
+
+    /**
+     * Frontend sort keys that are allowed but have no mapped DB column.
+     * When the effective sort uses one of these, the pageable is left unsorted
+     * and {@link ResolvedSort#isVirtual()} returns {@code true}.
+     *
+     * @return virtual field names (never {@code null})
+     */
+    protected Set<String> virtualSortFields() {
+        return Collections.emptySet();
+    }
+
+    /**
+     * Returns the union of sortable and virtual sort fields — the full allowed set.
+     *
+     * @return all accepted sort field names
+     */
+    public List<String> getAllowedSortFields() {
+        final List<String> all = new ArrayList<>(sortableFields);
+        all.addAll(virtualSortFields());
+        return Collections.unmodifiableList(all);
+    }
+
+    /**
+     * Resolves the effective sort and paging from the input.
+     *
+     * <p>When {@code input.getSortOrder()} is null or empty, {@link #defaultSort()} is applied
+     * and the resulting {@link AppliedSort} is marked {@code isDefault=true}.
+     * Unknown or non-sortable field names and invalid directions throw {@link InvalidSortException}.
+     *
+     * @param input the sortable page input
+     * @return the resolved sort result
+     * @throws InvalidSortException when a sort field or direction is rejected
+     */
+    public ResolvedSort resolveSort(final SortablePageInput input) {
+        final boolean isDefault = CollectionUtils.isEmpty(input.getSortOrder());
+        final List<SortableColumn> requested = isDefault ? defaultSort() : input.getSortOrder();
+
+        if (CollectionUtils.isEmpty(requested)) {
+            final int pageSize = input.getPageSize() <= 0 ? getDefaultPageSize() : input.getPageSize();
+            final Pageable pageable = PageRequest.of(input.getPageNumber(), pageSize, Sort.unsorted());
+            return new ResolvedSort(pageable, null, Collections.emptyList(), false);
+        }
+
+        final SortableColumn leading = requested.getFirst();
+        final boolean isVirtual = virtualSortFields().contains(normaliseFieldName(leading));
+
+        final List<SortableColumn> validated = normalise(requested);
+        final Sort jpaSort = isVirtual ? Sort.unsorted() : toJpaSort(validated);
+
+        final int pageSize = input.getPageSize() <= 0 ? getDefaultPageSize() : input.getPageSize();
+        final Pageable pageable = PageRequest.of(input.getPageNumber(), pageSize, jpaSort);
+
+        final String leadingDir = normaliseDirection(leading.getDirection());
+        final AppliedSort appliedSort = new AppliedSort(leading.getName(), leadingDir, isDefault);
+
+        return new ResolvedSort(pageable, appliedSort, validated, isVirtual);
+    }
+
+    /**
+     * Convert a list of {@link SortableColumn} objects into a Spring Data {@link Sort}.
+     *
+     * <p><strong>Strict:</strong> unknown/non-sortable field or invalid direction → {@link InvalidSortException}.
+     * Returns {@link Sort#unsorted()} for null/empty input.
+     *
+     * @param sortOrders sort columns requested by the client
+     * @return Spring Data Sort
+     * @throws InvalidSortException when a column is rejected
      */
     public Sort toSort(final List<SortableColumn> sortOrders) {
         if (CollectionUtils.isEmpty(sortOrders)) {
             return Sort.unsorted();
         }
+        return toJpaSort(normalise(sortOrders));
+    }
 
-        final List<Sort.Order> orders = sortOrders.stream()
-            .filter(o -> sortableFields.contains(o.getName()))
-            .map(o -> new Sort.Order(Sort.Direction.fromString(o.getDirection()), columnNames.get(o.getName()).getFirst()))
-            .toList();
-
-        if (orders.size() != sortOrders.size()) {
-            final List<String> discarded = sortOrders.stream()
-                .map(SortableColumn::getName)
-                .filter(name -> !sortableFields.contains(name))
-                .toList();
-            log.warn("Discarding non-sortable or unregistered sort columns: {}", discarded);
+    /**
+     * Guard for fixed-order endpoints. Throws {@link InvalidSortException} when {@code sortOrder} is non-empty.
+     *
+     * @param sortOrder the sort order from the request (may be {@code null})
+     */
+    public static void rejectAnySort(final List<SortableColumn> sortOrder) {
+        if (!CollectionUtils.isEmpty(sortOrder)) {
+            throw new InvalidSortException(sortOrder.getFirst().getName(), Collections.emptyList());
         }
-
-        return orders.isEmpty() ? Sort.unsorted() : Sort.by(orders);
     }
 
     /**
@@ -151,13 +235,74 @@ public abstract class AbstractSortSearchMetaData {
     /**
      * Convert a {@link SortablePageInput} to a Spring Data {@link Pageable}.
      * Uses {@link #getDefaultPageSize()} when input page size is not positive.
+     * Delegates to {@link #resolveSort(SortablePageInput)} — strict validation applies.
      *
      * @param input the sortable page input.
      * @return a configured {@link Pageable}.
      */
     public Pageable toPageable(final SortablePageInput input) {
-        final int resolvedPageSize = input.getPageSize() <= 0 ? getDefaultPageSize() : input.getPageSize();
-        return PageRequest.of(input.getPageNumber(), resolvedPageSize, toSort(input.getSortOrder()));
+        return resolveSort(input).getPageable();
+    }
+
+
+    /** Validates each column and returns the normalised list; throws on first invalid entry. */
+    private List<SortableColumn> normalise(final List<SortableColumn> columns) {
+        final List<String> allowed = getAllowedSortFields();
+        for (final SortableColumn col : columns) {
+            final String field = col.getName();
+            if (field == null || field.isBlank() || !allowed.contains(field)) {
+                throw new InvalidSortException(field, allowed);
+            }
+            final String dir = normaliseDirection(col.getDirection());
+            if (dir == null) {
+                throw new InvalidSortException(field, allowed);
+            }
+        }
+        return columns;
+    }
+
+    /** Normalises direction string: ASC/DESC (case-insensitive) → uppercase; anything else → {@code null}. */
+    private static String normaliseDirection(final String direction) {
+        if (direction == null || direction.isBlank()) {
+            return null;
+        }
+        final String upper = direction.strip().toUpperCase();
+        return ("ASC".equals(upper) || "DESC".equals(upper)) ? upper : null;
+    }
+
+    /** Returns the field name as-is (no normalisation — strict case-sensitive match). */
+    private static String normaliseFieldName(final SortableColumn col) {
+        return col.getName();
+    }
+
+    /** Builds a {@link Sort} with ignoreCase + nullsLast on every order, plus the tiebreaker. */
+    private Sort toJpaSort(final List<SortableColumn> columns) {
+        final List<Sort.Order> orders = new ArrayList<>();
+        for (final SortableColumn col : columns) {
+            final String dir = normaliseDirection(col.getDirection());
+            final List<String> dbCols = columnNames.get(col.getName());
+            if (dbCols == null) {
+                continue;
+            }
+            for (final String dbCol : dbCols) {
+                orders.add(
+                    Sort.Order.by(dbCol)
+                        .with(Sort.Direction.fromString(dir))
+                        .ignoreCase()
+                        .nullsLast()
+                );
+            }
+        }
+
+        final String tiebreaker = tiebreakerProperty();
+        if (tiebreaker != null) {
+            final boolean alreadyPresent = orders.stream().anyMatch(o -> tiebreaker.equals(o.getProperty()));
+            if (!alreadyPresent) {
+                orders.add(Sort.Order.asc(tiebreaker).ignoreCase().nullsLast());
+            }
+        }
+
+        return orders.isEmpty() ? Sort.unsorted() : Sort.by(orders);
     }
 
     /**

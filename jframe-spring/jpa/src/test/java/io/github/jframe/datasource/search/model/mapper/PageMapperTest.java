@@ -1,6 +1,7 @@
 package io.github.jframe.datasource.search.model.mapper;
 
 import io.github.jframe.datasource.search.model.PageableItem;
+import io.github.jframe.datasource.search.model.resource.AppliedSort;
 import io.github.jframe.datasource.search.model.resource.PageResource;
 import io.github.jframe.datasource.search.model.resource.PageableItemResource;
 import io.github.support.UnitTest;
@@ -153,5 +154,35 @@ class PageMapperTest extends UnitTest {
         public TestItemResource toResourceObject(final TestItem source) {
             return new TestItemResource(source.getValue());
         }
+    }
+
+    @Test
+    @DisplayName("Should set appliedSort when overload is used")
+    public void shouldSetAppliedSortWhenOverloadIsUsed() {
+        // Given
+        final Page<TestItem> page = new PageImpl<>(List.of(new TestItem("a")), PageRequest.of(0, 25), 1L);
+        final var appliedSort = new AppliedSort("name", "ASC", false);
+
+        // When
+        final PageResource<TestItemResource> result = mapper.toPageResource(page, appliedSort);
+
+        // Then
+        assertThat(result.getAppliedSort(), is(notNullValue()));
+        assertThat(result.getAppliedSort().getField(), is(equalTo("name")));
+        assertThat(result.getAppliedSort().getDirection(), is(equalTo("ASC")));
+        assertThat(result.getAppliedSort().isDefault(), is(false));
+    }
+
+    @Test
+    @DisplayName("Should return null appliedSort when null passed to overload")
+    public void shouldReturnNullAppliedSortWhenNullPassedToOverload() {
+        // Given
+        final Page<TestItem> page = new PageImpl<>(List.of(), PageRequest.of(0, 25), 0L);
+
+        // When
+        final PageResource<TestItemResource> result = mapper.toPageResource(page, null);
+
+        // Then
+        assertThat(result.getAppliedSort(), is(nullValue()));
     }
 }

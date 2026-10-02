@@ -57,7 +57,7 @@ class RequestScopedCacheTest extends UnitTest {
 
             // Then: Entity should be retrieved successfully
             assertThat(result.isPresent(), is(true));
-            assertThat(result.get().name(), is("Test"));
+            assertThat(result.get().getName(), is("Test"));
         }
 
         @Test
@@ -114,9 +114,9 @@ class RequestScopedCacheTest extends UnitTest {
 
             // Then: All entities should be stored
             assertThat(cache.size(), is(3));
-            assertThat(cache.get(1L).get().name(), is("First"));
-            assertThat(cache.get(2L).get().name(), is("Second"));
-            assertThat(cache.get(3L).get().name(), is("Third"));
+            assertThat(cache.get(1L).get().getName(), is("First"));
+            assertThat(cache.get(2L).get().getName(), is("Second"));
+            assertThat(cache.get(3L).get().getName(), is("Third"));
         }
 
         @Test
@@ -154,7 +154,7 @@ class RequestScopedCacheTest extends UnitTest {
 
             // Then: Cached entity should be returned without invoking loader
             assertThat(result.isPresent(), is(true));
-            assertThat(result.get().name(), is("Cached"));
+            assertThat(result.get().getName(), is("Cached"));
         }
 
         @Test
@@ -168,7 +168,7 @@ class RequestScopedCacheTest extends UnitTest {
 
             // Then: Entity should be loaded and cached
             assertThat(result.isPresent(), is(true));
-            assertThat(result.get().name(), is("Loaded"));
+            assertThat(result.get().getName(), is("Loaded"));
             assertThat(cache.contains(1L), is(true));
         }
 
@@ -258,8 +258,8 @@ class RequestScopedCacheTest extends UnitTest {
 
             // Then: Cached entities should be returned without invoking loader
             assertThat(result.size(), is(2));
-            assertThat(result.get(1L).name(), is("Cached1"));
-            assertThat(result.get(2L).name(), is("Cached2"));
+            assertThat(result.get(1L).getName(), is("Cached1"));
+            assertThat(result.get(2L).getName(), is("Cached2"));
         }
 
         @Test
@@ -276,9 +276,9 @@ class RequestScopedCacheTest extends UnitTest {
 
             // Then: All entities should be returned
             assertThat(result.size(), is(3));
-            assertThat(result.get(1L).name(), is("Cached"));
-            assertThat(result.get(2L).name(), is("Loaded2"));
-            assertThat(result.get(3L).name(), is("Loaded3"));
+            assertThat(result.get(1L).getName(), is("Cached"));
+            assertThat(result.get(2L).getName(), is("Loaded2"));
+            assertThat(result.get(3L).getName(), is("Loaded3"));
 
             // And: Loaded entities are now cached
             assertThat(cache.contains(2L), is(true));
@@ -372,7 +372,7 @@ class RequestScopedCacheTest extends UnitTest {
             final TestEntity removed = cache.remove(1L);
 
             // Then: Entity should be removed and returned
-            assertThat(removed.name(), is("Test"));
+            assertThat(removed.getName(), is("Test"));
             assertThat(cache.contains(1L), is(false));
         }
 

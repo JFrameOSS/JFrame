@@ -9,6 +9,8 @@ dependencies {
 
     // Quarkus Panache API — compileOnly (provided by consumer)
     compileOnly("io.quarkus:quarkus-hibernate-orm-panache:${retrieve("quarkusVersion")}")
+    // Jackson annotations on jframe-core API — compileOnly (annotation types on PageResource/AppliedSort)
+    compileOnly("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
     // Swagger annotations on jframe-core API — compileOnly (annotation types needed to compile against core classes)
     compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
 
@@ -22,6 +24,7 @@ dependencies {
     testImplementation("io.agroal:agroal-api")
     testImplementation("io.quarkus:quarkus-hibernate-orm-panache:${retrieve("quarkusVersion")}")
     testImplementation("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
+    testImplementation("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
     testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")
     testImplementation("org.mockito:mockito-core:${retrieve("mockitoVersion")}")
     testImplementation("org.mockito:mockito-junit-jupiter:${retrieve("mockitoVersion")}")

@@ -17,6 +17,9 @@ import io.github.jframe.datasource.search.fields.TextField;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.datasource.search.model.input.SortableColumn;
 import io.github.jframe.datasource.search.model.input.SortablePageInput;
+import io.github.jframe.datasource.search.model.resource.AppliedSort;
+import io.github.jframe.exception.sort.InvalidSortException;
+import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import jakarta.persistence.criteria.Predicate;
 
@@ -52,7 +56,9 @@ import static java.util.Objects.nonNull;
     {
         "ClassDataAbstractionCoupling",
         "ClassFanOutComplexity",
-        "PMD.ExcessiveImports"
+        "PMD.ExcessiveImports",
+        "PMD.GodClass",
+        "PMD.CouplingBetweenObjects"
     }
 )
 public abstract class AbstractPanacheSearchMetaData {
@@ -123,9 +129,6 @@ public abstract class AbstractPanacheSearchMetaData {
         );
     }
 
-    /* -------------------------------------------------
-     *  Search & sorting helpers
-     * ------------------------------------------------- */
 
     /**
      * Convert a list of SearchInput objects into a list of SearchCriterium objects based on the defined metadata.
@@ -145,48 +148,108 @@ public abstract class AbstractPanacheSearchMetaData {
     }
 
     /**
-     * Convert a list of SortableColumn objects into a Panache Sort object based on the defined sortable fields.
+     * // =========================================================================
+     * // Sort contract — strict (breaking change in 1.7.0)
+     * // =========================================================================
      *
-     * <p>Non-sortable or unregistered columns are silently discarded with a WARN log; the method never throws.
-     * Returns {@link Sort#empty()} when the input list is null/empty or all columns are invalid.
+     * /**
+     * The default sort applied when the request carries no sort order.
+     * Override to provide endpoint-specific defaults; return an empty list for unsorted.
      *
-     * @param sortOrders List of SortableColumn objects representing user-defined sort orders.
-     * @return Panache Sort object for querying the database; empty when all columns are invalid.
+     * @return default sort columns (never {@code null})
+     */
+    protected List<SortableColumn> defaultSort() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * The tiebreaker column appended ASC to every sort unless already present.
+     * Override and return {@code null} to disable tiebreaker.
+     *
+     * @return tiebreaker column name, default {@code "id"}
+     */
+    protected String tiebreakerProperty() {
+        return "id";
+    }
+
+    /**
+     * Frontend sort keys that are allowed but have no mapped DB column.
+     * When the effective sort uses one, the Panache sort is empty and
+     * {@link PanacheResolvedSort#isVirtual()} is {@code true}.
+     *
+     * @return virtual field names (never {@code null})
+     */
+    protected Set<String> virtualSortFields() {
+        return Collections.emptySet();
+    }
+
+    /**
+     * Returns the union of sortable and virtual sort fields — the full allowed set.
+     *
+     * @return all accepted sort field names
+     */
+    public List<String> getAllowedSortFields() {
+        final List<String> all = new ArrayList<>(sortableFields);
+        all.addAll(virtualSortFields());
+        return Collections.unmodifiableList(all);
+    }
+
+    /**
+     * Resolves the effective sort and paging from the input.
+     *
+     * @param input the sortable page input
+     * @return the resolved sort result
+     * @throws InvalidSortException when a sort field or direction is rejected
+     */
+    public PanacheResolvedSort resolveSort(final SortablePageInput input) {
+        final boolean isDefault = CollectionUtils.isEmpty(input.getSortOrder());
+        final List<SortableColumn> requested = isDefault ? defaultSort() : input.getSortOrder();
+
+        final int pageSize = input.getPageSize() <= 0 ? getDefaultPageSize() : input.getPageSize();
+        final Page page = Page.of(input.getPageNumber(), pageSize);
+
+        if (CollectionUtils.isEmpty(requested)) {
+            return new PanacheResolvedSort(page, Sort.empty(), null, Collections.emptyList(), false);
+        }
+
+        final SortableColumn leading = requested.getFirst();
+        final boolean isVirtual = virtualSortFields().contains(leading.getName());
+
+        final List<SortableColumn> validated = normalise(requested);
+        final Sort panacheSort = isVirtual ? Sort.empty() : buildPanacheSort(validated);
+
+        final String leadingDir = normaliseDirection(leading.getDirection());
+        final AppliedSort appliedSort = new AppliedSort(leading.getName(), leadingDir, isDefault);
+
+        return new PanacheResolvedSort(page, panacheSort, appliedSort, validated, isVirtual);
+    }
+
+    /**
+     * Convert a list of {@link SortableColumn} objects into a Panache {@link Sort}.
+     *
+     * <p><strong>Strict:</strong> unknown/non-sortable field or invalid direction → {@link InvalidSortException}.
+     * Returns {@link Sort#empty()} for null/empty input.
+     *
+     * @param sortOrders sort columns requested by the client
+     * @return Panache Sort
+     * @throws InvalidSortException when a column is rejected
      */
     public Sort toSort(final List<SortableColumn> sortOrders) {
         if (CollectionUtils.isEmpty(sortOrders)) {
             return Sort.empty();
         }
-
-        final List<SortableColumn> filtered = sortOrders.stream()
-            .filter(o -> sortableFields.contains(o.getName()))
-            .toList();
-
-        if (filtered.size() != sortOrders.size()) {
-            final List<String> discarded = sortOrders.stream()
-                .map(SortableColumn::getName)
-                .filter(name -> !sortableFields.contains(name))
-                .toList();
-            log.warn("Discarding non-sortable or unregistered sort columns: " + discarded);
-        }
-
-        return buildSort(filtered);
+        return buildPanacheSort(normalise(sortOrders));
     }
 
-    private Sort buildSort(final List<SortableColumn> columns) {
-        if (columns.isEmpty()) {
-            return Sort.empty();
+    /**
+     * Guard for fixed-order endpoints. Throws {@link InvalidSortException} when {@code sortOrder} is non-empty.
+     *
+     * @param sortOrder the sort order from the request (may be {@code null})
+     */
+    public static void rejectAnySort(final List<SortableColumn> sortOrder) {
+        if (!CollectionUtils.isEmpty(sortOrder)) {
+            throw new InvalidSortException(sortOrder.getFirst().getName(), Collections.emptyList());
         }
-
-        final SortableColumn first = columns.getFirst();
-        Sort sort = Sort.by(columnNames.get(first.getName()).getFirst(), toDirection(first.getDirection()));
-
-        for (int i = 1; i < columns.size(); i++) {
-            final SortableColumn column = columns.get(i);
-            sort = sort.and(columnNames.get(column.getName()).getFirst(), toDirection(column.getDirection()));
-        }
-
-        return sort;
     }
 
     /**
@@ -221,9 +284,6 @@ public abstract class AbstractPanacheSearchMetaData {
             || predicate.getExpressions().isEmpty();
     }
 
-    /* -------------------------------------------------
-     *  Search field registration
-     * ------------------------------------------------- */
 
     /**
      * Register a searchable and/or sortable field with the metadata.
@@ -324,9 +384,6 @@ public abstract class AbstractPanacheSearchMetaData {
         }
     }
 
-    /* -------------------------------------------------
-     *  Search criterium creation
-     * ------------------------------------------------- */
 
     /**
      * Create a SearchCriterium based on the SearchInput and defined metadata.
@@ -347,13 +404,61 @@ public abstract class AbstractPanacheSearchMetaData {
         return factories.getOrDefault(type, (c, i) -> null).create(columns, input);
     }
 
-    /* -------------------------------------------------
-     *  Private helpers
-     * ------------------------------------------------- */
 
-    private static Sort.Direction toDirection(final String direction) {
-        return DESCENDING.equalsIgnoreCase(direction)
-            ? Sort.Direction.Descending
-            : Sort.Direction.Ascending;
+    /** Validates each column and returns them; throws on first invalid entry. */
+    private List<SortableColumn> normalise(final List<SortableColumn> columns) {
+        final List<String> allowed = getAllowedSortFields();
+        for (final SortableColumn col : columns) {
+            final String field = col.getName();
+            if (field == null || field.isBlank() || !allowed.contains(field)) {
+                throw new InvalidSortException(field, allowed);
+            }
+            final String dir = normaliseDirection(col.getDirection());
+            if (dir == null) {
+                throw new InvalidSortException(field, allowed);
+            }
+        }
+        return columns;
     }
+
+    /** Normalises direction: ASC/DESC (case-insensitive) → uppercase; anything else → {@code null}. */
+    private static String normaliseDirection(final String direction) {
+        if (direction == null || direction.isBlank()) {
+            return null;
+        }
+        final String upper = direction.strip().toUpperCase();
+        return ("ASC".equals(upper) || DESCENDING.equals(upper)) ? upper : null;
+    }
+
+    /** Builds a Panache {@link Sort} with tiebreaker appended unless already present. */
+    private Sort buildPanacheSort(final List<SortableColumn> columns) {
+        if (columns.isEmpty()) {
+            return Sort.empty();
+        }
+
+        Sort result = Sort.empty();
+        final Set<String> addedColumns = new java.util.LinkedHashSet<>();
+
+        for (final SortableColumn col : columns) {
+            final List<String> dbCols = columnNames.get(col.getName());
+            if (dbCols == null) {
+                continue;
+            }
+            final Sort.Direction dir = DESCENDING.equalsIgnoreCase(col.getDirection())
+                ? Sort.Direction.Descending
+                : Sort.Direction.Ascending;
+            for (final String dbCol : dbCols) {
+                result = result.and(dbCol, dir);
+                addedColumns.add(dbCol);
+            }
+        }
+
+        final String tiebreaker = tiebreakerProperty();
+        if (tiebreaker != null && !addedColumns.contains(tiebreaker)) {
+            result = result.and(tiebreaker, Sort.Direction.Ascending);
+        }
+
+        return result;
+    }
+
 }

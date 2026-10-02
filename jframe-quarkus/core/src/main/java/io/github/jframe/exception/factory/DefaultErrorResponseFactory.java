@@ -6,6 +6,8 @@ import io.github.jframe.exception.resource.ConstraintViolationResponseResource;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
+import io.github.jframe.exception.sort.InvalidSortErrorResponseResource;
+import io.github.jframe.exception.sort.InvalidSortException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.validation.ConstraintViolationException;
@@ -37,6 +39,7 @@ public class DefaultErrorResponseFactory implements ExceptionResponseFactory {
 
     private static ErrorResponseResource getErrorResponseResource(final Throwable resolved, final Throwable original) {
         return switch (resolved) {
+            case final InvalidSortException e -> new InvalidSortErrorResponseResource(e);
             case final ValidationException e -> new ValidationErrorResponseResource(e);
             case final RateLimitExceededException e -> new RateLimitErrorResponseResource(e);
             case final ConstraintViolationException e -> new ConstraintViolationResponseResource(e);
@@ -47,7 +50,8 @@ public class DefaultErrorResponseFactory implements ExceptionResponseFactory {
     private static Throwable resolve(final Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
-            if (current instanceof ValidationException
+            if (current instanceof InvalidSortException
+                || current instanceof ValidationException
                 || current instanceof RateLimitExceededException
                 || current instanceof ConstraintViolationException) {
                 return current;

@@ -214,12 +214,48 @@ public class AdminUserController {
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `toPageable(SortablePageInput)` | `Pageable` | Builds a `PageRequest` from the input. Falls back to `getDefaultPageSize()` when page size ≤ 0. |
+| `resolveSort(SortablePageInput)` | `ResolvedSort` | **Preferred.** Resolves the full sort contract: validates input (throws `InvalidSortException` on unknown field or invalid direction), applies `defaultSort()` when empty, appends tiebreaker, returns `ResolvedSort` with pageable, `AppliedSort`, columns, and virtual flag. |
+| `toPageable(SortablePageInput)` | `Pageable` | Delegates to `resolveSort()`. Throws `InvalidSortException` on invalid input. Falls back to `getDefaultPageSize()` when page size ≤ 0. |
+| `toSort(List<SortableColumn>)` | `Sort` | Strict: unknown field or invalid direction → `InvalidSortException`. Returns `Sort.unsorted()` for null/empty input after applying tiebreaker rules. |
 | `toSearchSpecification(SortablePageInput)` | `JpaSearchSpecification<T>` | Builds a specification from the input's search criteria. |
 | `toSearchSpecification(SortablePageInput, String, Object)` | `Specification<T>` | Same as above, ANDed with an equality predicate on the given field path. Supports nested paths (`"tenant.id"`). |
 | `getDefaultPageSize()` | `int` | Returns `20`. Override in subclass to change the default. |
-| `toSort(List<SortableColumn>)` | `Sort` | Returns `Sort.unsorted()` for null/empty input. Invalid or non-sortable columns are logged at WARN and discarded; if all requested columns are invalid the query runs unsorted. Paginated reads over an all-invalid sort may return overlapping or skipped rows. |
+| `getAllowedSortFields()` | `List<String>` | Returns sortable fields plus virtual fields. |
+| `rejectAnySort(List<SortableColumn>)` | `void` (static) | Throws `InvalidSortException` if the list is non-empty. Use on fixed-order endpoints. |
 | `toSearchCriteria(List<SearchInput>)` | `List<SearchCriterium>` | Converts search inputs to criteria. Returns empty list for null/empty input. |
+
+### Sort hooks
+
+Override in your subclass to customise sort behaviour:
+
+```java
+@Override
+protected List<SortableColumn> defaultSort() {
+    // Applied when the client sends no sortOrder. Default: empty (unsorted).
+    return List.of(new SortableColumn("createdAt", "DESC"));
+}
+
+@Override
+protected String tiebreakerProperty() {
+    // Appended ASC unless already present. Default: "id". Return null to disable.
+    return "id";
+}
+
+@Override
+protected Set<String> virtualSortFields() {
+    // Fields accepted in sortOrder but with no DB column (consumer handles ordering).
+    return Set.of("relevanceScore");
+}
+```
+
+### Using `resolveSort()` to expose the sort in the response
+
+```java
+ResolvedSort resolved = metaData.resolveSort(input);
+Page<User> page = repo.findAll(spec, resolved.getPageable());
+PageResource<UserDto> resource = SpringPageAdapter.toPageResource(page, resolved.getAppliedSort());
+// resource.getAppliedSort() → { field, direction, isDefault }
+```
 
 ### Overriding the default page size
 
