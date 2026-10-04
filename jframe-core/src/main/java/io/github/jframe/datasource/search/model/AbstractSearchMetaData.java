@@ -60,6 +60,7 @@ import static java.util.Objects.nonNull;
 )
 public abstract class AbstractSearchMetaData {
 
+    private static final String ASCENDING = "ASC";
     private static final String DESCENDING = "DESC";
     private static final String PAGE_NUMBER = "pageNumber";
 
@@ -118,6 +119,16 @@ public abstract class AbstractSearchMetaData {
     }
 
     /**
+     * Tiebreaker columns appended to every sort, each skipped when already present.
+     *
+     * @return tiebreaker columns, default {@code [tiebreakerProperty() ASC]} or empty when that is {@code null}
+     */
+    protected List<SortableColumn> tiebreaker() {
+        final String property = tiebreakerProperty();
+        return property == null ? Collections.emptyList() : List.of(new SortableColumn(property, ASCENDING));
+    }
+
+    /**
      * The tiebreaker column appended ASC to every sort unless already present.
      * Override and return {@code null} to disable.
      *
@@ -138,13 +149,22 @@ public abstract class AbstractSearchMetaData {
     }
 
     /**
+     * All virtual sort keys; adapters override to add framework-registered keys.
+     *
+     * @return virtual field names (never {@code null})
+     */
+    protected Set<String> effectiveVirtualSortFields() {
+        return virtualSortFields();
+    }
+
+    /**
      * Returns the union of sortable and virtual sort fields.
      *
      * @return all accepted sort field names
      */
     public List<String> getAllowedSortFields() {
         final List<String> all = new ArrayList<>(sortableFields);
-        all.addAll(virtualSortFields());
+        all.addAll(effectiveVirtualSortFields());
         return Collections.unmodifiableList(all);
     }
 
@@ -208,7 +228,8 @@ public abstract class AbstractSearchMetaData {
         }
 
         final SortableColumn leading = requested.getFirst();
-        final boolean isVirtual = virtualSortFields().contains(leading.getName());
+        final Set<String> virtualFields = effectiveVirtualSortFields();
+        final boolean isVirtual = requested.stream().anyMatch(col -> virtualFields.contains(col.getName()));
         final List<SortableColumn> validated = normalise(requested);
         final String leadingDir = normaliseDirection(leading.getDirection());
         final AppliedSort appliedSort = new AppliedSort(leading.getName(), leadingDir, isDefault);
@@ -340,7 +361,7 @@ public abstract class AbstractSearchMetaData {
             return null;
         }
         final String upper = direction.strip().toUpperCase(Locale.ROOT);
-        return ("ASC".equals(upper) || DESCENDING.equals(upper)) ? upper : null;
+        return (ASCENDING.equals(upper) || DESCENDING.equals(upper)) ? upper : null;
     }
 
     /** Validates and returns each column; throws on first invalid entry. */

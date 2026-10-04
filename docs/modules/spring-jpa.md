@@ -245,11 +245,41 @@ protected String tiebreakerProperty() {
 }
 
 @Override
+protected List<SortableColumn> tiebreaker() {
+    // Columns appended to every sort, each skipped when already present.
+    // Default: [tiebreakerProperty() ASC]. Takes precedence over tiebreakerProperty().
+    return List.of(new SortableColumn("createdAt", "DESC"), new SortableColumn("id", "ASC"));
+}
+
+@Override
 protected Set<String> virtualSortFields() {
     // Fields accepted in sortOrder but with no DB column (consumer handles ordering).
     return Set.of("relevanceScore");
 }
 ```
+
+### Virtual sort expressions
+
+Register a Criteria expression for a sort key that has no mapped column. The key becomes a virtual sort field automatically, even when `virtualSortFields()` is overridden.
+
+```java
+public UserSearchMetaData() {
+    addField("name", "name", SearchType.TEXT, true);
+    addSortExpression("owner", (root, query, cb) -> {
+        final Join<User, Owner> owner = root.join("owner", JoinType.LEFT);
+        return List.of(owner.get("lastName"), owner.get("firstName"));
+    });
+}
+```
+
+A sort is virtual when **any** requested column is virtual. The `Pageable` is then unsorted and `toSearchSpecification(input)` (and the scoped overload) applies the ordering on the query instead:
+
+- each column in request order — expressions for registered keys, mapped column paths otherwise, virtual keys without an expression are skipped;
+- `tiebreaker()` columns last, unless already ordered;
+- nulls last; `String` expressions are compared case-insensitively;
+- count queries are never ordered.
+
+Always pass the specification from `toSearchSpecification(input)` together with `resolveSort(input).getPageable()`.
 
 ### Using `resolveSort()` to expose the sort in the response
 

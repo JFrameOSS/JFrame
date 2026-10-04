@@ -1,6 +1,7 @@
 package io.github.jframe.datasource.search.model.mapper;
 
 import io.github.jframe.datasource.search.model.PageableItem;
+import io.github.jframe.datasource.search.model.ResolvedSort;
 import io.github.jframe.datasource.search.model.resource.AppliedSort;
 import io.github.jframe.datasource.search.model.resource.PageResource;
 import io.github.jframe.datasource.search.model.resource.PageableItemResource;
@@ -54,5 +55,16 @@ public abstract class PageMapper<T extends PageableItemResource, S extends Pagea
             resource.setAppliedSort(appliedSort);
         }
         return resource;
+    }
+
+    /**
+     * Map a page of {@code S} to a {@link PageResource} of {@code T} with the sort applied by {@code sort}.
+     *
+     * @param source the Spring Data page (may be {@code null})
+     * @param sort   the resolved sort (may be {@code null})
+     * @return the mapped page resource, or {@code null} if {@code source} is {@code null}
+     */
+    public PageResource<T> toPageResource(final Page<S> source, final ResolvedSort sort) {
+        return toPageResource(source, isNull(sort) ? null : sort.getAppliedSort());
     }
 }

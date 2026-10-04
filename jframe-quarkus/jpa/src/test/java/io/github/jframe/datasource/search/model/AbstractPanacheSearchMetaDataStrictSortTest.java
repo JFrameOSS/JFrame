@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -201,22 +202,6 @@ class AbstractPanacheSearchMetaDataStrictSortTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should not append duplicate tiebreaker when already present")
-    void shouldNotAppendDuplicateTiebreaker() {
-        // Given: 'id' is sortable and explicitly requested
-        final var meta = new WithIdSortableMetaData();
-        final var columns = List.of(new SortableColumn("id", "DESC"));
-
-        // When
-        final var sort = meta.toSort(columns);
-
-        // Then: only one 'id' column
-        final long idCount = sort.getColumns().stream()
-            .filter(c -> "id".equals(c.getName())).count();
-        assertThat(idCount, is(1L));
-    }
-
-    @Test
     @DisplayName("Should skip tiebreaker when tiebreakerProperty returns null")
     void shouldSkipTiebreakerWhenNull() {
         // Given
@@ -231,6 +216,23 @@ class AbstractPanacheSearchMetaDataStrictSortTest extends UnitTest {
         final long idCount = sort.getColumns().stream()
             .filter(c -> "id".equals(c.getName())).count();
         assertThat(idCount, is(0L));
+    }
+
+    @Test
+    @DisplayName("Should append composite tiebreaker in order and skip columns already sorted")
+    void shouldAppendCompositeTiebreakerAndSkipPresentColumns() {
+        // Given: Tiebreaker override [createdAt DESC, id ASC] with id already requested
+        final AbstractPanacheSearchMetaData meta = new CompositeTiebreakerMetaData();
+        final List<SortableColumn> columns = List.of(new SortableColumn("name", "ASC"), new SortableColumn("id", "DESC"));
+
+        // When: Building the Panache sort
+        final Sort sort = meta.toSort(columns);
+
+        // Then: Requested columns first, then createdAt DESC; id not repeated
+        final List<String> rendered = sort.getColumns().stream()
+            .map(c -> c.getName() + " " + c.getDirection())
+            .toList();
+        assertThat(rendered, contains("name_col Ascending", "id Descending", "createdAt Descending"));
     }
 
     // =========================================================================
@@ -365,15 +367,16 @@ class AbstractPanacheSearchMetaDataStrictSortTest extends UnitTest {
     }
 
 
-    static class WithIdSortableMetaData extends AbstractPanacheSearchMetaData {
+    static class CompositeTiebreakerMetaData extends AbstractPanacheSearchMetaData {
 
-        WithIdSortableMetaData() {
+        CompositeTiebreakerMetaData() {
+            addField("name", "name_col", SearchType.TEXT, true);
             addField("id", "id", SearchType.NUMERIC, true);
         }
 
         @Override
-        protected List<SortableColumn> defaultSort() {
-            return List.of(new SortableColumn("id", "ASC"));
+        protected List<SortableColumn> tiebreaker() {
+            return List.of(new SortableColumn("createdAt", "DESC"), new SortableColumn("id", "ASC"));
         }
     }
 
