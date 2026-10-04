@@ -69,6 +69,8 @@ public abstract class AbstractPanacheSearchMetaData extends AbstractSearchMetaDa
     /**
      * Build a {@link PanacheSearchSpecification} from the search inputs in a {@link SortablePageInput}.
      *
+     * <p><b>Warning:</b> virtual sort keys are not ordered by jFrame on Quarkus; the consumer must order them.
+     *
      * @param <T>   the entity type
      * @param input the sortable page input containing search inputs
      * @return a new PanacheSearchSpecification wrapping the derived criteria
@@ -91,20 +93,23 @@ public abstract class AbstractPanacheSearchMetaData extends AbstractSearchMetaDa
             if (dbCols == null) {
                 continue;
             }
-            final Sort.Direction dir = DESCENDING.equalsIgnoreCase(col.getDirection())
-                ? Sort.Direction.Descending
-                : Sort.Direction.Ascending;
+            final Sort.Direction dir = toDirection(col.getDirection());
             for (final String dbCol : dbCols) {
                 result = result.and(dbCol, dir);
                 addedColumns.add(dbCol);
             }
         }
 
-        final String tiebreaker = tiebreakerProperty();
-        if (tiebreaker != null && !addedColumns.contains(tiebreaker)) {
-            result = result.and(tiebreaker, Sort.Direction.Ascending);
+        for (final SortableColumn tiebreaker : tiebreaker()) {
+            if (addedColumns.add(tiebreaker.getName())) {
+                result = result.and(tiebreaker.getName(), toDirection(tiebreaker.getDirection()));
+            }
         }
 
         return result;
+    }
+
+    private static Sort.Direction toDirection(final String direction) {
+        return DESCENDING.equalsIgnoreCase(direction) ? Sort.Direction.Descending : Sort.Direction.Ascending;
     }
 }

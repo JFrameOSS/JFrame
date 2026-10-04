@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Sort;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -202,18 +203,18 @@ class AbstractSortSearchMetaDataStrictSortTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should not append duplicate tiebreaker when already present")
-    void shouldNotAppendDuplicateTiebreaker() {
-        // Given: metadata where 'id' column is sortable
-        final var meta = new WithIdSortableMetaData();
-        final var columns = List.of(new SortableColumn("id", "DESC"));
+    @DisplayName("Should append composite tiebreaker in order and skip columns already sorted")
+    void shouldAppendCompositeTiebreakerAndSkipPresentColumns() {
+        // Given: Tiebreaker override [createdAt DESC, id ASC] with id already requested
+        final AbstractSortSearchMetaData meta = new CompositeTiebreakerMetaData();
+        final List<SortableColumn> columns = List.of(new SortableColumn("name", "ASC"), new SortableColumn("id", "DESC"));
 
-        // When
+        // When: Building the Spring sort
         final Sort sort = meta.toSort(columns);
 
-        // Then: exactly one 'id' order
-        final long idCount = sort.toList().stream().filter(o -> "id".equals(o.getProperty())).count();
-        assertThat(idCount, is(1L));
+        // Then: Requested columns first, then createdAt DESC; id not repeated
+        final List<String> rendered = sort.stream().map(o -> o.getProperty() + " " + o.getDirection()).toList();
+        assertThat(rendered, contains("name_col ASC", "id DESC", "createdAt DESC"));
     }
 
     @Test
@@ -401,15 +402,16 @@ class AbstractSortSearchMetaDataStrictSortTest extends UnitTest {
     }
 
 
-    static class WithIdSortableMetaData extends AbstractSortSearchMetaData {
+    static class CompositeTiebreakerMetaData extends AbstractSortSearchMetaData {
 
-        WithIdSortableMetaData() {
+        CompositeTiebreakerMetaData() {
+            addField("name", "name_col", SearchType.TEXT, true);
             addField("id", "id", SearchType.NUMERIC, true);
         }
 
         @Override
-        protected List<SortableColumn> defaultSort() {
-            return List.of(new SortableColumn("id", "ASC"));
+        protected List<SortableColumn> tiebreaker() {
+            return List.of(new SortableColumn("createdAt", "DESC"), new SortableColumn("id", "ASC"));
         }
     }
 

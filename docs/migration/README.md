@@ -2,6 +2,12 @@
 
 Every breaking or behaviour-changing release has a guide. Read the guides for each version between the one you are on and the one you are moving to, oldest first.
 
+## 1.7.1
+
+| Guide | What changed |
+|-------|--------------|
+| [Sort Expressions](./1.7.1-sort-expressions.md) | `addSortExpression` orders virtual sort keys inside `toSearchSpecification`; `isVirtual` now true when any column is virtual; composite `tiebreaker()`; `toPageResource(page, null)` is ambiguous — cast to `(AppliedSort)` |
+
 ## 1.7.0
 
 | Guide | What changed |

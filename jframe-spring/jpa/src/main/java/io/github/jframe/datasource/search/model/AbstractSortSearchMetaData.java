@@ -6,8 +6,19 @@ import io.github.jframe.datasource.search.model.input.SortablePageInput;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Nulls;
+import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,8 +31,35 @@ import org.springframework.data.jpa.domain.Specification;
  *
  * @see AbstractSearchMetaData
  */
-@SuppressWarnings("ClassDataAbstractionCoupling")
+@SuppressWarnings(
+    {
+        "ClassDataAbstractionCoupling",
+        "PMD.CouplingBetweenObjects"
+    }
+)
 public abstract class AbstractSortSearchMetaData extends AbstractSearchMetaData {
+
+    private final Map<String, SortExpression> sortExpressions = new ConcurrentHashMap<>();
+
+    /**
+     * Registers a virtual sort key ordered by the given expression inside {@link #toSearchSpecification}.
+     *
+     * <p><b>Warning:</b> avoid joining to-many associations — duplicate rows corrupt pagination counts.
+     * Reuse existing joins from the root where possible.
+     *
+     * @param name       frontend sort key
+     * @param expression builds the order expressions
+     */
+    protected void addSortExpression(final String name, final SortExpression expression) {
+        sortExpressions.put(name, expression);
+    }
+
+    @Override
+    protected Set<String> effectiveVirtualSortFields() {
+        final Set<String> all = new HashSet<>(virtualSortFields());
+        all.addAll(sortExpressions.keySet());
+        return all;
+    }
 
     /**
      * Resolves the effective sort and paging from the input.
@@ -75,17 +113,38 @@ public abstract class AbstractSortSearchMetaData extends AbstractSearchMetaData 
     /**
      * Build a {@link JpaSearchSpecification} from the search inputs in a {@link SortablePageInput}.
      *
+     * <p><b>Warning (virtual sorts):</b> when the effective sort contains a virtual key, ordering is applied
+     * inside the specification. Pass an unsorted {@link org.springframework.data.domain.Pageable} (e.g. from
+     * {@link #resolveSort}) — a sorted {@code Pageable} overrides the in-spec order.
+     *
      * @param input the sortable page input
      * @param <T>   the entity type
      * @return a {@link JpaSearchSpecification} based on the input's search criteria
      */
     public <T> JpaSearchSpecification<T> toSearchSpecification(final SortablePageInput input) {
-        return new JpaSearchSpecification<>(toSearchCriteria(input.getSearchInputs()));
+        final List<SearchCriterium> criteria = toSearchCriteria(input.getSearchInputs());
+        final ResolvedSortCore core = resolveCore(input);
+        if (!core.isVirtual()) {
+            return new JpaSearchSpecification<>(criteria);
+        }
+        final List<SortableColumn> columns = core.getColumns();
+        return new JpaSearchSpecification<>(criteria) {
+
+            @Override
+            public Predicate toPredicate(final Root<T> root, final CriteriaQuery<?> query, final CriteriaBuilder cb) {
+                if (query != null && !isCountQuery(query)) {
+                    query.orderBy(toOrders(columns, root, query, cb));
+                }
+                return super.toPredicate(root, query, cb);
+            }
+        };
     }
 
     /**
      * Build a scoped {@link Specification} by ANDing the base search specification with an equality
      * predicate on {@code fieldPath} == {@code scopeValue}. Supports nested paths (e.g. {@code "tenant.id"}).
+     *
+     * <p>See {@link #toSearchSpecification(SortablePageInput)} for the virtual-sort {@code Pageable} warning.
      *
      * @param input      the sortable page input
      * @param fieldPath  dot-separated path to the field
@@ -98,13 +157,7 @@ public abstract class AbstractSortSearchMetaData extends AbstractSearchMetaData 
         final String fieldPath,
         final Object scopeValue) {
         final JpaSearchSpecification<T> base = toSearchSpecification(input);
-        final Specification<T> scope = (root, query, cb) -> {
-            Path<?> path = root;
-            for (final String segment : fieldPath.split("\\.")) {
-                path = path.get(segment);
-            }
-            return cb.equal(path, scopeValue);
-        };
+        final Specification<T> scope = (root, query, cb) -> cb.equal(resolvePath(root, fieldPath), scopeValue);
         return base.and(scope);
     }
 
@@ -127,14 +180,71 @@ public abstract class AbstractSortSearchMetaData extends AbstractSearchMetaData 
             }
         }
 
-        final String tiebreaker = tiebreakerProperty();
-        if (tiebreaker != null) {
-            final boolean alreadyPresent = orders.stream().anyMatch(o -> tiebreaker.equals(o.getProperty()));
-            if (!alreadyPresent) {
-                orders.add(Sort.Order.asc(tiebreaker).ignoreCase().nullsLast());
+        for (final SortableColumn tiebreaker : tiebreaker()) {
+            final String property = tiebreaker.getName();
+            if (orders.stream().noneMatch(o -> property.equals(o.getProperty()))) {
+                orders.add(
+                    Sort.Order.by(property)
+                        .with(Sort.Direction.fromString(normaliseDirection(tiebreaker.getDirection())))
+                        .ignoreCase()
+                        .nullsLast()
+                );
             }
         }
 
         return orders.isEmpty() ? Sort.unsorted() : Sort.by(orders);
+    }
+
+    /** Builds criteria orders for a virtual sort: expressions, mapped columns, then tiebreaker. */
+    private List<Order> toOrders(
+        final List<SortableColumn> columns,
+        final Root<?> root,
+        final CriteriaQuery<?> query,
+        final CriteriaBuilder cb) {
+        final List<Order> orders = new ArrayList<>();
+        final Set<String> orderedPaths = new HashSet<>();
+        for (final SortableColumn col : columns) {
+            final boolean ascending = isAscending(col);
+            final SortExpression expression = sortExpressions.get(col.getName());
+            if (expression != null) {
+                expression.build(root, query, cb).forEach(expr -> orders.add(toOrder(expr, ascending, cb)));
+                continue;
+            }
+            for (final String dbCol : getColumnNames().getOrDefault(col.getName(), Collections.emptyList())) {
+                orders.add(toOrder(resolvePath(root, dbCol), ascending, cb));
+                orderedPaths.add(dbCol);
+            }
+        }
+        for (final SortableColumn tiebreaker : tiebreaker()) {
+            if (orderedPaths.add(tiebreaker.getName())) {
+                orders.add(toOrder(resolvePath(root, tiebreaker.getName()), isAscending(tiebreaker), cb));
+            }
+        }
+        return orders;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Order toOrder(final Expression<?> expression, final boolean ascending, final CriteriaBuilder cb) {
+        final Expression<?> sortable = expression.getJavaType() == String.class
+            ? cb.lower((Expression<String>) expression)
+            : expression;
+        return ascending ? cb.asc(sortable, Nulls.LAST) : cb.desc(sortable, Nulls.LAST);
+    }
+
+    private static Path<?> resolvePath(final Root<?> root, final String dotPath) {
+        Path<?> path = root;
+        for (final String segment : dotPath.split("\\.")) {
+            path = path.get(segment);
+        }
+        return path;
+    }
+
+    private static boolean isAscending(final SortableColumn column) {
+        return !"DESC".equals(normaliseDirection(column.getDirection()));
+    }
+
+    private static boolean isCountQuery(final CriteriaQuery<?> query) {
+        final Class<?> resultType = query.getResultType();
+        return Long.class.equals(resultType) || long.class.equals(resultType);
     }
 }

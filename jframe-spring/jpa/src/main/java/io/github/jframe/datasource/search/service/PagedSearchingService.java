@@ -38,8 +38,7 @@ public abstract class PagedSearchingService {
     protected <T extends PageableItem> Page<T> searchPage(final SortablePageInput input,
         final AbstractSortSearchMetaData metaData,
         final JpaSpecificationExecutor<T> repository) {
-        final JpaSearchSpecification<T> searchSpecification =
-            new JpaSearchSpecification<>(metaData.toSearchCriteria(input.getSearchInputs()));
+        final JpaSearchSpecification<T> searchSpecification = metaData.toSearchSpecification(input);
         return searchPage(input, metaData, searchSpecification, repository);
     }
 

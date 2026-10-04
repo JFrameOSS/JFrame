@@ -1,6 +1,7 @@
 package io.github.jframe.datasource.search.model.mapper;
 
 import io.github.jframe.datasource.search.model.PageableItem;
+import io.github.jframe.datasource.search.model.ResolvedSort;
 import io.github.jframe.datasource.search.model.resource.AppliedSort;
 import io.github.jframe.datasource.search.model.resource.PageResource;
 import io.github.jframe.datasource.search.model.resource.PageableItemResource;
@@ -174,13 +175,31 @@ class PageMapperTest extends UnitTest {
     }
 
     @Test
+    @DisplayName("Should set appliedSort from ResolvedSort and return null for null page")
+    public void shouldSetAppliedSortFromResolvedSort() {
+        // Given: A page and a resolved sort
+        final Page<TestItem> page = new PageImpl<>(List.of(new TestItem("a")), PageRequest.of(0, 25), 1L);
+        final AppliedSort appliedSort = new AppliedSort("score", "DESC", true);
+        final ResolvedSort resolvedSort = new ResolvedSort(PageRequest.of(0, 25), appliedSort, List.of(), true);
+
+        // When: Mapping with the ResolvedSort overload
+        final PageResource<TestItemResource> result = mapper.toPageResource(page, resolvedSort);
+        final PageResource<TestItemResource> nullResult = mapper.toPageResource(null, resolvedSort);
+
+        // Then: appliedSort is copied; null page maps to null
+        assertThat(result.getAppliedSort(), is(equalTo(appliedSort)));
+        assertThat(result.getContent(), hasSize(1));
+        assertThat(nullResult, is(nullValue()));
+    }
+
+    @Test
     @DisplayName("Should return null appliedSort when null passed to overload")
     public void shouldReturnNullAppliedSortWhenNullPassedToOverload() {
         // Given
         final Page<TestItem> page = new PageImpl<>(List.of(), PageRequest.of(0, 25), 0L);
 
         // When
-        final PageResource<TestItemResource> result = mapper.toPageResource(page, null);
+        final PageResource<TestItemResource> result = mapper.toPageResource(page, (AppliedSort) null);
 
         // Then
         assertThat(result.getAppliedSort(), is(nullValue()));
