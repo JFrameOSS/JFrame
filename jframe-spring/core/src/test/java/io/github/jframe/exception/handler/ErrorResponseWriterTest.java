@@ -1,14 +1,20 @@
 package io.github.jframe.exception.handler;
 
+import io.github.jframe.exception.HttpException;
 import io.github.jframe.exception.JFrameErrorCode;
+import io.github.jframe.exception.core.RateLimitExceededException;
+import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.logging.model.TransactionId;
 import io.github.jframe.tests.spring.TestApplication;
 import io.github.jframe.tests.spring.TestEnricherConfiguration;
 import io.github.jframe.tests.spring.TestSecurityConfiguration;
+import io.github.jframe.validation.ValidationResult;
 import io.github.support.ProblemJson;
 import io.github.support.fixtures.TestApiError;
 
 import java.lang.reflect.Method;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import jakarta.servlet.http.HttpServletRequest;
@@ -195,5 +201,158 @@ public class ErrorResponseWriterTest {
         // Then: errorCode is the JFrameErrorCode for the status
         final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
         assertThat(body, hasEntry("errorCode", JFrameErrorCode.valueOf(status.name()).getErrorCode()));
+    }
+
+    @Test
+    @DisplayName("Should write HttpException with its status, code and detail")
+    public void shouldWriteHttpExceptionWithItsStatusCodeAndDetail() throws Exception {
+        // Given: A business HttpException
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing the exception
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new HttpException(new TestApiError("ORDER_CLOSED", "Order is already closed", Response.Status.CONFLICT))
+        );
+
+        // Then: Problem Details from the exception, enriched
+        ProblemJson.assertRfc9457(response.getContentAsString(), response.getStatus());
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(response.getStatus(), is(409));
+        assertThat(response.getContentType(), startsWith(ProblemJson.PROBLEM_JSON));
+        assertThat(body, hasEntry("type", "https://errors.example.com/ORDER_CLOSED"));
+        assertThat(body, hasEntry("errorCode", "ORDER_CLOSED"));
+        assertThat(body, hasEntry("detail", "Order is already closed"));
+        assertThat(body, hasEntry("instance", "/api/orders"));
+        assertThat(body, hasEntry("tenant", "acme"));
+    }
+
+    @Test
+    @DisplayName("Should never expose the wrapped cause message of an HttpException")
+    public void shouldNotExposeCauseMessageWhenHttpExceptionHasCause() throws Exception {
+        // Given: An HttpException wrapping a secret cause
+        final String secret = "jdbc:postgresql://db/secret password=hunter2";
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing the exception
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new HttpException(
+                new TestApiError("ORDER_CLOSED", "Order is already closed", Response.Status.CONFLICT),
+                new IllegalStateException(secret)
+            )
+        );
+
+        // Then: Secret absent, detail from the exception
+        assertThat(response.getContentAsString(), not(containsString("hunter2")));
+        assertThat(ProblemJson.parse(response.getContentAsString()), hasEntry("detail", "Order is already closed"));
+    }
+
+    @Test
+    @DisplayName("Should preserve rate-limit members when writing RateLimitExceededException")
+    public void shouldPreserveRateLimitMembersWhenWritingRateLimitExceededException() throws Exception {
+        // Given: A rate-limit exception
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing the exception
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new RateLimitExceededException(100, 0, OffsetDateTime.parse("2030-01-01T12:00:00Z"))
+        );
+
+        // Then: 429 with limit members
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(response.getStatus(), is(429));
+        assertThat(body, hasEntry("limit", 100));
+        assertThat(body, hasEntry("remaining", 0));
+        assertThat(body, hasKey("resetDate"));
+    }
+
+    @Test
+    @DisplayName("Should preserve validation errors when writing ValidationException")
+    public void shouldPreserveValidationErrorsWhenWritingValidationException() throws Exception {
+        // Given: A validation exception with one violation
+        final ValidationResult result = new ValidationResult();
+        result.rejectValue("name", "name.required");
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "POST", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing the exception
+        ErrorResponseWriter.write(request, response, new ValidationException(result));
+
+        // Then: 400 with VALIDATION_ERROR and the violation
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(response.getStatus(), is(400));
+        assertThat(body, hasEntry("errorCode", "VALIDATION_ERROR"));
+        assertThat((List<?>) body.get("errors"), contains(Map.of("field", "name", "code", "name.required")));
+    }
+
+    @Test
+    @DisplayName("Should negotiate plain JSON for HttpException when client accepts only application/json")
+    public void shouldNegotiateJsonForHttpExceptionWhenAcceptIsJson() throws Exception {
+        // Given: A client accepting only application/json
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/orders");
+        request.addHeader("Accept", "application/json");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing an HttpException
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new HttpException(new TestApiError("ORDER_CLOSED", "Order is already closed", Response.Status.CONFLICT))
+        );
+
+        // Then: Same content type as the ApiError overload would use
+        assertThat(response.getContentType(), startsWith("application/json"));
+    }
+
+    @Test
+    @DisplayName("Should write HttpException without application context and without leaking the cause")
+    public void shouldWriteHttpExceptionWhenNoApplicationContext() throws Exception {
+        // Given: A request outside any web application context and a secret cause
+        final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing via the fallback path
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new HttpException(
+                new TestApiError("ORDER_CLOSED", "Order is already closed", Response.Status.CONFLICT),
+                new IllegalStateException("password=hunter2")
+            )
+        );
+
+        // Then: Conformant body from the exception
+        ProblemJson.assertRfc9457(response.getContentAsString(), 409);
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(body, hasEntry("errorCode", "ORDER_CLOSED"));
+        assertThat(body, hasEntry("detail", "Order is already closed"));
+        assertThat(response.getContentAsString(), not(containsString("hunter2")));
+    }
+
+    @Test
+    @DisplayName("Should not deprecate the HttpException overload")
+    public void shouldNotDeprecateHttpExceptionOverload() throws Exception {
+        // Given: The HttpException overload
+        final Method method =
+            ErrorResponseWriter.class.getMethod("write", HttpServletRequest.class, HttpServletResponse.class, HttpException.class);
+
+        // When: Reading its deprecation
+        final Deprecated deprecated = method.getAnnotation(Deprecated.class);
+
+        // Then: Not deprecated
+        assertThat(deprecated, is(nullValue()));
     }
 }

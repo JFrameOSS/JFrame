@@ -55,7 +55,7 @@ public class JFrameErrorController implements ErrorController {
         );
         body.setInstance(originalPath(request));
         if (body.getTxId() == null) {
-            body.setTxId(txId(request, response));
+            body.setTxId(txId(response));
         }
         if (status.is5xxServerError()) {
             final Object throwable = request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
@@ -78,19 +78,10 @@ public class JFrameErrorController implements ErrorController {
         return status == null ? HttpStatus.INTERNAL_SERVER_ERROR : status;
     }
 
-    /** Existing id from response header, request header or thread context; {@code null} when absent. */
-    private static String txId(final HttpServletRequest request, final HttpServletResponse response) {
+    /** Id set by the transaction-id filter (response header or thread context); never the raw request header. */
+    private static String txId(final HttpServletResponse response) {
         final String responseHeader = response.getHeader(TX_ID_HEADER);
-        final String requestHeader = request.getHeader(TX_ID_HEADER);
-        final String txId;
-        if (responseHeader != null && !responseHeader.isBlank()) {
-            txId = responseHeader;
-        } else if (requestHeader != null && !requestHeader.isBlank()) {
-            txId = requestHeader;
-        } else {
-            txId = TransactionId.get();
-        }
-        return txId;
+        return responseHeader != null && !responseHeader.isBlank() ? responseHeader : TransactionId.get();
     }
 
     private static String originalPath(final HttpServletRequest request) {

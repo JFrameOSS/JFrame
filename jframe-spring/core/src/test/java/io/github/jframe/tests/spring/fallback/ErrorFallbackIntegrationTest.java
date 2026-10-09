@@ -1,5 +1,6 @@
 package io.github.jframe.tests.spring.fallback;
 
+import io.github.jframe.exception.core.BadRequestException;
 import io.github.support.ProblemJson;
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -22,6 +24,9 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import static io.github.jframe.util.constants.Constants.Headers.TX_ID_HEADER;
@@ -39,6 +44,10 @@ import static org.hamcrest.Matchers.*;
 public class ErrorFallbackIntegrationTest {
 
     static final String SECRET = "jdbc:postgresql://db/secret";
+
+    static final String TX_ID = "3f1c2b7a-1d2e-4f5a-9b8c-0d1e2f3a4b5c";
+
+    static final String MVC_PATH = "/fallback/mvc/bad-request";
 
     @LocalServerPort
     private int port;
@@ -62,21 +71,61 @@ public class ErrorFallbackIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should echo the request transaction id when present")
-    public void shouldEchoRequestTransactionId() throws Exception {
-        // Given: A request carrying a transaction id header
-        final String txId = "3f1c2b7a-1d2e-4f5a-9b8c-0d1e2f3a4b5c";
-        final HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/fallback/throw"))
-            .header(TX_ID_HEADER, txId)
-            .GET()
-            .build();
+    @DisplayName("Should not echo request transaction id on /error fallback when transaction-id filter disabled")
+    public void shouldNotEchoTransactionIdOnFallbackWhenFilterDisabled() throws Exception {
+        // Given: Transaction-id filter disabled (default) and a request carrying the header
+        // When: Calling a path failing in a filter
+        final HttpResponse<String> response = get(port, "/fallback/throw", TX_ID);
 
-        // When: Calling a failing path
-        final HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-
-        // Then: The body reports that transaction id
+        // Then: txId absent, consistent with the MVC handler
         assertProblem(response, 500);
-        assertThat(ProblemJson.parse(response.body()), hasEntry("txId", txId));
+        assertThat(ProblemJson.parse(response.body()), not(hasKey("txId")));
+    }
+
+    @Test
+    @DisplayName("Should not echo request transaction id from MVC handler when transaction-id filter disabled")
+    public void shouldNotEchoTransactionIdFromHandlerWhenFilterDisabled() throws Exception {
+        // Given: Transaction-id filter disabled (default) and a request carrying the header
+        // When: Calling an endpoint whose controller throws
+        final HttpResponse<String> response = get(port, MVC_PATH, TX_ID);
+
+        // Then: Handled by MVC, txId absent
+        assertProblem(response, 400);
+        assertThat(ProblemJson.parse(response.body()), not(hasKey("txId")));
+    }
+
+    /** Transaction-id filter enabled: both paths report the incoming transaction id. */
+    @Nested
+    @DisplayName("With transaction-id filter enabled")
+    @TestPropertySource(properties = "jframe.logging.filters.transaction-id.enabled=true")
+    public class TransactionIdFilterEnabled {
+
+        @LocalServerPort
+        private int enabledPort;
+
+        @Test
+        @DisplayName("Should echo the request transaction id on /error fallback")
+        public void shouldEchoRequestTransactionId() throws Exception {
+            // Given: A request carrying a transaction id header
+            // When: Calling a path failing in a filter
+            final HttpResponse<String> response = get(enabledPort, "/fallback/throw", TX_ID);
+
+            // Then: The body reports that transaction id
+            assertProblem(response, 500);
+            assertThat(ProblemJson.parse(response.body()), hasEntry("txId", TX_ID));
+        }
+
+        @Test
+        @DisplayName("Should echo the request transaction id from MVC handler")
+        public void shouldEchoRequestTransactionIdFromHandler() throws Exception {
+            // Given: A request carrying a transaction id header
+            // When: Calling an endpoint whose controller throws
+            final HttpResponse<String> response = get(enabledPort, MVC_PATH, TX_ID);
+
+            // Then: The body reports that transaction id
+            assertProblem(response, 400);
+            assertThat(ProblemJson.parse(response.body()), hasEntry("txId", TX_ID));
+        }
     }
 
     @ParameterizedTest(name = "sendError({0}) -> {1}")
@@ -123,6 +172,14 @@ public class ErrorFallbackIntegrationTest {
         return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     }
 
+    static HttpResponse<String> get(final int port, final String path, final String txId) throws Exception {
+        final HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+            .header(TX_ID_HEADER, txId)
+            .GET()
+            .build();
+        return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
     private static void assertProblem(final HttpResponse<String> response, final int status) {
         assertThat(response.statusCode(), is(status));
         assertThat(response.headers().firstValue("Content-Type").orElse(""), startsWith(ProblemJson.PROBLEM_JSON));
@@ -140,8 +197,24 @@ public class ErrorFallbackIntegrationTest {
         }
 
         @Bean
+        FallbackMvcController fallbackMvcController() {
+            return new FallbackMvcController();
+        }
+
+        @Bean
         SecurityFilterChain permitAll(final HttpSecurity http) throws Exception {
             return http.csrf(csrf -> csrf.disable()).authorizeHttpRequests(auth -> auth.anyRequest().permitAll()).build();
+        }
+    }
+
+
+    /** Throws from inside the MVC handler chain. */
+    @RestController
+    static class FallbackMvcController {
+
+        @GetMapping(MVC_PATH)
+        public void badRequest() {
+            throw new BadRequestException();
         }
     }
 

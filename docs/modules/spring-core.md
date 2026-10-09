@@ -106,7 +106,7 @@ The `@ConditionalOnMissingBean` on the default ensures your bean takes precedenc
 
 ### Fallback `/error` controller
 
-`JFrameErrorController` handles errors outside MVC (exceptions thrown in filters, `response.sendError`) and returns jFrame Problem Details instead of Spring Boot's default error body. The `instance` field is set to the original request path. `txId` is included only when one exists (from header or thread context); never fabricated. Disabled via `jframe.exception.enabled=false`; backs off if the application defines its own `ErrorController`.
+`JFrameErrorController` handles errors outside MVC (exceptions thrown in filters, `response.sendError`) and returns jFrame Problem Details instead of Spring Boot's default error body. The `instance` field is set to the original request path. `txId` is included only when the transaction-ID filter is on, like the MVC handler. Disabled via `jframe.exception.enabled=false`; backs off if the application defines its own `ErrorController`.
 
 ### Error response format
 
