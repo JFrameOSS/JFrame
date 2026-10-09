@@ -13,6 +13,8 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@io.swagger.v3.oas.annotations.media.Schema(name = "ValidationProblemDetails")
+@org.eclipse.microprofile.openapi.annotations.media.Schema(name = "ValidationProblemDetails")
 public class ValidationErrorResponseResource extends ErrorResponseResource {
 
     /** The validation errors. */

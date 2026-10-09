@@ -21,12 +21,12 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -34,7 +34,6 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static io.github.jframe.util.constants.Constants.Headers.*;
 import static org.springframework.http.HttpStatus.*;
-import static org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON;
 
 /**
  * This class creates proper HTTP response bodies for exceptions.
@@ -63,11 +62,10 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
      * @return a response entity reflecting the current exception
      */
     @ResponseBody
-    @ResponseStatus(BAD_REQUEST)
     @ExceptionHandler(HttpException.class)
     @ApiResponse(
-        responseCode = "400 (default)",
-        description = "Default HTTP Exception",
+        responseCode = "400",
+        description = "Bad Request",
         content = @Content(
             mediaType = ProblemDetails.MEDIA_TYPE,
             schema = @Schema(implementation = ErrorResponseResource.class)
@@ -77,7 +75,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         final HttpStatus status = HttpStatus.valueOf(exception.getHttpStatus().getStatusCode());
         return ResponseEntity
             .status(status)
-            .contentType(APPLICATION_PROBLEM_JSON)
+            .contentType(mediaType(request))
             .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, status, request));
     }
 
@@ -96,7 +94,6 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
      * @return a response entity reflecting the current exception
      */
     @ResponseBody
-    @ResponseStatus(TOO_MANY_REQUESTS)
     @ExceptionHandler(RateLimitExceededException.class)
     @ApiResponse(
         responseCode = "429",
@@ -118,7 +115,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         return ResponseEntity
             .status(TOO_MANY_REQUESTS)
             .headers(headers)
-            .contentType(APPLICATION_PROBLEM_JSON)
+            .contentType(mediaType(request))
             .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, TOO_MANY_REQUESTS, request));
     }
 
@@ -132,21 +129,12 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
      * @return a response entity reflecting the current exception
      */
     @ResponseBody
-    @ResponseStatus(BAD_REQUEST)
     @ExceptionHandler(ValidationException.class)
-    @ApiResponse(
-        responseCode = "400 (Validation)",
-        description = "Input Validation Exception",
-        content = @Content(
-            mediaType = ProblemDetails.MEDIA_TYPE,
-            schema = @Schema(implementation = ValidationErrorResponseResource.class)
-        )
-    )
     public ResponseEntity<ValidationErrorResponseResource> handleJframeValidation(
         final ValidationException exception, final WebRequest request) {
         return ResponseEntity
             .status(BAD_REQUEST)
-            .contentType(APPLICATION_PROBLEM_JSON)
+            .contentType(mediaType(request))
             .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, BAD_REQUEST, request));
     }
 
@@ -158,7 +146,6 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
      * @return a response entity reflecting the current exception
      */
     @ResponseBody
-    @ResponseStatus(UNAUTHORIZED)
     @ExceptionHandler(AuthenticationException.class)
     @ApiResponse(
         responseCode = "401",
@@ -171,7 +158,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
     public ResponseEntity<ErrorResponseResource> handleAuthentication(final AuthenticationException exception, final WebRequest request) {
         return ResponseEntity
             .status(UNAUTHORIZED)
-            .contentType(APPLICATION_PROBLEM_JSON)
+            .contentType(mediaType(request))
             .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, UNAUTHORIZED, request));
     }
 
@@ -184,7 +171,6 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
      * @return a response entity reflecting the current exception
      */
     @ResponseBody
-    @ResponseStatus(FORBIDDEN)
     @ExceptionHandler(AccessDeniedException.class)
     @ApiResponse(
         responseCode = "403",
@@ -197,7 +183,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
     public ResponseEntity<ErrorResponseResource> handleAccessDenied(final AccessDeniedException exception, final WebRequest request) {
         return ResponseEntity
             .status(FORBIDDEN)
-            .contentType(APPLICATION_PROBLEM_JSON)
+            .contentType(mediaType(request))
             .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, FORBIDDEN, request));
     }
 
@@ -209,7 +195,6 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
      * @return a response entity reflecting the current exception
      */
     @ResponseBody
-    @ResponseStatus(INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Throwable.class)
     @ApiResponse(
         responseCode = "500",
@@ -223,7 +208,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         log.error(throwable.getMessage(), throwable);
         return ResponseEntity
             .status(INTERNAL_SERVER_ERROR)
-            .contentType(APPLICATION_PROBLEM_JSON)
+            .contentType(mediaType(request))
             .body(errorResponseEntityBuilder.buildErrorResponseBody(throwable, INTERNAL_SERVER_ERROR, request));
     }
 
@@ -283,7 +268,13 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
         return ResponseEntity
             .status(httpStatus)
             .headers(headers)
-            .contentType(APPLICATION_PROBLEM_JSON)
+            .contentType(mediaType(request))
             .body(errorResponseEntityBuilder.buildErrorResponseBody(exception, httpStatus, request));
+    }
+
+    /** Problem Details or plain JSON, per the request's {@code Accept} header. */
+    static MediaType mediaType(final WebRequest request) {
+        final String[] accept = request.getHeaderValues(HttpHeaders.ACCEPT);
+        return MediaType.parseMediaType(ProblemDetails.negotiateMediaType(accept == null ? null : String.join(",", accept)));
     }
 }

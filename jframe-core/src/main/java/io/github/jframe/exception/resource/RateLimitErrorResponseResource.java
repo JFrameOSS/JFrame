@@ -13,6 +13,8 @@ import java.time.OffsetDateTime;
  */
 @Getter
 @Setter
+@io.swagger.v3.oas.annotations.media.Schema(name = "RateLimitProblemDetails")
+@org.eclipse.microprofile.openapi.annotations.media.Schema(name = "RateLimitProblemDetails")
 public class RateLimitErrorResponseResource extends ErrorResponseResource {
 
     private int limit;

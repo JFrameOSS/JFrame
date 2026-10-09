@@ -7,6 +7,7 @@ import io.github.jframe.exception.resource.ProblemDetails;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -28,8 +29,6 @@ import jakarta.ws.rs.ext.ExceptionMapper;
  * @param <T> the exception type handled by the concrete mapper
  */
 public abstract class AbstractExceptionMapper<T extends Throwable> implements ExceptionMapper<T> {
-
-    private static final MediaType PROBLEM_JSON = MediaType.valueOf(ProblemDetails.MEDIA_TYPE);
 
     @Inject
     private ErrorResponseEntityBuilder errorResponseEntityBuilder;
@@ -57,7 +56,7 @@ public abstract class AbstractExceptionMapper<T extends Throwable> implements Ex
     protected Response buildInternalServerErrorResponse() {
         final int statusCode = Response.Status.INTERNAL_SERVER_ERROR.getStatusCode();
         return Response.status(statusCode)
-            .type(PROBLEM_JSON)
+            .type(negotiatedMediaType())
             .entity(buildBody(new IllegalStateException(), statusCode))
             .build();
     }
@@ -94,7 +93,13 @@ public abstract class AbstractExceptionMapper<T extends Throwable> implements Ex
      */
     protected Response.ResponseBuilder responseBuilder(final T exception, final int statusCode) {
         return Response.status(statusCode)
-            .type(PROBLEM_JSON)
+            .type(negotiatedMediaType())
             .entity(buildErrorBody(exception, statusCode));
+    }
+
+    /** Negotiates problem+json vs json from the (comma-joined) Accept header; never 406. */
+    private MediaType negotiatedMediaType() {
+        final String accept = requestContext == null ? null : requestContext.getHeaderString(HttpHeaders.ACCEPT);
+        return MediaType.valueOf(ProblemDetails.negotiateMediaType(accept));
     }
 }

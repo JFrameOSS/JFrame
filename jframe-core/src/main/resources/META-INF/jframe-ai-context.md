@@ -19,6 +19,9 @@ RuntimeException
 - `ValidationErrorResponseResource` — adds errors extension (List<ValidationErrorResource> with code + field)
 - `ConstraintViolationResponseResource` — for Jakarta Bean Validation
 - `RateLimitErrorResponseResource` — adds limit, remaining, resetDate extensions
+- `InvalidSortErrorResponseResource` — adds sortableFields extension
+- `InvalidSearchErrorResponseResource` — adds searchableFields extension
+- `InvalidPageErrorResponseResource` — adds rejectedParameter, rejectedValue extensions
 - `ExceptionResponseFactory` — functional interface to create responses from exceptions
 
 ## ECS Structured Logging

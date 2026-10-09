@@ -3,6 +3,7 @@ package io.github.jframe.exception;
 import io.github.jframe.exception.factory.DefaultExceptionResponseFactory;
 import io.github.jframe.exception.factory.ErrorResponseEntityBuilder;
 import io.github.jframe.exception.handler.JFrameResponseEntityExceptionHandler;
+import io.github.jframe.exception.handler.ProblemDetailsOpenApiCustomizer;
 import io.github.jframe.exception.handler.enricher.ErrorCodeResponseEnricher;
 import io.github.jframe.exception.handler.enricher.MethodArgumentNotValidResponseEnricher;
 import io.github.jframe.exception.handler.enricher.RateLimitResponseEnricher;
@@ -39,6 +40,7 @@ import org.springframework.context.annotation.Import;
         ObjectErrorResourceAssembler.class,
         ValidationErrorResourceAssembler.class,
         ErrorResponseEntityBuilder.class,
+        ProblemDetailsOpenApiCustomizer.class,
         DefaultExceptionResponseFactory.class
     }
 )

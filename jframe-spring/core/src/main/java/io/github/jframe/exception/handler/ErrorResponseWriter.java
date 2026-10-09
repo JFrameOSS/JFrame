@@ -2,6 +2,7 @@ package io.github.jframe.exception.handler;
 
 import io.github.jframe.exception.ApiError;
 import io.github.jframe.exception.HttpException;
+import io.github.jframe.exception.JFrameErrorCode;
 import io.github.jframe.exception.factory.ErrorResponseEntityBuilder;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.ProblemDetails;
@@ -11,10 +12,12 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.Serial;
+import java.util.Collections;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.Response;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.request.ServletWebRequest;
@@ -31,7 +34,9 @@ public class ErrorResponseWriter {
     private static final ObjectMapper FALLBACK_MAPPER = JsonMapper.builder().build();
 
     /**
-     * Writes a Problem Details error response.
+     * Writes a Problem Details error response from loose values.
+     *
+     * <p>For 401/403 the detail is always the reason phrase; a {@code null} code falls back to the status' {@link JFrameErrorCode}.
      *
      * @param request     the HTTP request
      * @param response    the HTTP response to write to
@@ -39,14 +44,24 @@ public class ErrorResponseWriter {
      * @param errorCode   the application error code (nullable)
      * @param errorReason the error reason (nullable)
      * @throws IOException if writing to the response fails
+     * @deprecated use {@link #write(HttpServletRequest, HttpServletResponse, ApiError)}
      */
+    @Deprecated(
+        forRemoval = true,
+        since = "1.8.0"
+    )
     public static void write(
         final HttpServletRequest request,
         final HttpServletResponse response,
         final Response.Status status,
         final String errorCode,
         final String errorReason) throws IOException {
-        write(request, response, new SimpleApiError(errorCode, errorReason, status));
+        final boolean security = status == Response.Status.UNAUTHORIZED || status == Response.Status.FORBIDDEN;
+        final String reason = security ? status.getReasonPhrase() : errorReason;
+        final String code = errorCode == null
+            ? JFrameErrorCode.forStatus(status.getStatusCode()).map(JFrameErrorCode::getErrorCode).orElse(status.name())
+            : errorCode;
+        write(request, response, new SimpleApiError(code, reason, status));
     }
 
     /**
@@ -78,7 +93,8 @@ public class ErrorResponseWriter {
         }
 
         response.setStatus(status.value());
-        response.setContentType(ProblemDetails.MEDIA_TYPE);
+        final String accept = String.join(",", Collections.list(request.getHeaders(HttpHeaders.ACCEPT)));
+        response.setContentType(ProblemDetails.negotiateMediaType(accept.isEmpty() ? null : accept));
         mapper.writeValue(response.getOutputStream(), resource);
     }
 

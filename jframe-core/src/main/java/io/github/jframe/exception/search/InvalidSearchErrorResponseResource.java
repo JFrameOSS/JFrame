@@ -10,6 +10,8 @@ import java.util.List;
  * Extends the standard error body with {@code rejectedField}, {@code rejectedValue} and {@code searchableFields}.
  */
 @Getter
+@io.swagger.v3.oas.annotations.media.Schema(name = "InvalidSearchProblemDetails")
+@org.eclipse.microprofile.openapi.annotations.media.Schema(name = "InvalidSearchProblemDetails")
 public class InvalidSearchErrorResponseResource extends ErrorResponseResource {
 
     private final String rejectedField;

@@ -10,6 +10,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -52,7 +54,7 @@ class ProblemDetailsOpenApiTest {
         final Set<String> problemSchemas = problemSchemaNames(document);
 
         // Then: Each has the RFC 9457 + errorCode members and no 'extensions' wrapper
-        assertThat(problemSchemas, hasItem("ErrorResponseResource"));
+        assertThat(problemSchemas, hasItem("ProblemDetails"));
         for (final String name : problemSchemas) {
             final Map<String, Object> properties = properties(schemas, name);
             assertThat(name, properties.keySet(), hasItems("type", "title", "status", "detail", "instance", "errorCode"));
@@ -76,11 +78,148 @@ class ProblemDetailsOpenApiTest {
                 );
                 final Map<String, Object> media = (Map<String, Object>) content.get(ProblemJson.PROBLEM_JSON);
                 if (media != null) {
-                    final String ref = (String) ((Map<String, Object>) media.get("schema")).get("$ref");
-                    names.add(ref.substring(REF_PREFIX.length()));
+                    names.addAll(refs((Map<String, Object>) media.get("schema")));
                 }
             });
         }));
+        return names;
+    }
+
+    @Test
+    @DisplayName("Should publish ProblemDetails schema names and no *ResponseResource names")
+    void shouldPublishProblemDetailsSchemaNames() throws Exception {
+        // Given: The generated OpenAPI document
+        final Map<String, Object> document = apiDocs();
+
+        // When: Reading the component schema names
+        final Set<String> names = schemas(document).keySet();
+
+        // Then: ProblemDetails naming, no Java resource class names
+        assertThat(
+            names,
+            hasItems(
+                "ProblemDetails",
+                "ValidationProblemDetails",
+                "RateLimitProblemDetails",
+                "InvalidSortProblemDetails",
+                "InvalidSearchProblemDetails",
+                "InvalidPageProblemDetails"
+            )
+        );
+        assertThat(names, everyItem(not(endsWith("ResponseResource"))));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+        delimiter = '|',
+        value = {
+            "InvalidSortProblemDetails | rejectedField,sortableFields",
+            "InvalidSearchProblemDetails | rejectedField,rejectedValue,searchableFields",
+            "InvalidPageProblemDetails | rejectedParameter,rejectedValue"
+        }
+    )
+    @DisplayName("Should document invalid sort/search/page extension members")
+    void shouldDocumentInvalidQueryExtensionMembers(final String schemaName, final String members) throws Exception {
+        // Given: The generated OpenAPI document
+        final Map<String, Object> document = apiDocs();
+
+        // When: Reading the schema's (inherited) properties
+        final Map<String, Object> properties = properties(schemas(document), schemaName);
+
+        // Then: RFC 9457 members plus the extension members
+        assertThat(properties.keySet(), hasItems("type", "title", "status", "detail", "instance", "errorCode"));
+        assertThat(properties.keySet(), hasItems(members.split(",")));
+    }
+
+    @Test
+    @DisplayName("Should reference every 400 variant from a single 400 response")
+    @SuppressWarnings("unchecked")
+    void shouldReferenceAll400Variants() throws Exception {
+        // Given: The generated OpenAPI document
+        final Map<String, Object> document = apiDocs();
+
+        // When: Collecting schemas of every problem+json 400 response
+        final Set<String> variants = new HashSet<>();
+        ((Map<String, Object>) document.get("paths")).values().forEach(
+            pathItem -> ((Map<String, Object>) pathItem).values()
+                .forEach(operation -> {
+                    final Map<String, Object> responses = (Map<String, Object>) ((Map<String, Object>) operation).getOrDefault(
+                        "responses",
+                        Map.of()
+                    );
+                    final Map<String, Object> badRequest = (Map<String, Object>) responses.get("400");
+                    if (badRequest != null) {
+                        final Map<String, Object> content = (Map<String, Object>) badRequest.getOrDefault("content", Map.of());
+                        final Map<String, Object> media = (Map<String, Object>) content.get(ProblemJson.PROBLEM_JSON);
+                        if (media != null) {
+                            variants.addAll(refs((Map<String, Object>) media.get("schema")));
+                        }
+                    }
+                })
+        );
+
+        // Then: All 400 variants are referenced
+        assertThat(
+            variants,
+            hasItems(
+                "ProblemDetails",
+                "ValidationProblemDetails",
+                "InvalidSortProblemDetails",
+                "InvalidSearchProblemDetails",
+                "InvalidPageProblemDetails"
+            )
+        );
+    }
+
+    @Test
+    @DisplayName("Should not document a wildcard media type on error responses")
+    @SuppressWarnings("unchecked")
+    void shouldNotDocumentWildcardMediaTypeOnErrorResponses() throws Exception {
+        // Given: The generated OpenAPI document
+        final Map<String, Object> document = apiDocs();
+
+        // When: Collecting error responses declaring */* content
+        final Set<String> offenders = new HashSet<>();
+        ((Map<String, Object>) document.get("paths")).forEach(
+            (path, pathItem) -> ((Map<String, Object>) pathItem).forEach(
+                (method, operation) -> ((Map<String, Object>) ((Map<String, Object>) operation).getOrDefault("responses", Map.of()))
+                    .forEach((code, response) -> {
+                        final Map<String, Object> content = (Map<String, Object>) ((Map<String, Object>) response).getOrDefault(
+                            "content",
+                            Map.of()
+                        );
+                        if (code.matches("[45]\\d\\d") && content.containsKey("*/*")) {
+                            offenders.add(method + " " + path + " " + code);
+                        }
+                    })
+            )
+        );
+
+        // Then: None found
+        assertThat(offenders, is(empty()));
+    }
+
+    private Map<String, Object> apiDocs() throws Exception {
+        final MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+        return ProblemJson.parse(mockMvc.perform(get("/v3/api-docs")).andReturn().getResponse().getContentAsString());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> schemas(final Map<String, Object> document) {
+        return (Map<String, Object>) ((Map<String, Object>) document.get("components")).get("schemas");
+    }
+
+    /** Schema names referenced directly or via {@code oneOf}. */
+    @SuppressWarnings("unchecked")
+    private static Set<String> refs(final Map<String, Object> schema) {
+        final Set<String> names = new HashSet<>();
+        final String ref = (String) schema.get("$ref");
+        if (ref != null) {
+            names.add(ref.substring(REF_PREFIX.length()));
+        }
+        for (final Object part : (List<Object>) schema.getOrDefault("oneOf", List.of())) {
+            names.addAll(refs((Map<String, Object>) part));
+        }
         return names;
     }
 
@@ -88,6 +227,7 @@ class ProblemDetailsOpenApiTest {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> properties(final Map<String, Object> schemas, final String name) {
         final Map<String, Object> schema = (Map<String, Object>) schemas.get(name);
+        assertThat(name, schema, is(notNullValue()));
         final Map<String, Object> result = new LinkedHashMap<>((Map<String, Object>) schema.getOrDefault("properties", Map.of()));
         for (final Object part : (List<Object>) schema.getOrDefault("allOf", List.of())) {
             final Map<String, Object> partSchema = (Map<String, Object>) part;

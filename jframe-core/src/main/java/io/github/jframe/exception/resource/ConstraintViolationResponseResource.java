@@ -14,6 +14,8 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@io.swagger.v3.oas.annotations.media.Schema(name = "ConstraintViolationProblemDetails")
+@org.eclipse.microprofile.openapi.annotations.media.Schema(name = "ConstraintViolationProblemDetails")
 public class ConstraintViolationResponseResource extends ErrorResponseResource {
 
     /** The list of constraint violation errors. */

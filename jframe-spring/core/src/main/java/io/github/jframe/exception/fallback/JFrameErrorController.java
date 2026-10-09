@@ -2,15 +2,18 @@ package io.github.jframe.exception.fallback;
 
 import io.github.jframe.exception.factory.ErrorResponseEntityBuilder;
 import io.github.jframe.exception.resource.ErrorResponseResource;
+import io.github.jframe.exception.resource.ProblemDetails;
 import io.github.jframe.logging.model.TransactionId;
 import io.swagger.v3.oas.annotations.Hidden;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.boot.webmvc.error.ErrorController;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -64,7 +67,9 @@ public class JFrameErrorController implements ErrorController {
                 throwable instanceof final Throwable t ? t : null
             );
         }
-        return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(body);
+        return ResponseEntity.status(status).contentType(MediaType.parseMediaType(ProblemDetails.negotiateMediaType(accept(request)))).body(
+            body
+        );
     }
 
     private static HttpStatus status(final HttpServletRequest request) {
@@ -91,5 +96,10 @@ public class JFrameErrorController implements ErrorController {
     private static String originalPath(final HttpServletRequest request) {
         final Object uri = request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
         return uri instanceof final String path ? path : request.getRequestURI();
+    }
+
+    private static String accept(final HttpServletRequest request) {
+        final String accept = String.join(",", Collections.list(request.getHeaders(HttpHeaders.ACCEPT)));
+        return accept.isEmpty() ? null : accept;
     }
 }

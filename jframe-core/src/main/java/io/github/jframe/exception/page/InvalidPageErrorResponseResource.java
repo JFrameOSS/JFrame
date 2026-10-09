@@ -8,6 +8,8 @@ import lombok.Getter;
  * Extends the standard error body with {@code rejectedParameter} and {@code rejectedValue}.
  */
 @Getter
+@io.swagger.v3.oas.annotations.media.Schema(name = "InvalidPageProblemDetails")
+@org.eclipse.microprofile.openapi.annotations.media.Schema(name = "InvalidPageProblemDetails")
 public class InvalidPageErrorResponseResource extends ErrorResponseResource {
 
     private final String rejectedParameter;

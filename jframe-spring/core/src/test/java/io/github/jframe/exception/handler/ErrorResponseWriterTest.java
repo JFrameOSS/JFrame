@@ -1,5 +1,6 @@
 package io.github.jframe.exception.handler;
 
+import io.github.jframe.exception.JFrameErrorCode;
 import io.github.jframe.logging.model.TransactionId;
 import io.github.jframe.tests.spring.TestApplication;
 import io.github.jframe.tests.spring.TestEnricherConfiguration;
@@ -7,13 +8,18 @@ import io.github.jframe.tests.spring.TestSecurityConfiguration;
 import io.github.support.ProblemJson;
 import io.github.support.fixtures.TestApiError;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.UUID;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -44,6 +50,7 @@ import static org.hamcrest.Matchers.*;
         TestEnricherConfiguration.class
     }
 )
+@SuppressWarnings("removal")
 public class ErrorResponseWriterTest {
 
     @Autowired
@@ -118,5 +125,75 @@ public class ErrorResponseWriterTest {
 
         // Then: Optional members may be absent, body still conforms
         ProblemJson.assertRfc9457(response.getContentAsString(), 401);
+    }
+
+    @Test
+    @DisplayName("Should mark loose-values overload deprecated for removal since 1.8.0")
+    public void shouldMarkLooseValuesOverloadDeprecatedForRemoval() throws Exception {
+        // Given: The 5-arg overload
+        final Method method = ErrorResponseWriter.class.getMethod(
+            "write",
+            HttpServletRequest.class,
+            HttpServletResponse.class,
+            Response.Status.class,
+            String.class,
+            String.class
+        );
+
+        // When: Reading its deprecation
+        final Deprecated deprecated = method.getAnnotation(Deprecated.class);
+
+        // Then: Deprecated for removal since 1.8.0
+        assertThat(deprecated, is(notNullValue()));
+        assertThat(deprecated.forRemoval(), is(true));
+        assertThat(deprecated.since(), is("1.8.0"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+        {
+            "UNAUTHORIZED, 401, Unauthorized",
+            "FORBIDDEN, 403, Forbidden"
+        }
+    )
+    @DisplayName("Should never echo the given reason for 401/403 via loose-values overload")
+    public void shouldNotEchoReasonForAuthErrors(final Response.Status status, final int code, final String phrase) throws Exception {
+        // Given: A sensitive reason
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/secure");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing via the loose-values overload
+        ErrorResponseWriter.write(request, response, status, "TOKEN_EXPIRED", "user bob token abc123 expired");
+
+        // Then: Detail is the reason phrase, reason not leaked
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(response.getStatus(), is(code));
+        assertThat(body, hasEntry("detail", phrase));
+        assertThat(response.getContentAsString(), not(containsString("abc123")));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+        {
+            "UNAUTHORIZED",
+            "FORBIDDEN",
+            "NOT_FOUND",
+            "BAD_REQUEST"
+        }
+    )
+    @DisplayName("Should use the JFrameErrorCode for the status when errorCode is null")
+    public void shouldUseJFrameErrorCodeWhenErrorCodeNull(final Response.Status status) throws Exception {
+        // Given: No error code
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/secure");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing via the loose-values overload
+        ErrorResponseWriter.write(request, response, status, null, null);
+
+        // Then: errorCode is the JFrameErrorCode for the status
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(body, hasEntry("errorCode", JFrameErrorCode.valueOf(status.name()).getErrorCode()));
     }
 }

@@ -41,7 +41,11 @@ public class ErrorCodeResponseEnricher implements ErrorResponseEnricher {
             resource.setError(JFrameErrorCode.INTERNAL_SERVER_ERROR);
         } else {
             final Response.Status status = Response.Status.fromStatusCode(statusCode);
-            resource.setErrorCode(status != null ? status.name() : String.valueOf(statusCode));
+            resource.setErrorCode(
+                JFrameErrorCode.forStatus(statusCode)
+                    .map(JFrameErrorCode::name)
+                    .orElse(status != null ? status.name() : String.valueOf(statusCode))
+            );
             resource.setDetail(status != null ? status.getReasonPhrase() : null);
         }
     }

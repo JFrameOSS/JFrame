@@ -10,6 +10,8 @@ import java.util.List;
  * Extends the standard error body with {@code rejectedField} and {@code sortableFields}.
  */
 @Getter
+@io.swagger.v3.oas.annotations.media.Schema(name = "InvalidSortProblemDetails")
+@org.eclipse.microprofile.openapi.annotations.media.Schema(name = "InvalidSortProblemDetails")
 public class InvalidSortErrorResponseResource extends ErrorResponseResource {
 
     private final String rejectedField;

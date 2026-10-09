@@ -146,7 +146,7 @@ When tracing is enabled, `TracingResponseEnricher` adds `traceId` and `spanId` a
 {
   "title": "Internal Server Error",
   "status": 500,
-  "detail": "An unexpected error occurred",
+  "detail": "Internal server error",
   "instance": "/api/users",
   "errorCode": "INTERNAL_SERVER_ERROR",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",

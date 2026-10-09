@@ -26,7 +26,9 @@ dependencies {
     // ======= COMPILE-ONLY (provided by consumer) =======
     compileOnly("jakarta.persistence:jakarta.persistence-api:${retrieve("jakartaPersistenceVersion")}")
     compileOnly("jakarta.annotation:jakarta.annotation-api:${retrieve("jakartaAnnotationVersion")}")
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
+    // OpenAPI schema-name annotations: visible to consumers' compilers (avoids missing-annotation warnings), never at runtime
+    compileOnlyApi("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
+    compileOnlyApi("org.eclipse.microprofile.openapi:microprofile-openapi-api:${retrieve("microprofileOpenApiVersion")}")
     compileOnly("org.jspecify:jspecify:${retrieve("jspecifyVersion")}")
     compileOnly("net.ttddyy:datasource-proxy:${retrieve("datasourceProxyVersion")}")
 

@@ -1,5 +1,7 @@
 package io.github.jframe.exception;
 
+import java.util.Arrays;
+import java.util.Optional;
 import jakarta.ws.rs.core.Response;
 
 /**
@@ -11,8 +13,13 @@ import jakarta.ws.rs.core.Response;
  */
 public enum JFrameErrorCode implements ApiError {
 
-    BAD_REQUEST("BAD_REQUEST", "Bad request", Response.Status.BAD_REQUEST),
-    NOT_FOUND("NOT_FOUND", "Resource not found", Response.Status.NOT_FOUND),
+    BAD_REQUEST(Response.Status.BAD_REQUEST),
+    UNAUTHORIZED(Response.Status.UNAUTHORIZED),
+    FORBIDDEN(Response.Status.FORBIDDEN),
+    NOT_FOUND(Response.Status.NOT_FOUND),
+    METHOD_NOT_ALLOWED(Response.Status.METHOD_NOT_ALLOWED),
+    NOT_ACCEPTABLE(Response.Status.NOT_ACCEPTABLE),
+    UNSUPPORTED_MEDIA_TYPE(Response.Status.UNSUPPORTED_MEDIA_TYPE),
     RATE_LIMIT_EXCEEDED("RATE_LIMIT_EXCEEDED", "Rate limit exceeded", Response.Status.TOO_MANY_REQUESTS),
     VALIDATION_ERROR("VALIDATION_ERROR", "Validation failed", Response.Status.BAD_REQUEST),
     INTERNAL_SERVER_ERROR(
@@ -29,10 +36,27 @@ public enum JFrameErrorCode implements ApiError {
     private final String reason;
     private final Response.Status httpStatus;
 
+    /** Status-derived code: name of the status, reason phrase as reason. */
+    JFrameErrorCode(final Response.Status httpStatus) {
+        this(httpStatus.name(), httpStatus.getReasonPhrase(), httpStatus);
+    }
+
     JFrameErrorCode(final String errorCode, final String reason, final Response.Status httpStatus) {
         this.errorCode = errorCode;
         this.reason = reason;
         this.httpStatus = httpStatus;
+    }
+
+    /**
+     * Returns the status-derived code for the status.
+     *
+     * @param status the HTTP status code
+     * @return the matching code, or empty when none is status-derived
+     */
+    public static Optional<JFrameErrorCode> forStatus(final int status) {
+        return Arrays.stream(values())
+            .filter(code -> code.name().equals(code.httpStatus.name()) && code.httpStatus.getStatusCode() == status)
+            .findFirst();
     }
 
     @Override

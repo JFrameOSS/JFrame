@@ -30,7 +30,9 @@ public class ErrorCodeResponseEnricher implements ErrorResponseEnricher {
         } else if (httpStatus.is5xxServerError()) {
             resource.setError(JFrameErrorCode.INTERNAL_SERVER_ERROR);
         } else {
-            resource.setErrorCode(httpStatus.name());
+            resource.setErrorCode(
+                JFrameErrorCode.forStatus(httpStatus.value()).map(JFrameErrorCode::getErrorCode).orElse(httpStatus.name())
+            );
             resource.setDetail(httpStatus.getReasonPhrase());
         }
     }

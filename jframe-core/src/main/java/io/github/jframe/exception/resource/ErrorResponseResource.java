@@ -39,6 +39,8 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
         "spanId"
     }
 )
+@io.swagger.v3.oas.annotations.media.Schema(name = "ProblemDetails")
+@org.eclipse.microprofile.openapi.annotations.media.Schema(name = "ProblemDetails")
 public class ErrorResponseResource {
 
     private static final ClassValue<Set<String>> PROPERTY_NAMES = new ClassValue<>() {
