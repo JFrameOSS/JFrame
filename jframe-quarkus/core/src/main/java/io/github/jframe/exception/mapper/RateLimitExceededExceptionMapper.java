@@ -1,10 +1,9 @@
 package io.github.jframe.exception.mapper;
 
 import io.github.jframe.exception.core.RateLimitExceededException;
-import io.github.jframe.exception.resource.ErrorResponseResource;
+import io.quarkus.arc.properties.IfBuildProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
@@ -23,6 +22,11 @@ import static jakarta.ws.rs.core.Response.Status.TOO_MANY_REQUESTS;
  * Extends {@link AbstractExceptionMapper} which provides shared null-check and response-building logic.
  */
 @Provider
+@IfBuildProperty(
+    name = "jframe.exception.enabled",
+    stringValue = "true",
+    enableIfMissing = true
+)
 @ApplicationScoped
 public class RateLimitExceededExceptionMapper extends AbstractExceptionMapper<RateLimitExceededException> {
 
@@ -34,10 +38,7 @@ public class RateLimitExceededExceptionMapper extends AbstractExceptionMapper<Ra
      */
     @Override
     public Response toResponse(final RateLimitExceededException exception) {
-        final ErrorResponseResource resource = buildErrorBody(exception, TOO_MANY_REQUESTS.getStatusCode());
-        final Response.ResponseBuilder builder = Response.status(TOO_MANY_REQUESTS)
-            .type(MediaType.APPLICATION_JSON_TYPE)
-            .entity(resource)
+        final Response.ResponseBuilder builder = responseBuilder(exception, TOO_MANY_REQUESTS.getStatusCode())
             .header(X_RATELIMIT_LIMIT, String.valueOf(exception.getLimit()))
             .header(X_RATELIMIT_REMAINING, String.valueOf(exception.getRemaining()));
 

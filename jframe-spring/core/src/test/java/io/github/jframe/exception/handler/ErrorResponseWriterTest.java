@@ -1,156 +1,358 @@
 package io.github.jframe.exception.handler;
 
-import io.github.jframe.exception.ApiError;
-import io.github.support.UnitTest;
+import io.github.jframe.exception.HttpException;
+import io.github.jframe.exception.JFrameErrorCode;
+import io.github.jframe.exception.core.RateLimitExceededException;
+import io.github.jframe.exception.core.ValidationException;
+import io.github.jframe.logging.model.TransactionId;
+import io.github.jframe.tests.spring.TestApplication;
+import io.github.jframe.tests.spring.TestEnricherConfiguration;
+import io.github.jframe.tests.spring.TestSecurityConfiguration;
+import io.github.jframe.validation.ValidationResult;
+import io.github.support.ProblemJson;
 import io.github.support.fixtures.TestApiError;
 
-import java.io.IOException;
+import java.lang.reflect.Method;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.Response;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.context.WebApplicationContext;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 /**
- * Tests for {@link ErrorResponseWriter}.
+ * Tests for {@link ErrorResponseWriter} used from servlet filters.
  *
- * <p>Verifies the ErrorResponseWriter functionality including:
- * <ul>
- * <li>JSON error response body written to HttpServletResponse</li>
- * <li>Content-Type set to application/json</li>
- * <li>HTTP status code set from Response.Status</li>
- * <li>ErrorResponseResource fields populated from request and arguments</li>
- * <li>ApiError overload extracts status, errorCode, and errorReason</li>
- * <li>errorCode always serialized when provided; absent query string handled correctly</li>
- * </ul>
+ * <p>Runs inside an application context: the writer must use the application's JSON mapper and enrichers.
  */
-@DisplayName("Exception Handler - Error Response Writer")
-public class ErrorResponseWriterTest extends UnitTest {
+@DisplayName("Spring Integration - Filter-level Error Response Writer")
+@SpringBootTest(
+    classes = TestApplication.class,
+    webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+    properties = {
+        "jframe.exception.type-base-uri=https://errors.example.com/",
+        "jframe.logging.filters.transaction-id.enabled=true"
+    }
+)
+@Import(
+    {
+        TestSecurityConfiguration.class,
+        TestEnricherConfiguration.class
+    }
+)
+@SuppressWarnings("removal")
+public class ErrorResponseWriterTest {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    @Autowired
+    private WebApplicationContext webApplicationContext;
 
-    // ======================== write(req, res, status, errorCode, errorReason) ========================
-
-    @Test
-    @DisplayName("Should write JSON error response with status code and error code")
-    public void shouldWriteJsonErrorResponseWithStatusCodeAndErrorCode() throws IOException {
-        // Given: A GET request and a writable response with a specific status, code, and reason
-        final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/users");
-        final MockHttpServletResponse response = new MockHttpServletResponse();
-        final Response.Status status = Response.Status.BAD_REQUEST;
-        final String errorCode = "JFRAME_BAD_REQUEST";
-        final String errorReason = "Input validation failed";
-
-        // When: Writing the error response
-        ErrorResponseWriter.write(request, response, status, errorCode, errorReason);
-
-        // Then: Response body contains statusCode, errorCode and errorReason; cause is absent
-        assertThat(response.getContentType(), containsString(MediaType.APPLICATION_JSON_VALUE));
-        final Map<String, Object> body = parseBody(response);
-        assertThat(body.get("statusCode"), is(equalTo(400)));
-        assertThat(body.get("errorCode"), is(equalTo(errorCode)));
-        assertThat(body.get("errorReason"), is(equalTo(errorReason)));
-        assertThat(body.get("cause"), is(nullValue()));
+    @AfterEach
+    public void clearTransactionId() {
+        TransactionId.remove();
     }
 
     @Test
-    @DisplayName("Should always serialize errorCode when provided")
-    public void shouldAlwaysSerializeErrorCodeWhenProvided() throws IOException {
-        // Given: A request with an error code (errorCode is always populated — never null in the new design)
-        final MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/data");
+    @DisplayName("Should write same Problem Details as the handler, including enrichers")
+    public void shouldWriteProblemDetailsWithEnrichersWhenCalledFromFilter() throws Exception {
+        // Given: A filter request inside the application and a known transaction id
+        final UUID txId = UUID.randomUUID();
+        TransactionId.set(txId);
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/secure");
         final MockHttpServletResponse response = new MockHttpServletResponse();
-        final String errorCode = "INTERNAL_SERVER_ERROR";
 
-        // When: Writing error response with a non-null error code
-        ErrorResponseWriter.write(request, response, Response.Status.INTERNAL_SERVER_ERROR, errorCode, "Unexpected error");
+        // When: Writing an UNAUTHORIZED ApiError
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new TestApiError("TOKEN_EXPIRED", "Token has expired", Response.Status.UNAUTHORIZED)
+        );
 
-        // Then: errorCode is present in JSON body (always populated, never absent)
-        final Map<String, Object> body = parseBody(response);
-        assertThat(body.get("errorCode"), is(equalTo(errorCode)));
-        assertThat(body.get("errorReason"), is(equalTo("Unexpected error")));
+        // Then: Problem Details body, content type and enriched extensions
+        ProblemJson.assertRfc9457(response.getContentAsString(), response.getStatus());
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(response.getStatus(), is(401));
+        assertThat(response.getContentType(), startsWith(ProblemJson.PROBLEM_JSON));
+        assertThat(body, hasEntry("type", "https://errors.example.com/TOKEN_EXPIRED"));
+        assertThat(body, hasEntry("title", "Unauthorized"));
+        assertThat(body, hasEntry("status", 401));
+        assertThat(body, hasEntry("detail", "Token has expired"));
+        assertThat(body, hasEntry("instance", "/api/secure"));
+        assertThat(body, hasEntry("errorCode", "TOKEN_EXPIRED"));
+        assertThat(body, hasEntry("txId", txId.toString()));
+        assertThat(body, hasEntry("tenant", "acme"));
+        assertThat(body, not(hasKey("statusCode")));
+        assertThat(body, not(hasKey("method")));
     }
 
     @Test
-    @DisplayName("Should set HTTP status on response")
-    public void shouldSetHttpStatusOnResponse() throws IOException {
-        // Given: A request and a writable response
-        final MockHttpServletRequest request = new MockHttpServletRequest("DELETE", "/api/resource/1");
+    @DisplayName("Should write RFC 9457 conformant body without application context")
+    public void shouldWriteConformantBodyWhenNoApplicationContext() throws Exception {
+        // Given: A request outside any web application context
+        final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/secure");
         final MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // When: Writing error response with NOT_FOUND status
-        ErrorResponseWriter.write(request, response, Response.Status.NOT_FOUND, "JFRAME_NOT_FOUND", "Resource not found");
+        // When: Writing a FORBIDDEN error via the fallback path
+        ErrorResponseWriter.write(request, response, Response.Status.FORBIDDEN, "ACCESS_DENIED", "Access denied");
 
-        // Then: Response HTTP status code matches the provided status
-        assertThat(response.getStatus(), is(equalTo(404)));
-    }
-
-    // ======================== write(req, res, apiError) ========================
-
-    @Test
-    @DisplayName("Should write JSON error response from ApiError")
-    public void shouldWriteJsonErrorResponseFromApiError() throws IOException {
-        // Given: A request and an ApiError carrying status, errorCode, and errorReason
-        final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/items");
-        final MockHttpServletResponse response = new MockHttpServletResponse();
-        final ApiError apiError = new TestApiError("ITEM_NOT_FOUND", "The requested item does not exist", Response.Status.NOT_FOUND);
-
-        // When: Writing error response from ApiError
-        ErrorResponseWriter.write(request, response, apiError);
-
-        // Then: Status, errorCode, and errorReason are all extracted from ApiError
-        assertThat(response.getStatus(), is(equalTo(404)));
-        final Map<String, Object> body = parseBody(response);
-        assertThat(body.get("errorCode"), is(equalTo("ITEM_NOT_FOUND")));
-        assertThat(body.get("errorReason"), is(equalTo("The requested item does not exist")));
+        // Then: Still a valid problem, type omitted
+        ProblemJson.assertRfc9457(response.getContentAsString(), 403);
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(body, not(hasKey("type")));
+        assertThat(body, hasEntry("instance", "/api/secure"));
     }
 
     @Test
-    @DisplayName("Should populate request info from HttpServletRequest")
-    public void shouldPopulateRequestInfoFromHttpServletRequest() throws IOException {
-        // Given: A request with URI, method, query string, and content type
-        final MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/search");
-        request.setQueryString("page=1&size=10");
-        request.setContentType("application/json");
+    @DisplayName("Should write RFC 9457 conformant body when request has no URI")
+    public void shouldWriteConformantBodyWhenRequestUriEmpty() throws Exception {
+        // Given: A request without URI and no application context
+        final MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI(null);
         final MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // When: Writing error response
-        ErrorResponseWriter.write(request, response, Response.Status.BAD_REQUEST, "JFRAME_BAD_REQUEST", "Search failed");
+        // When: Writing an error
+        ErrorResponseWriter.write(request, response, Response.Status.UNAUTHORIZED, null, null);
 
-        // Then: Request metadata is populated in the response body
-        final Map<String, Object> body = parseBody(response);
-        assertThat(body.get("uri"), is(equalTo("/api/search")));
-        assertThat(body.get("method"), is(equalTo("POST")));
-        assertThat(body.get("query"), is(equalTo("page=1&size=10")));
-        assertThat(body.get("contentType"), is(equalTo("application/json")));
+        // Then: Optional members may be absent, body still conforms
+        ProblemJson.assertRfc9457(response.getContentAsString(), 401);
     }
 
     @Test
-    @DisplayName("Should set query to null when request has no query string")
-    public void shouldSetQueryToNullWhenRequestHasNoQueryString() throws IOException {
-        // Given: A request without a query string
-        final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/health");
-        final MockHttpServletResponse response = new MockHttpServletResponse();
+    @DisplayName("Should mark loose-values overload deprecated for removal since 1.8.0")
+    public void shouldMarkLooseValuesOverloadDeprecatedForRemoval() throws Exception {
+        // Given: The 5-arg overload
+        final Method method = ErrorResponseWriter.class.getMethod(
+            "write",
+            HttpServletRequest.class,
+            HttpServletResponse.class,
+            Response.Status.class,
+            String.class,
+            String.class
+        );
 
-        // When: Writing error response
-        ErrorResponseWriter.write(request, response, Response.Status.SERVICE_UNAVAILABLE, "INTERNAL_SERVER_ERROR", "Service unavailable");
+        // When: Reading its deprecation
+        final Deprecated deprecated = method.getAnnotation(Deprecated.class);
 
-        // Then: Query field is absent from JSON body (NON_NULL serialization)
-        final Map<String, Object> body = parseBody(response);
-        assertThat(body.get("query"), is(nullValue()));
+        // Then: Deprecated for removal since 1.8.0
+        assertThat(deprecated, is(notNullValue()));
+        assertThat(deprecated.forRemoval(), is(true));
+        assertThat(deprecated.since(), is("1.8.0"));
     }
 
-    // ======================== HELPERS ========================
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+        {
+            "UNAUTHORIZED, 401, Unauthorized",
+            "FORBIDDEN, 403, Forbidden"
+        }
+    )
+    @DisplayName("Should never echo the given reason for 401/403 via loose-values overload")
+    public void shouldNotEchoReasonForAuthErrors(final Response.Status status, final int code, final String phrase) throws Exception {
+        // Given: A sensitive reason
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/secure");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
 
-    private Map<String, Object> parseBody(final MockHttpServletResponse response) throws IOException {
-        return MAPPER.readValue(response.getContentAsString(), new TypeReference<Map<String, Object>>() {});
+        // When: Writing via the loose-values overload
+        ErrorResponseWriter.write(request, response, status, "TOKEN_EXPIRED", "user bob token abc123 expired");
+
+        // Then: Detail is the reason phrase, reason not leaked
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(response.getStatus(), is(code));
+        assertThat(body, hasEntry("detail", phrase));
+        assertThat(response.getContentAsString(), not(containsString("abc123")));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+        {
+            "UNAUTHORIZED",
+            "FORBIDDEN",
+            "NOT_FOUND",
+            "BAD_REQUEST"
+        }
+    )
+    @DisplayName("Should use the JFrameErrorCode for the status when errorCode is null")
+    public void shouldUseJFrameErrorCodeWhenErrorCodeNull(final Response.Status status) throws Exception {
+        // Given: No error code
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/secure");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing via the loose-values overload
+        ErrorResponseWriter.write(request, response, status, null, null);
+
+        // Then: errorCode is the JFrameErrorCode for the status
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(body, hasEntry("errorCode", JFrameErrorCode.valueOf(status.name()).getErrorCode()));
+    }
+
+    @Test
+    @DisplayName("Should write HttpException with its status, code and detail")
+    public void shouldWriteHttpExceptionWithItsStatusCodeAndDetail() throws Exception {
+        // Given: A business HttpException
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing the exception
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new HttpException(new TestApiError("ORDER_CLOSED", "Order is already closed", Response.Status.CONFLICT))
+        );
+
+        // Then: Problem Details from the exception, enriched
+        ProblemJson.assertRfc9457(response.getContentAsString(), response.getStatus());
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(response.getStatus(), is(409));
+        assertThat(response.getContentType(), startsWith(ProblemJson.PROBLEM_JSON));
+        assertThat(body, hasEntry("type", "https://errors.example.com/ORDER_CLOSED"));
+        assertThat(body, hasEntry("errorCode", "ORDER_CLOSED"));
+        assertThat(body, hasEntry("detail", "Order is already closed"));
+        assertThat(body, hasEntry("instance", "/api/orders"));
+        assertThat(body, hasEntry("tenant", "acme"));
+    }
+
+    @Test
+    @DisplayName("Should never expose the wrapped cause message of an HttpException")
+    public void shouldNotExposeCauseMessageWhenHttpExceptionHasCause() throws Exception {
+        // Given: An HttpException wrapping a secret cause
+        final String secret = "jdbc:postgresql://db/secret password=hunter2";
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing the exception
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new HttpException(
+                new TestApiError("ORDER_CLOSED", "Order is already closed", Response.Status.CONFLICT),
+                new IllegalStateException(secret)
+            )
+        );
+
+        // Then: Secret absent, detail from the exception
+        assertThat(response.getContentAsString(), not(containsString("hunter2")));
+        assertThat(ProblemJson.parse(response.getContentAsString()), hasEntry("detail", "Order is already closed"));
+    }
+
+    @Test
+    @DisplayName("Should preserve rate-limit members when writing RateLimitExceededException")
+    public void shouldPreserveRateLimitMembersWhenWritingRateLimitExceededException() throws Exception {
+        // Given: A rate-limit exception
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing the exception
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new RateLimitExceededException(100, 0, OffsetDateTime.parse("2030-01-01T12:00:00Z"))
+        );
+
+        // Then: 429 with limit members
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(response.getStatus(), is(429));
+        assertThat(body, hasEntry("limit", 100));
+        assertThat(body, hasEntry("remaining", 0));
+        assertThat(body, hasKey("resetDate"));
+    }
+
+    @Test
+    @DisplayName("Should preserve validation errors when writing ValidationException")
+    public void shouldPreserveValidationErrorsWhenWritingValidationException() throws Exception {
+        // Given: A validation exception with one violation
+        final ValidationResult result = new ValidationResult();
+        result.rejectValue("name", "name.required");
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "POST", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing the exception
+        ErrorResponseWriter.write(request, response, new ValidationException(result));
+
+        // Then: 400 with VALIDATION_ERROR and the violation
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(response.getStatus(), is(400));
+        assertThat(body, hasEntry("errorCode", "VALIDATION_ERROR"));
+        assertThat((List<?>) body.get("errors"), contains(Map.of("field", "name", "code", "name.required")));
+    }
+
+    @Test
+    @DisplayName("Should negotiate plain JSON for HttpException when client accepts only application/json")
+    public void shouldNegotiateJsonForHttpExceptionWhenAcceptIsJson() throws Exception {
+        // Given: A client accepting only application/json
+        final MockHttpServletRequest request =
+            new MockHttpServletRequest(webApplicationContext.getServletContext(), "GET", "/api/orders");
+        request.addHeader("Accept", "application/json");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing an HttpException
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new HttpException(new TestApiError("ORDER_CLOSED", "Order is already closed", Response.Status.CONFLICT))
+        );
+
+        // Then: Same content type as the ApiError overload would use
+        assertThat(response.getContentType(), startsWith("application/json"));
+    }
+
+    @Test
+    @DisplayName("Should write HttpException without application context and without leaking the cause")
+    public void shouldWriteHttpExceptionWhenNoApplicationContext() throws Exception {
+        // Given: A request outside any web application context and a secret cause
+        final MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/orders");
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Writing via the fallback path
+        ErrorResponseWriter.write(
+            request,
+            response,
+            new HttpException(
+                new TestApiError("ORDER_CLOSED", "Order is already closed", Response.Status.CONFLICT),
+                new IllegalStateException("password=hunter2")
+            )
+        );
+
+        // Then: Conformant body from the exception
+        ProblemJson.assertRfc9457(response.getContentAsString(), 409);
+        final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
+        assertThat(body, hasEntry("errorCode", "ORDER_CLOSED"));
+        assertThat(body, hasEntry("detail", "Order is already closed"));
+        assertThat(response.getContentAsString(), not(containsString("hunter2")));
+    }
+
+    @Test
+    @DisplayName("Should not deprecate the HttpException overload")
+    public void shouldNotDeprecateHttpExceptionOverload() throws Exception {
+        // Given: The HttpException overload
+        final Method method =
+            ErrorResponseWriter.class.getMethod("write", HttpServletRequest.class, HttpServletResponse.class, HttpException.class);
+
+        // When: Reading its deprecation
+        final Deprecated deprecated = method.getAnnotation(Deprecated.class);
+
+        // Then: Not deprecated
+        assertThat(deprecated, is(nullValue()));
     }
 }

@@ -3,12 +3,17 @@ package io.github.jframe.tests.quarkus;
 import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.exception.mapper.ValidationExceptionMapper;
 import io.github.jframe.validation.ValidationResult;
+import io.github.support.ProblemJson;
 
 import jakarta.ws.rs.core.Response;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static io.github.jframe.exception.factory.ProblemDetailsFixture.aBuilder;
+import static io.github.jframe.exception.factory.ProblemDetailsFixture.aRequest;
+import static io.github.jframe.exception.factory.ProblemDetailsFixture.builtInEnrichersPlus;
+import static io.github.jframe.exception.factory.ProblemDetailsFixture.wire;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -28,7 +33,8 @@ import static org.hamcrest.Matchers.notNullValue;
 class ValidationContractTest {
 
     /** Mapper under test. */
-    private final ValidationExceptionMapper mapper = new ValidationExceptionMapper();
+    private final ValidationExceptionMapper mapper =
+        wire(new ValidationExceptionMapper(), aBuilder(builtInEnrichersPlus()), aRequest("/test/validation-error"));
 
     /**
      * Verifies that a {@link ValidationException} with field errors is mapped to HTTP 400
@@ -49,5 +55,6 @@ class ValidationContractTest {
         // Then: Response has 400 status and contains the validation result
         assertThat(response.getStatus(), is(400));
         assertThat(response.getEntity(), is(notNullValue()));
+        ProblemJson.assertRfc9457(ProblemJson.toJson(response.getEntity()), response.getStatus());
     }
 }

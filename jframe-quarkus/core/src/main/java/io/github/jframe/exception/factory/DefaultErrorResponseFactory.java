@@ -48,8 +48,7 @@ public class DefaultErrorResponseFactory implements ExceptionResponseFactory {
      */
     @Override
     public ErrorResponseResource create(final Throwable throwable) {
-        final Throwable resolved = resolve(throwable);
-        return getErrorResponseResource(resolved, throwable);
+        return getErrorResponseResource(resolve(throwable), throwable);
     }
 
     private static ErrorResponseResource getErrorResponseResource(final Throwable resolved, final Throwable original) {

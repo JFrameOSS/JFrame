@@ -8,6 +8,9 @@ jframe:
     environment: dev
     url: http://localhost:8080
 
+  exception:
+    enabled: true
+
   logging:
     disabled: false
     response-length: -1

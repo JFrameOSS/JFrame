@@ -4,6 +4,15 @@ fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")
 
+plugins {
+    `java-test-fixtures`
+}
+
+// Test fixtures are for jFrame's own tests only; never publish them.
+listOf("testFixturesApiElements", "testFixturesRuntimeElements").forEach {
+    (components["java"] as AdhocComponentWithVariants).withVariantsFromConfiguration(configurations[it]) { skip() }
+}
+
 dependencies {
     // ======= API (transitive to consumers) =======
     api("org.apache.commons:commons-lang3:${retrieve("commonsLangVersion")}")
@@ -17,7 +26,9 @@ dependencies {
     // ======= COMPILE-ONLY (provided by consumer) =======
     compileOnly("jakarta.persistence:jakarta.persistence-api:${retrieve("jakartaPersistenceVersion")}")
     compileOnly("jakarta.annotation:jakarta.annotation-api:${retrieve("jakartaAnnotationVersion")}")
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
+    // OpenAPI schema-name annotations: visible to consumers' compilers (avoids missing-annotation warnings), never at runtime
+    compileOnlyApi("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
+    compileOnlyApi("org.eclipse.microprofile.openapi:microprofile-openapi-api:${retrieve("microprofileOpenApiVersion")}")
     compileOnly("org.jspecify:jspecify:${retrieve("jspecifyVersion")}")
     compileOnly("net.ttddyy:datasource-proxy:${retrieve("datasourceProxyVersion")}")
 
@@ -25,6 +36,11 @@ dependencies {
     implementation("org.slf4j:slf4j-api:${retrieve("slf4jVersion")}")
     implementation("tools.jackson.core:jackson-databind:${retrieve("jacksonVersion")}")
     implementation("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
+
+    // ======= TEST FIXTURES (shared RFC 9457 schema + expected bodies) =======
+    testFixturesImplementation("tools.jackson.core:jackson-databind:${retrieve("jacksonVersion")}")
+    testFixturesImplementation("org.hamcrest:hamcrest:${retrieve("hamcrestVersion")}")
+    testFixturesImplementation("com.networknt:json-schema-validator:${retrieve("jsonSchemaValidatorVersion")}")
 
     // ======= TEST =======
     testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")

@@ -5,9 +5,11 @@ import io.github.jframe.exception.core.ValidationException;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
 import io.github.jframe.validation.ValidationError;
+import io.quarkus.arc.properties.IfBuildProperty;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
@@ -17,6 +19,12 @@ import jakarta.ws.rs.container.ContainerRequestContext;
  * <p>Only enriches when the resource is a {@link ValidationErrorResponseResource}
  * and the throwable is a {@link ValidationException} with a non-empty errors list.
  */
+@IfBuildProperty(
+    name = "jframe.exception.enabled",
+    stringValue = "true",
+    enableIfMissing = true
+)
+@Priority(ErrorResponseEnricher.BUILT_IN_PRIORITY)
 @ApplicationScoped
 @RequiredArgsConstructor
 public class ValidationErrorResponseEnricher implements ErrorResponseEnricher {

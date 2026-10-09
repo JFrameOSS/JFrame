@@ -59,7 +59,7 @@ public class ExceptionMappersTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should map HttpException response body with JSON media type")
+    @DisplayName("Should map HttpException response with application/problem+json media type")
     public void shouldMapHttpExceptionResponseBodyAsJson() {
         // Given: A Quarkus HttpExceptionMapper and an HttpException
         final HttpExceptionMapper mapper = new HttpExceptionMapper();
@@ -68,8 +68,9 @@ public class ExceptionMappersTest extends UnitTest {
         // When: Mapping the exception
         final Response response = mapper.toResponse(exception);
 
-        // Then: Response entity is present
+        // Then: Response entity is present with Problem Details media type
         assertThat(response.getEntity(), is(notNullValue()));
+        assertThat(response.getMediaType().toString(), is(equalTo("application/problem+json")));
     }
 
     @Test

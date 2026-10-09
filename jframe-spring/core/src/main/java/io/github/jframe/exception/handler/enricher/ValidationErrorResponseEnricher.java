@@ -9,8 +9,8 @@ import io.github.jframe.validation.ValidationError;
 
 import java.util.List;
 
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
 
 import static java.util.Objects.requireNonNull;
@@ -19,7 +19,7 @@ import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 /**
  * This enricher adds validation errors to the error response resource.
  */
-@Component
+@Order(ErrorResponseEnricher.BUILT_IN_ORDER + 10)
 public class ValidationErrorResponseEnricher implements ErrorResponseEnricher {
 
     private final ModelConverter<ValidationError, ValidationErrorResource> validationErrorResourceAssembler;

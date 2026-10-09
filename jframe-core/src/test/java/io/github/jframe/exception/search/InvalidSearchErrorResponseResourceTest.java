@@ -1,46 +1,48 @@
 package io.github.jframe.exception.search;
 
+import io.github.support.ProblemJson;
 import io.github.support.UnitTest;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 
 @DisplayName("Unit Test - InvalidSearchErrorResponseResource")
 class InvalidSearchErrorResponseResourceTest extends UnitTest {
 
     @Test
-    @DisplayName("Should carry rejected field, value and searchable fields from exception")
-    void shouldCarryDetailsFromException() {
+    @DisplayName("Should serialise rejected input as top-level extension members")
+    void shouldSerialiseRejectedInputAsExtensions() {
         // Given: An invalid search exception
         final InvalidSearchException exception = new InvalidSearchException("status", "BOGUS", List.of("status", "name"));
 
-        // When: Creating the response resource
-        final InvalidSearchErrorResponseResource resource = new InvalidSearchErrorResponseResource(exception);
+        // When: Serialising its resource
+        final Map<String, Object> body = ProblemJson.toMap(new InvalidSearchErrorResponseResource(exception));
 
-        // Then: Details are copied
-        assertThat(resource.getRejectedField(), is(equalTo("status")));
-        assertThat(resource.getRejectedValue(), is(equalTo("BOGUS")));
-        assertThat(resource.getSearchableFields(), contains("status", "name"));
+        // Then: Rejected input is top-level; legacy cause is gone
+        assertThat(body, hasEntry("rejectedField", "status"));
+        assertThat(body, hasEntry("rejectedValue", "BOGUS"));
+        assertThat(body, hasEntry("searchableFields", List.of("status", "name")));
+        assertThat(body, not(hasKey("cause")));
     }
 
     @Test
-    @DisplayName("Should keep rejected value null when field is unknown")
-    void shouldKeepRejectedValueNullWhenFieldUnknown() {
-        // Given: An unknown-field exception
+    @DisplayName("Should omit rejectedValue when null")
+    void shouldOmitRejectedValueWhenNull() {
+        // Given: An invalid search exception without a rejected value
         final InvalidSearchException exception = new InvalidSearchException("unknown", null, List.of("name"));
 
-        // When: Creating the response resource
-        final InvalidSearchErrorResponseResource resource = new InvalidSearchErrorResponseResource(exception);
+        // When: Serialising its resource
+        final Map<String, Object> body = ProblemJson.toMap(new InvalidSearchErrorResponseResource(exception));
 
-        // Then: Rejected value is null
-        assertThat(resource.getRejectedValue(), is(nullValue()));
+        // Then: The member is omitted, not null
+        assertThat(body, not(hasKey("rejectedValue")));
     }
 }

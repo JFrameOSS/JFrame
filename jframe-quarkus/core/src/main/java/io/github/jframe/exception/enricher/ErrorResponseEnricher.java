@@ -13,6 +13,9 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 @SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface ErrorResponseEnricher {
 
+    /** {@code @Priority} of built-in enrichers; application enrichers without priority run after. */
+    int BUILT_IN_PRIORITY = 1000;
+
     /**
      * Enriches the given resource using the throwable stored on the resource.
      *

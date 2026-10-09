@@ -1,349 +1,74 @@
 package io.github.jframe.exception.handler;
 
-import io.github.jframe.exception.HttpException;
-import io.github.jframe.exception.core.BadRequestException;
-import io.github.jframe.exception.core.RateLimitExceededException;
-import io.github.jframe.exception.core.ValidationException;
-import io.github.jframe.exception.factory.ErrorResponseEntityBuilder;
-import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.MethodArgumentNotValidResponseResource;
-import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 import io.github.jframe.exception.resource.ValidationErrorResponseResource;
-import io.github.jframe.validation.ValidationError;
-import io.github.jframe.validation.ValidationResult;
 import io.github.support.UnitTest;
-import io.github.support.fixtures.TestApiError;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
-import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
-import jakarta.ws.rs.core.Response;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.context.request.WebRequest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 /**
- * Tests for {@link JFrameResponseEntityExceptionHandler}.
+ * OpenAPI contract of {@link JFrameResponseEntityExceptionHandler}.
  *
- * <p>Verifies the exception handler functionality including:
- * <ul>
- * <li>HTTP exception handling with correct status codes</li>
- * <li>API exception handling</li>
- * <li>Validation exception handling (both Spring and custom)</li>
- * <li>Security exception handling (BadCredentials, AccessDenied)</li>
- * <li>404 Not Found exception handling</li>
- * <li>Fallback Throwable handling (500 Internal Server Error)</li>
- * <li>Integration with ErrorResponseEntityBuilder</li>
- * <li>Correct response entity structure</li>
- * </ul>
+ * <p>Runtime behaviour is covered end-to-end by {@code ExceptionHandlingContractTest}.
  */
-@DisplayName("Exception Handler - Response Entity Exception Handler")
+@DisplayName("Exception Handler - OpenAPI contract")
 public class JFrameResponseEntityExceptionHandlerTest extends UnitTest {
 
-    @Mock
-    private ErrorResponseEntityBuilder errorResponseEntityBuilder;
-
-    @Mock
-    private WebRequest webRequest;
-
-    private JFrameResponseEntityExceptionHandler exceptionHandler;
-    private ErrorResponseResource mockErrorResponse;
-    private MethodArgumentNotValidResponseResource mockMethodArgumentNotValidResponse;
-    private ValidationErrorResponseResource mockValidationErrorResponse;
-    private RateLimitErrorResponseResource mockRateLimitErrorResponse;
-
-    @BeforeEach
-    @Override
-    public void setUp() {
-        exceptionHandler = new JFrameResponseEntityExceptionHandler(errorResponseEntityBuilder);
-
-        mockErrorResponse = new ErrorResponseResource();
-        mockMethodArgumentNotValidResponse = new MethodArgumentNotValidResponseResource();
-        mockValidationErrorResponse = new ValidationErrorResponseResource();
-        mockRateLimitErrorResponse = new RateLimitErrorResponseResource();
-    }
-
-    @Test
-    @DisplayName("Should handle HttpException with correct status code")
-    public void shouldHandleHttpException() {
-        // Given: An HttpException with BAD_REQUEST status (no-arg constructor — String constructors removed)
-        final HttpException exception = new BadRequestException();
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.BAD_REQUEST), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
-
-        // When: Handling the HttpException
-        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleHttpException(exception, webRequest);
-
-        // Then: Response has correct status and body
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
-        assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
-    }
-
-    @Test
-    @DisplayName("Should handle HttpException with custom status code")
-    public void shouldHandleHttpExceptionWithCustomStatus() {
-        // Given: An HttpException created via ApiError (status-only constructors removed)
-        final HttpException exception = new HttpException(
-            new TestApiError("JFRAME_NOT_FOUND", "Resource not found", Response.Status.NOT_FOUND)
-        );
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.NOT_FOUND), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
-
-        // When: Handling the HttpException
-        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleHttpException(exception, webRequest);
-
-        // Then: Response has correct status from exception
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.NOT_FOUND)));
-        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.NOT_FOUND, webRequest);
-    }
-
-    @Test
-    @DisplayName("Should handle MethodArgumentNotValidException with BAD_REQUEST status")
-    public void shouldHandleMethodArgumentNotValidException() {
-        // Given: A MethodArgumentNotValidException
-        final BindingResult bindingResult = mock(BindingResult.class);
-        final MethodArgumentNotValidException exception = new MethodArgumentNotValidException(null, bindingResult);
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.BAD_REQUEST), eq(webRequest)))
-            .thenReturn(mockMethodArgumentNotValidResponse);
-
-        // When: Handling the MethodArgumentNotValidException
-        final ResponseEntity<Object> response = exceptionHandler.handleMethodArgumentNotValid(
-            exception,
-            org.springframework.http.HttpHeaders.EMPTY,
-            HttpStatus.BAD_REQUEST,
-            webRequest
-        );
-
-        // Then: Response has BAD_REQUEST status and correct body
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
-        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
-        assertThat(response.getBody(), is(sameInstance(mockMethodArgumentNotValidResponse)));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
-    }
-
-    @Test
-    @DisplayName("Should handle ValidationException with BAD_REQUEST status")
-    public void shouldHandleValidationException() {
-        // Given: A ValidationException with validation errors
-        final ValidationResult validationResult = new ValidationResult();
-        validationResult.addError(new ValidationError("field1", "REQUIRED"));
-        validationResult.addError(new ValidationError("field2", "INVALID"));
-        final ValidationException exception = new ValidationException(validationResult);
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.BAD_REQUEST), eq(webRequest)))
-            .thenReturn(mockValidationErrorResponse);
-
-        // When: Handling the ValidationException
-        final ResponseEntity<ValidationErrorResponseResource> response = exceptionHandler.handleJframeValidation(exception, webRequest);
-
-        // Then: Response has BAD_REQUEST status and correct body
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.BAD_REQUEST)));
-        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
-        assertThat(response.getBody(), is(sameInstance(mockValidationErrorResponse)));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.BAD_REQUEST, webRequest);
-    }
-
-    @Test
-    @DisplayName("Should handle BadCredentialsException with UNAUTHORIZED status")
-    public void shouldHandleBadCredentialsException() {
-        // Given: A BadCredentialsException
-        final BadCredentialsException exception = new BadCredentialsException("Invalid credentials");
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.UNAUTHORIZED), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
-
-        // When: Handling the BadCredentialsException
-        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleBadCredentials(exception, webRequest);
-
-        // Then: Response has UNAUTHORIZED status and correct body
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.UNAUTHORIZED)));
-        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
-        assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.UNAUTHORIZED, webRequest);
-    }
-
-    @Test
-    @DisplayName("Should handle AccessDeniedException with FORBIDDEN status")
-    public void shouldHandleAccessDeniedException() {
-        // Given: An AccessDeniedException
-        final AccessDeniedException exception = new AccessDeniedException("Access denied");
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.FORBIDDEN), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
-
-        // When: Handling the AccessDeniedException
-        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleAccessDenied(exception, webRequest);
-
-        // Then: Response has FORBIDDEN status and correct body
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.FORBIDDEN)));
-        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
-        assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.FORBIDDEN, webRequest);
-    }
-
-    @Test
-    @DisplayName("Should handle generic Throwable with INTERNAL_SERVER_ERROR status")
-    public void shouldHandleGenericThrowable() {
-        // Given: A generic Throwable
-        final Throwable throwable = new RuntimeException("Unexpected error");
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.INTERNAL_SERVER_ERROR), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
-
-        // When: Handling the generic Throwable
-        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleThrowable(throwable, webRequest);
-
-        // Then: Response has INTERNAL_SERVER_ERROR status and correct body
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.INTERNAL_SERVER_ERROR)));
-        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
-        assertThat(response.getBody(), is(sameInstance(mockErrorResponse)));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(throwable, HttpStatus.INTERNAL_SERVER_ERROR, webRequest);
-    }
-
-    @Test
-    @DisplayName("Should handle Error subclass with INTERNAL_SERVER_ERROR status")
-    public void shouldHandleErrorSubclass() {
-        // Given: An Error subclass
-        final Throwable error = new OutOfMemoryError("Out of memory");
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.INTERNAL_SERVER_ERROR), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
-
-        // When: Handling the Error
-        final ResponseEntity<ErrorResponseResource> response = exceptionHandler.handleThrowable(error, webRequest);
-
-        // Then: Response has INTERNAL_SERVER_ERROR status
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.INTERNAL_SERVER_ERROR)));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(error, HttpStatus.INTERNAL_SERVER_ERROR, webRequest);
-    }
-
-    @Test
-    @DisplayName("Should return correct headers in all responses")
-    public void shouldReturnEmptyHeaders() {
-        // Given: An HttpException (no-arg constructor)
-        final HttpException httpException = new BadRequestException();
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), any(), eq(webRequest)))
-            .thenReturn(mockErrorResponse);
-
-        // When: Handling the HttpException
-        final ResponseEntity<ErrorResponseResource> httpResponse = exceptionHandler.handleHttpException(httpException, webRequest);
-
-        // Then: Response has correct content type header
-        assertThat(httpResponse.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
-    }
-
-    @Test
-    @DisplayName("Should handle RateLimitExceededException with TOO_MANY_REQUESTS status and rate limit headers")
-    public void shouldHandleRateLimitExceededException() {
-        // Given: A RateLimitExceededException with rate limit details (String-message constructor removed)
-        final int limit = 100;
-        final int remaining = 0;
-        final OffsetDateTime resetDate = OffsetDateTime.now().plusMinutes(5);
-        final RateLimitExceededException exception = new RateLimitExceededException(limit, remaining, resetDate);
-
-        // Configure mock to return a response with rate limit details (simulating enricher behavior)
-        mockRateLimitErrorResponse.setLimit(limit);
-        mockRateLimitErrorResponse.setRemaining(remaining);
-        mockRateLimitErrorResponse.setResetDate(resetDate);
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.TOO_MANY_REQUESTS), eq(webRequest)))
-            .thenReturn(mockRateLimitErrorResponse);
-
-        // When: Handling the RateLimitExceededException
-        final ResponseEntity<RateLimitErrorResponseResource> response = exceptionHandler.handleRateLimitExceeded(exception, webRequest);
-
-        // Then: Response has TOO_MANY_REQUESTS status, correct headers and body with rate limit details
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.TOO_MANY_REQUESTS)));
-        assertThat(response.getHeaders().getContentType(), is(equalTo(MediaType.APPLICATION_JSON)));
-        assertThat(response.getHeaders().getFirst("X-RateLimit-Limit"), is(equalTo(String.valueOf(limit))));
-        assertThat(response.getHeaders().getFirst("X-RateLimit-Remaining"), is(equalTo(String.valueOf(remaining))));
-        assertThat(response.getHeaders().getFirst("X-RateLimit-Reset"), is(equalTo(resetDate.toString())));
-        assertThat(response.getBody(), is(notNullValue()));
-        assertThat(response.getBody().getLimit(), is(equalTo(limit)));
-        assertThat(response.getBody().getRemaining(), is(equalTo(remaining)));
-        assertThat(response.getBody().getResetDate(), is(equalTo(resetDate)));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.TOO_MANY_REQUESTS, webRequest);
+    private static List<ApiResponse> apiResponses() {
+        return Arrays.stream(JFrameResponseEntityExceptionHandler.class.getDeclaredMethods())
+            .filter(method -> method.isAnnotationPresent(ApiResponse.class))
+            .map(method -> method.getAnnotation(ApiResponse.class))
+            .toList();
     }
 
     @Test
     @DisplayName("Should have unique @ApiResponse response codes across all handler methods")
     public void shouldHaveUniqueApiResponseCodesAcrossAllHandlerMethods() {
-        // Given: all declared methods of the exception handler that carry @ApiResponse
+        // Given: all @ApiResponse annotations of the handler
         // When: collecting all responseCode values
-        final List<String> allCodes = Arrays.stream(JFrameResponseEntityExceptionHandler.class.getDeclaredMethods())
-            .filter(method -> method.isAnnotationPresent(ApiResponse.class))
-            .map(method -> method.getAnnotation(ApiResponse.class).responseCode())
-            .toList();
+        final List<String> allCodes = apiResponses().stream().map(ApiResponse::responseCode).toList();
 
-        // Then: every code must appear exactly once — duplicates make springdoc nondeterministic
-        final long distinctCount = allCodes.stream().distinct().count();
+        // Then: every code appears exactly once — duplicates make springdoc nondeterministic
         assertThat(
-            "Duplicate @ApiResponse responseCodes found — springdoc schema will be nondeterministic: " + allCodes,
-            distinctCount,
+            "Duplicate @ApiResponse responseCodes: " + allCodes,
+            allCodes.stream().distinct().count(),
             is(equalTo((long) allCodes.size()))
         );
     }
 
     @Test
-    @DisplayName("Should have MethodArgumentNotValidResponseResource assignable to ValidationErrorResponseResource")
-    public void shouldHaveMethodArgumentNotValidResponseResourceAssignableToValidationErrorResponseResource() {
-        // Given: the two 400 validation response resource types used in the handler
-        final Class<?> methodArgNotValidResource = MethodArgumentNotValidResponseResource.class;
-        final Class<?> validationErrorResource = ValidationErrorResponseResource.class;
+    @DisplayName("Should document every error response as application/problem+json with a schema")
+    public void shouldDocumentErrorResponsesAsProblemJson() {
+        // Given: all @ApiResponse annotations of the handler
+        // When: collecting their content declarations
+        final List<Content> contents = apiResponses().stream().flatMap(response -> Arrays.stream(response.content())).toList();
 
-        // When: checking the type hierarchy
-        final boolean isAssignable = validationErrorResource.isAssignableFrom(methodArgNotValidResource);
-
-        // Then: MethodArgumentNotValidResponseResource must be a subtype of ValidationErrorResponseResource
-        //       so both 400 validation bodies share one OpenAPI schema shape
-        assertThat(
-            "MethodArgumentNotValidResponseResource must extend ValidationErrorResponseResource "
-                + "so both validation 400 bodies share one OpenAPI schema — current parent: "
-                + methodArgNotValidResource.getSuperclass().getSimpleName(),
-            isAssignable,
-            is(true)
-        );
+        // Then: every content is problem+json with an implementation schema
+        assertThat(contents, is(not(empty())));
+        contents.forEach(content -> {
+            assertThat(content.mediaType(), is(equalTo("application/problem+json")));
+            assertThat(content.schema().implementation(), is(not(equalTo(Void.class))));
+        });
     }
 
     @Test
-    @DisplayName("Should handle RateLimitExceededException with null resetDate")
-    public void shouldHandleRateLimitExceededExceptionWithNullResetDate() {
-        // Given: A RateLimitExceededException with null reset date
-        final int limit = 50;
-        final int remaining = 0;
-        final RateLimitExceededException exception = new RateLimitExceededException(limit, remaining, null);
-        when(errorResponseEntityBuilder.buildErrorResponseBody(any(), eq(HttpStatus.TOO_MANY_REQUESTS), eq(webRequest)))
-            .thenReturn(mockRateLimitErrorResponse);
+    @DisplayName("Should have MethodArgumentNotValidResponseResource assignable to ValidationErrorResponseResource")
+    public void shouldHaveMethodArgumentNotValidResponseResourceAssignableToValidationErrorResponseResource() {
+        // Given: the two 400 validation response resource types
+        // When: checking the type hierarchy
+        final boolean isAssignable =
+            ValidationErrorResponseResource.class.isAssignableFrom(MethodArgumentNotValidResponseResource.class);
 
-        // When: Handling the RateLimitExceededException
-        final ResponseEntity<RateLimitErrorResponseResource> response = exceptionHandler.handleRateLimitExceeded(exception, webRequest);
-
-        // Then: Response has TOO_MANY_REQUESTS status and no X-RateLimit-Reset header
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getStatusCode(), is(equalTo(HttpStatus.TOO_MANY_REQUESTS)));
-        assertThat(response.getHeaders().getFirst("X-RateLimit-Limit"), is(equalTo(String.valueOf(limit))));
-        assertThat(response.getHeaders().getFirst("X-RateLimit-Remaining"), is(equalTo(String.valueOf(remaining))));
-        assertThat(response.getHeaders().getFirst("X-RateLimit-Reset"), is(nullValue()));
-        verify(errorResponseEntityBuilder).buildErrorResponseBody(exception, HttpStatus.TOO_MANY_REQUESTS, webRequest);
+        // Then: both validation 400 bodies share one OpenAPI schema shape
+        assertThat(isAssignable, is(true));
     }
 }

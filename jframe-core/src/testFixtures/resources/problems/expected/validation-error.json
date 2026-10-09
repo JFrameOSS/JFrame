@@ -1,0 +1,1 @@
+{"title":"Bad Request","status":400,"detail":"Validation failed","instance":"/test/validation-error","errorCode":"VALIDATION_ERROR","errors":[{"field":"name","code":"name.required"},{"field":"email","code":"email.required"}]}

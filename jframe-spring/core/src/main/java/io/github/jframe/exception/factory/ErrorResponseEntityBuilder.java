@@ -2,44 +2,51 @@ package io.github.jframe.exception.factory;
 
 import io.github.jframe.exception.handler.enricher.ErrorResponseEnricher;
 import io.github.jframe.exception.resource.ErrorResponseResource;
+import io.github.jframe.exception.resource.ProblemDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This class creates proper HTTP response bodies for exceptions.
+ * Builds RFC 9457 Problem Details bodies for exceptions.
  */
-@Component
 public class ErrorResponseEntityBuilder {
+
+    /** Property holding the {@code type} base URI. */
+    public static final String TYPE_BASE_URI_PROPERTY = "jframe.exception.type-base-uri";
 
     private final ExceptionResponseFactory exceptionResponseFactory;
 
-    private final Set<ErrorResponseEnricher> errorResponseEnrichers = new HashSet<>();
+    private final List<ErrorResponseEnricher> errorResponseEnrichers = new ArrayList<>();
 
-    /** The constructor. */
+    private final String typeBaseUri;
+
+    /** The constructor; enrichers keep their injection order, which honours {@code @Order}. */
     public ErrorResponseEntityBuilder(final ExceptionResponseFactory exceptionResponseFactory,
-                                      final List<ErrorResponseEnricher> errorResponseEnrichers) {
+                                      final List<ErrorResponseEnricher> errorResponseEnrichers,
+                                      @Value(
+                                          "${" + TYPE_BASE_URI_PROPERTY + ":}"
+                                      ) final String typeBaseUri) {
         this.exceptionResponseFactory = requireNonNull(exceptionResponseFactory);
+        this.typeBaseUri = typeBaseUri;
         if (nonNull(errorResponseEnrichers)) {
             this.errorResponseEnrichers.addAll(errorResponseEnrichers);
+            sortEnrichers();
         }
     }
 
     /**
-     * Builds a meaningful response body for the given throwable, HTTP status and request.
-     *
-     * <p>This method constructs an {@link ErrorResponseResource} using {@link ExceptionResponseFactory} and then applies the error response
-     * enrichers returned from {@link #getResponseEnrichers()} to complete
-     * the response.
+     * Builds the Problem Details body: creates the resource, runs enrichers in order, then derives {@code type}.
      *
      * @param throwable the exception
      * @param status    the HTTP status
@@ -51,7 +58,9 @@ public class ErrorResponseEntityBuilder {
         final HttpStatus status,
         final WebRequest request) {
         final ErrorResponseResource resource = exceptionResponseFactory.create(throwable);
+        ProblemDetails.apply(resource, status.value(), instance(request), typeBaseUri);
         errorResponseEnrichers.forEach(enricher -> enricher.enrich(resource, request, status));
+        resource.setType(ProblemDetails.type(typeBaseUri, resource.getErrorCode()));
         return (T) resource;
     }
 
@@ -62,6 +71,7 @@ public class ErrorResponseEntityBuilder {
      */
     public void addResponseEnricher(final ErrorResponseEnricher errorResponseEnricher) {
         errorResponseEnrichers.add(errorResponseEnricher);
+        sortEnrichers();
     }
 
     /**
@@ -74,11 +84,23 @@ public class ErrorResponseEntityBuilder {
     }
 
     /**
-     * Returns a collection of registered response enrichers.
+     * Returns the registered response enrichers in execution order.
      *
      * @return the response enrichers
      */
     public Collection<ErrorResponseEnricher> getResponseEnrichers() {
-        return new HashSet<>(errorResponseEnrichers);
+        return List.copyOf(errorResponseEnrichers);
+    }
+
+    /** Stable sort: keeps injection order for enrichers whose order is only declared on a {@code @Bean} method. */
+    private void sortEnrichers() {
+        errorResponseEnrichers.sort(AnnotationAwareOrderComparator.INSTANCE);
+    }
+
+    private static String instance(final WebRequest request) {
+        if (request instanceof final ServletWebRequest servletWebRequest) {
+            return servletWebRequest.getRequest().getRequestURI();
+        }
+        return null;
     }
 }

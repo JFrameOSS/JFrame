@@ -27,9 +27,9 @@ All modules share `jframe-core` (pulled in transitively). You never need to depe
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:1.7.1")
-    implementation("io.github.jframeoss:jframe-spring-jpa:1.7.1")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:1.7.1")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.8.0")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.8.0")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.8.0")  // optional
 }
 ```
 
@@ -38,9 +38,9 @@ dependencies {
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:1.7.1")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.7.1")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.7.1")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.8.0")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.8.0")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.8.0")  // optional
 }
 ```
 
@@ -88,8 +88,8 @@ That's it. All HTTP filters, exception handlers, and logging are auto-configured
 | Request/transaction ID tracking | `spring-core` | `quarkus-core` |
 | HTTP request/response logging | `spring-core` | `quarkus-core` |
 | Sensitive field masking | `spring-core` | `quarkus-core` |
-| Global exception handling | `spring-core` | `quarkus-core` |
-| Structured error responses | `spring-core` | `quarkus-core` |
+| Global exception handling (RFC 9457 Problem Details) | `spring-core` | `quarkus-core` |
+| Structured error responses (`application/problem+json`) | `spring-core` | `quarkus-core` |
 | Request-scoped entity caching | `spring-core` | `quarkus-core` |
 | Scheduled task context propagation | `spring-core` | `quarkus-core` |
 | JPA search specifications | `spring-jpa` | `quarkus-jpa` |

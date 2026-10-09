@@ -6,7 +6,9 @@ import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.security.AuthenticationConstants;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
+import io.quarkus.arc.properties.IfBuildProperty;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
@@ -29,6 +31,12 @@ import static io.github.jframe.logging.ecs.EcsFieldNames.*;
  * <p>If the current span is not recording (e.g. no tracing backend configured), no enrichment
  * is performed and the method returns immediately.
  */
+@IfBuildProperty(
+    name = "jframe.exception.enabled",
+    stringValue = "true",
+    enableIfMissing = true
+)
+@Priority(ErrorResponseEnricher.BUILT_IN_PRIORITY)
 @ApplicationScoped
 public class TracingEnricher implements ErrorResponseEnricher {
 

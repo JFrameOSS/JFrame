@@ -6,7 +6,10 @@ import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.util.Map;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +24,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import static io.github.jframe.logging.ecs.EcsFieldNames.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -104,6 +108,26 @@ class TracingResponseEnricherTest extends UnitTest {
     }
 
     // ======================== TESTS ========================
+
+    @Test
+    @DisplayName("Should write traceId and spanId as top-level Problem Details extensions")
+    void shouldWriteTraceAndSpanIdAsExtensionsWhenSpanRecording() {
+        // Given: A recording span
+        final ErrorResponseResource resource = new ErrorResponseResource();
+
+        // When: Enriching and serialising the resource
+        try (MockedStatic<Span> spanStatic = mockStatic(Span.class)) {
+            spanStatic.when(Span::current).thenReturn(span);
+            enricher.doEnrich(resource, new RuntimeException("boom"), servletWebRequest, HTTP_STATUS);
+        }
+        final Map<String, Object> body = JsonMapper.builder().build()
+            .readValue(JsonMapper.builder().build().writeValueAsString(resource), new TypeReference<Map<String, Object>>() {
+            });
+
+        // Then: Trace correlation members are top-level extensions
+        assertThat(body, hasEntry("traceId", TRACE_ID_VALUE));
+        assertThat(body, hasEntry("spanId", SPAN_ID_VALUE));
+    }
 
     @Test
     @DisplayName("Should record exception on span when enriching error response")

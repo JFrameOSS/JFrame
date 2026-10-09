@@ -36,7 +36,7 @@ public class BadRequestExceptionTest extends UnitTest {
         // Then: Exception is created with BAD_REQUEST status, structured error code and null cause
         assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
         assertThat(exception.getErrorCode(), is(equalTo("BAD_REQUEST")));
-        assertThat(exception.getErrorReason(), is(equalTo("Bad request")));
+        assertThat(exception.getErrorReason(), is(equalTo("Bad Request")));
         assertThat(exception.getMessage(), is(nullValue()));
         assertThat(exception.getCause(), is(nullValue()));
     }
@@ -53,7 +53,7 @@ public class BadRequestExceptionTest extends UnitTest {
         // Then: Exception is created with BAD_REQUEST status, structured error code and the cause
         assertThat(exception.getHttpStatus(), is(equalTo(Response.Status.BAD_REQUEST)));
         assertThat(exception.getErrorCode(), is(equalTo("BAD_REQUEST")));
-        assertThat(exception.getErrorReason(), is(equalTo("Bad request")));
+        assertThat(exception.getErrorReason(), is(equalTo("Bad Request")));
         assertThat(exception.getCause(), is(equalTo(cause)));
     }
 }

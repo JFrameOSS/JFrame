@@ -69,24 +69,6 @@ public class ErrorResponseEnricherTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should be functional interface")
-    public void shouldBeFunctionalInterface() {
-        // Given: A lambda implementation of ErrorResponseEnricher
-        final ErrorResponseEnricher enricher = (resource, throwable, request, httpStatus) -> {
-            resource.setErrorReason("Enriched");
-        };
-
-        final ErrorResponseResource resource = new ErrorResponseResource();
-        final WebRequest request = mock(WebRequest.class);
-
-        // When: Using the lambda enricher
-        enricher.doEnrich(resource, new RuntimeException(), request, HttpStatus.INTERNAL_SERVER_ERROR);
-
-        // Then: Enricher is functional and works
-        assertThat(resource.getErrorReason(), is(equalTo("Enriched")));
-    }
-
-    @Test
     @DisplayName("Should pass all parameters correctly in default enrich method")
     public void shouldPassAllParametersCorrectlyInDefaultEnrichMethod() {
         // Given: Specific parameter values

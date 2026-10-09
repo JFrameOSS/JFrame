@@ -89,7 +89,7 @@ The `@ConditionalOnMissingBean` on the default ensures your bean takes precedenc
 
 ## Exception handling
 
-`JFrameResponseEntityExceptionHandler` is a `@RestControllerAdvice` that converts exceptions to structured JSON error responses.
+`JFrameResponseEntityExceptionHandler` is a `@RestControllerAdvice` that converts exceptions to RFC 9457 Problem Details error responses (`application/problem+json`). Registered with `@Order(Ordered.LOWEST_PRECEDENCE)` so application `@RestControllerAdvice` / `@ExceptionHandler` beans take precedence for exceptions they handle (including jFrame `HttpException` subtypes); jFrame handles the rest. Disabled via `jframe.exception.enabled=false`; backs off if the application defines its own `ErrorController`.
 
 ### Handled exceptions
 
@@ -99,55 +99,75 @@ The `@ConditionalOnMissingBean` on the default ensures your bean takes precedenc
 | `ValidationException` | 400 | `ValidationErrorResponseResource` (with field errors) |
 | `RateLimitExceededException` | 429 | `RateLimitErrorResponseResource` (with limit headers) |
 | `MethodArgumentNotValidException` | 400 | Validation errors from `@Valid` |
+| Spring MVC exceptions (404, 405, 415, etc.) | Dynamic | `ErrorResponseResource` with jFrame enrichment |
+| `AuthenticationException` | 401 | `ErrorResponseResource` |
+| `AccessDeniedException` | 403 | `ErrorResponseResource` |
 | `Throwable` (catch-all) | 500 | `ErrorResponseResource` |
+
+### Fallback `/error` controller
+
+`JFrameErrorController` handles errors outside MVC (exceptions thrown in filters, `response.sendError`) and returns jFrame Problem Details instead of Spring Boot's default error body. The `instance` field is set to the original request path. `txId` is included only when the transaction-ID filter is on, like the MVC handler. Disabled via `jframe.exception.enabled=false`; backs off if the application defines its own `ErrorController`.
 
 ### Error response format
 
+RFC 9457 Problem Details with jFrame extension members:
+
 ```json
 {
-  "statusCode": 404,
+  "title": "Not Found",
+  "status": 404,
+  "detail": "User not found",
+  "instance": "/api/users/42",
   "errorCode": "USER_001",
-  "errorReason": "User not found",
-  "cause": null,
-  "method": "GET",
-  "uri": "/api/users/42",
-  "query": null,
-  "contentType": "application/json",
   "txId": "abc-123",
-  "traceId": "...",
-  "spanId": "..."
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "spanId": "00f067aa0ba902b7"
 }
 ```
 
+Content type: `application/problem+json`. Absent extension members are omitted (never `null`). `type` is omitted unless `jframe.exception.type-base-uri` is configured.
+
 ### Built-in enrichers
 
-8 enrichers run on every error response (plus `TracingResponseEnricher` from `spring-otlp`):
+6 enrichers run on every error response (plus `TracingResponseEnricher` from `spring-otlp`):
 
 | Enricher | Adds |
 |----------|------|
-| `StatusCodeEnricher` | `statusCode` |
-| `ErrorCodeEnricher` | `errorCode`, `errorReason` |
-| `RequestInfoEnricher` | `method`, `uri`, `query`, `contentType` |
-| `TransactionIdEnricher` | `txId` |
-| `ValidationEnricher` | field error details (ValidationException) |
-| `MethodArgumentNotValidEnricher` | field error details (@Valid failures) |
-| `RateLimitEnricher` | limit headers (RateLimitExceededException) |
-| `TracingResponseEnricher` *(spring-otlp)* | `traceId`, `spanId` |
+| `ErrorCodeResponseEnricher` | `errorCode`, `detail` (from `ApiError` or HTTP status) |
+| `MethodArgumentNotValidResponseEnricher` | `errors` extension (field violations from `@Valid`) |
+| `ValidationErrorResponseEnricher` | `errors` extension (field violations from `ValidationException`) |
+| `RateLimitResponseEnricher` | `limit`, `remaining`, `resetDate` extensions (rate limit headers still set) |
+| `TransactionIdResponseEnricher` | `txId` extension |
+| `TracingResponseEnricher` *(spring-otlp)* | `traceId`, `spanId` extensions |
+
+Enrichers run in deterministic order: built-ins first (via `@Order(ErrorResponseEnricher.BUILT_IN_ORDER)`), then application enrichers.
 
 ### Custom error enricher
 
 Add fields to every error response:
 
 ```java
-@Component
-public class TenantEnricher implements ErrorResponseEnricher {
-    @Override
-    public void doEnrich(ErrorResponseResource resource, Throwable t,
-                         WebRequest req, HttpStatus status) {
-        resource.putDetail("tenantId", TenantContext.current());
+@Configuration
+public class ErrorHandlingConfig {
+    @Bean
+    @Order(ErrorResponseEnricher.BUILT_IN_ORDER + 100)  // after built-ins
+    public ErrorResponseEnricher tenantEnricher() {
+        return (resource, throwable, request, httpStatus) -> {
+            String tenantId = request.getHeader("X-Tenant-ID");
+            if (tenantId != null) {
+                resource.addExtension("tenantId", tenantId);
+            }
+        };
     }
 }
 ```
+
+**Signature:** `doEnrich(ErrorResponseResource, Throwable, WebRequest, HttpStatus)` — `httpStatus` is an `HttpStatus` enum.
+
+**Available methods:**
+- `resource.setErrorCode(String)` — override error code
+- `resource.setDetail(String)` — override detail message
+- `resource.addExtension(String key, Object value)` — add extension member
 
 ### Throwing exceptions
 

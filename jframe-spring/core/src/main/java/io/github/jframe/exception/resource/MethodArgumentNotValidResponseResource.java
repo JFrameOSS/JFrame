@@ -6,6 +6,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 /** Response resource for {@link MethodArgumentNotValidException} validation errors. */
 @NoArgsConstructor
+@io.swagger.v3.oas.annotations.media.Schema(name = "ValidationProblemDetails")
 public class MethodArgumentNotValidResponseResource extends ValidationErrorResponseResource {
 
     /** Constructor with a {@code validationException}. */

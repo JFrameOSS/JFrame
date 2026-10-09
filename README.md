@@ -27,7 +27,7 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 | Feature | Spring Boot | Quarkus |
 |---------|:-----------:|:-------:|
-| Structured exception handling with error enrichers | ✅ | ✅ |
+| RFC 9457 Problem Details error responses with enrichers | ✅ | ✅ |
 | ECS-compliant MDC logging (request/transaction ID, duration) | ✅ | ✅ |
 | Request/response body logging with content-type filtering | ✅ | ✅ |
 | Paginated search with type-safe specifications | ✅ | ✅ |
@@ -37,7 +37,7 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 | Auto-instrumentation (JDBC, HTTP, Kafka, gRPC) | ✅ | ✅ |
 | Outbound HTTP correlation (RestTemplate / WebClient / JAX-RS client) | ✅ | ✅ |
 | SQL query logging via datasource-proxy | ✅ | ✅ |
-| OpenAPI error response schemas (400/429/500) | — | ✅ |
+| OpenAPI error response schemas (400/401/403/404/429/500) | ✅ springdoc | ✅ |
 | Jackson 3.x configuration | — | ✅ |
 | Jackson 2.x configuration | ✅ | — |
 
@@ -55,9 +55,9 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:1.7.1")
-    implementation("io.github.jframeoss:jframe-spring-jpa:1.7.1")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:1.7.1")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.8.0")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.8.0")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.8.0")  // optional
 }
 ```
 
@@ -65,9 +65,9 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:1.7.1")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.7.1")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.7.1")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.8.0")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.8.0")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.8.0")  // optional
 }
 ```
 
@@ -147,6 +147,7 @@ Newest first. See the [migration index](./docs/migration/README.md) for the full
 
 | Version | Guide | What changed |
 |---------|-------|--------------|
+| 1.8.0 | [Problem Details](./docs/migration/1.8.0-problem-details.md) | **Breaking** — error bodies are RFC 9457 `application/problem+json`; app exception handlers now win over jFrame |
 | 1.6.1 | [Spring Log Export](./docs/migration/1.6.1-spring-log-export.md) | `jframe.otlp.logs.enabled` now works on Spring — log records start exporting |
 | 1.6.0 | [OTLP Opt-In](./docs/migration/1.6.0-otlp-opt-in.md) | Telemetry is opt-in, Opt-In process attributes excluded, `sampling-rate` now honoured |
 | 1.5.0 | [Upgrading to 1.5.0](./docs/migration/1.5.0-upgrading.md) | **Start here** — consolidated checklist for the whole release |

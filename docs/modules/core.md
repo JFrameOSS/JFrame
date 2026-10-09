@@ -57,8 +57,13 @@ Built-in `ApiError` constants for common cases:
 
 ```java
 public enum JFrameErrorCode implements ApiError {
-    BAD_REQUEST("BAD_REQUEST", "Bad request", Response.Status.BAD_REQUEST),
-    NOT_FOUND("NOT_FOUND", "Resource not found", Response.Status.NOT_FOUND),
+    BAD_REQUEST(Response.Status.BAD_REQUEST),
+    UNAUTHORIZED(Response.Status.UNAUTHORIZED),
+    FORBIDDEN(Response.Status.FORBIDDEN),
+    NOT_FOUND(Response.Status.NOT_FOUND),
+    METHOD_NOT_ALLOWED(Response.Status.METHOD_NOT_ALLOWED),
+    NOT_ACCEPTABLE(Response.Status.NOT_ACCEPTABLE),
+    UNSUPPORTED_MEDIA_TYPE(Response.Status.UNSUPPORTED_MEDIA_TYPE),
     RATE_LIMIT_EXCEEDED("RATE_LIMIT_EXCEEDED", "Rate limit exceeded", Response.Status.TOO_MANY_REQUESTS),
     VALIDATION_ERROR("VALIDATION_ERROR", "Validation failed", Response.Status.BAD_REQUEST),
     INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR", "Internal server error", Response.Status.INTERNAL_SERVER_ERROR),
@@ -67,6 +72,11 @@ public enum JFrameErrorCode implements ApiError {
     INVALID_SEARCH("INVALID_SEARCH", "Invalid search field or value", Response.Status.BAD_REQUEST),
     INVALID_PAGE("INVALID_PAGE", "Invalid page number or size", Response.Status.BAD_REQUEST);
 }
+```
+
+**Status-derived codes** (BAD_REQUEST, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, METHOD_NOT_ALLOWED, NOT_ACCEPTABLE, UNSUPPORTED_MEDIA_TYPE): error code = status name, reason = HTTP reason phrase. Use `JFrameErrorCode.forStatus(int)` to look up the code for a given HTTP status; returns empty when the status has no status-derived code.
+
+**Custom codes** (RATE_LIMIT_EXCEEDED, VALIDATION_ERROR, etc.): explicit error code and reason.
 ```
 
 ### HttpException constructors
@@ -101,21 +111,29 @@ HttpStatusCode.valueOf(429);               // TOO_MANY_REQUESTS
 
 ### ErrorResponseResource fields
 
-The structured error response DTO returned by both Spring and Quarkus exception handlers:
+RFC 9457 Problem Details body with jFrame extension members. Serialised as `application/problem+json`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `method` | String | HTTP method (e.g. `GET`) |
-| `uri` | String | Request path |
-| `query` | String | Query string, or `null` |
-| `contentType` | String | Request content type |
-| `statusCode` | int | HTTP status code |
-| `errorCode` | String | Error code from `ApiError.getErrorCode()` |
-| `errorReason` | String | Human-readable reason from `ApiError.getReason()` |
-| `cause` | String | Wrapped exception message, or `null` when no cause |
-| `txId` | String | Transaction ID |
-| `traceId` | String | OpenTelemetry trace ID |
-| `spanId` | String | OpenTelemetry span ID |
+| `type` | String | Stable URI unique per error code (omitted unless `jframe.exception.type-base-uri` is configured; when configured, built from base URI + percent-encoded error code) |
+| `title` | String | HTTP reason phrase (e.g. "Not Found") or family label (e.g. "Server Error") for non-standard codes |
+| `status` | int | HTTP status code |
+| `detail` | String | Human-readable error message |
+| `instance` | String | Full request path as seen by client, including servlet context path / application root path |
+| `errorCode` | String | Error code from `ApiError.getErrorCode()` (extension member) |
+| `txId` | String | Transaction ID (extension member, nullable) |
+| `traceId` | String | OpenTelemetry trace ID (extension member, nullable) |
+| `spanId` | String | OpenTelemetry span ID (extension member, nullable) |
+| `errors` | Array | Validation errors (extension member, nullable) |
+| `limit` | Integer | Rate limit (extension member, nullable) |
+| `remaining` | Integer | Remaining requests (extension member, nullable) |
+| `resetDate` | String | Rate limit reset time ISO-8601 (extension member, nullable) |
+| `sortableFields` | Array | Available sort fields (extension member, always present, `[]` when empty) |
+| `searchableFields` | Array | Available search fields (extension member, nullable) |
+| `rejectedParameter` | String | Rejected page parameter name (extension member, nullable) |
+| `rejectedValue` | int | Rejected page parameter value (extension member, nullable) |
+
+Absent fields are omitted from the JSON (never sent as `null`).
 
 ## Validation API
 

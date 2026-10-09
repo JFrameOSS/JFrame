@@ -33,4 +33,6 @@ dependencies {
     // ======= TEST =======
     testImplementation("tools.jackson.core:jackson-databind:${retrieve("jacksonVersion")}")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-tomcat")
+    testImplementation(testFixtures(project(":jframe-core")))
 }

@@ -2,6 +2,12 @@
 
 Every breaking or behaviour-changing release has a guide. Read the guides for each version between the one you are on and the one you are moving to, oldest first.
 
+## 1.8.0
+
+| Guide | What changed |
+|-------|--------------|
+| [RFC 9457 Problem Details](./1.8.0-problem-details.md) | Error responses now follow RFC 9457 Problem Details format (`application/problem+json`); old proprietary JSON shape removed; `statusCode` → `status`, `errorReason` → `detail`, `uri` → `instance`, `cause`/`method`/`query`/`contentType` removed; new `type`/`title` fields; extension members (`errorCode`, `txId`, `traceId`, `spanId`, `errors`, `limit`, `remaining`, `resetDate`); new properties `jframe.exception.enabled` and `jframe.exception.type-base-uri`; enrichers now registered as `@Bean` (Spring) or `@ApplicationScoped` (Quarkus); deterministic enricher ordering via `@Order`/`@Priority` |
+
 ## 1.7.1
 
 | Guide | What changed |

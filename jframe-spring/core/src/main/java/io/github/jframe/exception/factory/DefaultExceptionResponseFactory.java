@@ -15,10 +15,7 @@ import io.github.jframe.exception.search.InvalidSearchException;
 import io.github.jframe.exception.sort.InvalidSortErrorResponseResource;
 import io.github.jframe.exception.sort.InvalidSortException;
 
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-
-import static java.util.Objects.nonNull;
 
 /**
  * Default type of {@link ExceptionResponseFactory}.
@@ -26,7 +23,6 @@ import static java.util.Objects.nonNull;
  * <p>The default type creates a {@link ErrorResponseResource} for known exception types, and falls
  * back to a plain {@link ErrorResponseResource} for all other cases.
  */
-@Component
 public class DefaultExceptionResponseFactory implements ExceptionResponseFactory {
 
     /**
@@ -45,18 +41,14 @@ public class DefaultExceptionResponseFactory implements ExceptionResponseFactory
      */
     @Override
     public ErrorResponseResource create(final Throwable throwable) {
-        ErrorResponseResource result = null;
-        if (nonNull(throwable)) {
-            result = getErrorResponseResource(throwable);
-            if (result == null) {
-                final Throwable cause = getCausingJFrameException(throwable);
-                result = getErrorResponseResource(cause);
-            }
+        if (throwable == null) {
+            return new ErrorResponseResource(null);
         }
+        ErrorResponseResource result = getErrorResponseResource(throwable);
         if (result == null) {
-            result = new ErrorResponseResource(throwable);
+            result = getErrorResponseResource(getCausingJFrameException(throwable));
         }
-        return result;
+        return result == null ? new ErrorResponseResource(throwable) : result;
     }
 
     /**

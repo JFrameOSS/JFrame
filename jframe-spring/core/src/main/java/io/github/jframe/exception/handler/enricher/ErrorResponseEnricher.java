@@ -3,6 +3,7 @@ package io.github.jframe.exception.handler.enricher;
 import io.github.jframe.exception.handler.JFrameResponseEntityExceptionHandler;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.context.request.WebRequest;
 
@@ -17,6 +18,9 @@ import org.springframework.web.context.request.WebRequest;
  */
 @FunctionalInterface
 public interface ErrorResponseEnricher {
+
+    /** Base order of jFrame built-in enrichers; unordered application enrichers run after them. */
+    int BUILT_IN_ORDER = Ordered.LOWEST_PRECEDENCE - 1000;
 
     /**
      * Default type that first retrieves the original throwable stored in the error response resource, and then calls

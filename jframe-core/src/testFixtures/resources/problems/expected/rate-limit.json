@@ -1,0 +1,1 @@
+{"title":"Too Many Requests","status":429,"detail":"Rate limit exceeded","instance":"/test/rate-limit","errorCode":"RATE_LIMIT_EXCEEDED","limit":100,"remaining":0,"resetDate":"2030-01-01T12:00:00Z"}
