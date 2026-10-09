@@ -27,7 +27,7 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 | Feature | Spring Boot | Quarkus |
 |---------|:-----------:|:-------:|
-| Structured exception handling with error enrichers | ✅ | ✅ |
+| RFC 9457 Problem Details error responses with enrichers | ✅ | ✅ |
 | ECS-compliant MDC logging (request/transaction ID, duration) | ✅ | ✅ |
 | Request/response body logging with content-type filtering | ✅ | ✅ |
 | Paginated search with type-safe specifications | ✅ | ✅ |
@@ -37,7 +37,7 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 | Auto-instrumentation (JDBC, HTTP, Kafka, gRPC) | ✅ | ✅ |
 | Outbound HTTP correlation (RestTemplate / WebClient / JAX-RS client) | ✅ | ✅ |
 | SQL query logging via datasource-proxy | ✅ | ✅ |
-| OpenAPI error response schemas (400/429/500) | — | ✅ |
+| OpenAPI error response schemas (400/401/403/404/429/500) | ✅ springdoc | ✅ |
 | Jackson 3.x configuration | — | ✅ |
 | Jackson 2.x configuration | ✅ | — |
 
