@@ -1,0 +1,1 @@
+{"type":"{{typeBaseUri}}NOT_FOUND","title":"Not Found","status":404,"detail":"Not Found","instance":"/test/does-not-exist","errorCode":"NOT_FOUND"}

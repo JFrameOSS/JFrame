@@ -1,68 +1,47 @@
 package io.github.jframe.exception.sort;
 
+import io.github.support.ProblemJson;
 import io.github.support.UnitTest;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 
 @DisplayName("Unit Test - InvalidSortErrorResponseResource")
 class InvalidSortErrorResponseResourceTest extends UnitTest {
 
     @Test
-    @DisplayName("Should carry rejectedField from exception")
-    void shouldCarryRejectedField() {
-        // Given
-        final var ex = new InvalidSortException("badField", List.of("name", "email"));
+    @DisplayName("Should serialise rejected input as top-level extension members")
+    void shouldSerialiseRejectedInputAsExtensions() {
+        // Given: An invalid sort exception
+        final InvalidSortException exception = new InvalidSortException("badField", List.of("name", "email"));
 
-        // When
-        final var resource = new InvalidSortErrorResponseResource(ex);
+        // When: Serialising its resource
+        final Map<String, Object> body = ProblemJson.toMap(new InvalidSortErrorResponseResource(exception));
 
-        // Then
-        assertThat(resource.getRejectedField(), is(equalTo("badField")));
+        // Then: Rejected input is top-level; legacy cause is gone
+        assertThat(body, hasEntry("rejectedField", "badField"));
+        assertThat(body, hasEntry("sortableFields", List.of("name", "email")));
+        assertThat(body, not(hasKey("cause")));
     }
 
     @Test
-    @DisplayName("Should carry sortableFields from exception")
-    void shouldCarrySortableFields() {
-        // Given
-        final var ex = new InvalidSortException("x", List.of("name", "email", "status"));
+    @DisplayName("Should serialise sortableFields as empty array when none given")
+    void shouldSerialiseEmptySortableFields() {
+        // Given: An invalid sort exception without sortable fields
+        final InvalidSortException exception = new InvalidSortException("x", null);
 
-        // When
-        final var resource = new InvalidSortErrorResponseResource(ex);
+        // When: Serialising its resource
+        final Map<String, Object> body = ProblemJson.toMap(new InvalidSortErrorResponseResource(exception));
 
-        // Then
-        assertThat(resource.getSortableFields(), containsInAnyOrder("name", "email", "status"));
-    }
-
-    @Test
-    @DisplayName("Should be non-null when constructed")
-    void shouldBeNonNull() {
-        // Given
-        final var ex = new InvalidSortException("f", List.of());
-
-        // When
-        final var resource = new InvalidSortErrorResponseResource(ex);
-
-        // Then
-        assertThat(resource, is(notNullValue()));
-    }
-
-    @Test
-    @DisplayName("Should propagate null sortableFields without NPE")
-    void shouldPropagateNullSortableFieldsWithoutNpe() {
-        // Given
-        final var ex = new InvalidSortException("x", null);
-
-        // When / Then — no NPE during construction
-        final var resource = new InvalidSortErrorResponseResource(ex);
-        assertThat(resource, is(notNullValue()));
+        // Then: The member is an empty array
+        assertThat(body, hasEntry("sortableFields", List.of()));
     }
 }

@@ -1,6 +1,7 @@
 package io.github.jframe.exception.mapper;
 
 import io.github.jframe.exception.core.ValidationException;
+import io.quarkus.arc.properties.IfBuildProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
@@ -15,6 +16,11 @@ import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
  * as the response body. Extends {@link AbstractExceptionMapper} which provides shared null-check and response-building logic.
  */
 @Provider
+@IfBuildProperty(
+    name = "jframe.exception.enabled",
+    stringValue = "true",
+    enableIfMissing = true
+)
 @ApplicationScoped
 public class ValidationExceptionMapper extends AbstractExceptionMapper<ValidationException> {
 

@@ -75,51 +75,57 @@ public interface UserClient {
 
 ## Exception mappers
 
-JAX-RS `@Provider` exception mappers convert JFrame exceptions to structured JSON responses.
+JAX-RS `@Provider` exception mappers convert JFrame exceptions to RFC 9457 Problem Details responses (`application/problem+json`).
 
 ### Handled exceptions
 
-4 `@Provider` exception mappers handle the full exception hierarchy:
+6 `@Provider` exception mappers handle the full exception hierarchy:
 
 | Mapper | Exception | HTTP Status |
 |--------|-----------|-------------|
 | `HttpExceptionMapper` | `HttpException` (+ subclasses) | Dynamic |
+| `WebApplicationExceptionMapper` | `WebApplicationException` (JAX-RS) | From exception; 5xx → 500 |
 | `ValidationExceptionMapper` | `ValidationException` | 400 |
+| `ConstraintViolationExceptionMapper` | `ConstraintViolationException` (Bean Validation) | 400 |
 | `RateLimitExceptionMapper` | `RateLimitExceededException` | 429 |
 | `ThrowableMapper` | `Throwable` (catch-all) | 500 |
 
 ### Error response format
 
+RFC 9457 Problem Details with jFrame extension members:
+
 ```json
 {
-  "statusCode": 404,
+  "type": "https://jframeoss.github.io/jframe/problems/USER_001",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "User not found",
+  "instance": "/api/users/42",
   "errorCode": "USER_001",
-  "errorReason": "User not found",
-  "cause": null,
-  "method": "GET",
-  "uri": "/api/users/42",
-  "query": null,
-  "contentType": "application/json",
   "txId": "abc-123",
-  "traceId": "...",
-  "spanId": "..."
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "spanId": "00f067aa0ba902b7"
 }
 ```
 
+Content type: `application/problem+json`. Absent extension members are omitted (never `null`).
+
 ### Built-in enrichers
 
-7 enrichers run on every error response (plus `TracingEnricher` from `quarkus-otlp`):
+6 enrichers run on every error response (plus `TracingEnricher` from `quarkus-otlp`):
 
 | Enricher | Adds |
 |----------|------|
-| `StatusCodeEnricher` | `statusCode` |
-| `ErrorCodeEnricher` | `errorCode`, `errorReason` |
-| `RequestInfoEnricher` | `method`, `uri`, `query`, `contentType` |
-| `TransactionIdEnricher` | `txId` |
-| `ValidationEnricher` | field error details (ValidationException) |
-| `ConstraintViolationEnricher` | field error details (Bean Validation) |
-| `RateLimitEnricher` | limit headers (RateLimitExceededException) |
-| `TracingEnricher` *(quarkus-otlp)* | `traceId`, `spanId` |
+| `ErrorCodeResponseEnricher` | `errorCode`, `detail` (from `ApiError` or HTTP status) |
+| `ConstraintViolationResponseEnricher` | `errors` extension (Bean Validation violations) |
+| `ValidationErrorResponseEnricher` | `errors` extension (field violations from `ValidationException`) |
+| `RateLimitResponseEnricher` | `limit`, `remaining`, `resetDate` extensions (rate limit headers still set) |
+| `TransactionIdResponseEnricher` | `txId` extension |
+| `TracingEnricher` *(quarkus-otlp)* | `traceId`, `spanId` extensions |
+
+Enrichers run in deterministic order: built-ins first (via `@Priority(ErrorResponseEnricher.BUILT_IN_PRIORITY)`), then application enrichers.
+
+**JAX-RS exception handling:** `WebApplicationExceptionMapper` handles JAX-RS exceptions (404, 405, 415, etc.) with their own status codes and response headers (e.g. `Allow`). `ConstraintViolationExceptionMapper` handles Bean Validation violations (400 VALIDATION_ERROR). Return-value violations → 500.
 
 ### Custom error enricher
 
@@ -127,14 +133,25 @@ Add fields to every error response:
 
 ```java
 @ApplicationScoped
+@Priority(ErrorResponseEnricher.BUILT_IN_PRIORITY + 100)  // after built-ins
 public class TenantEnricher implements ErrorResponseEnricher {
     @Override
-    public void enrich(ErrorResponseResource resource, Throwable t,
-                       ContainerRequestContext request, int statusCode) {
-        resource.putDetail("tenantId", TenantContext.current());
+    public void doEnrich(ErrorResponseResource resource, Throwable throwable,
+                         ContainerRequestContext requestContext, int statusCode) {
+        String tenantId = requestContext.getHeaderString("X-Tenant-ID");
+        if (tenantId != null) {
+            resource.addExtension("tenantId", tenantId);
+        }
     }
 }
 ```
+
+**Signature:** `doEnrich(ErrorResponseResource, Throwable, ContainerRequestContext, int statusCode)` — `statusCode` is a primitive `int`.
+
+**Available methods:**
+- `resource.setErrorCode(String)` — override error code
+- `resource.setDetail(String)` — override detail message
+- `resource.addExtension(String key, Object value)` — add extension member
 
 ## Request-scoped caching
 

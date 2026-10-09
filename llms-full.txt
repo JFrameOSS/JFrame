@@ -47,13 +47,16 @@ RuntimeException
       └─ ValidationException (+ ValidationResult with List<ValidationError>)
 ```
 
-**Error Response Resources** — DTOs for JSON error responses:
-- `ErrorResponseResource` — base: method, uri, query, statusCode, statusMessage, errorMessage, txId, traceId, spanId
-- `ApiErrorResponseResource` — adds apiErrorCode, apiErrorReason
-- `ValidationErrorResponseResource` — adds List<ValidationErrorResource> (code + field)
+**Error Response Resources** — RFC 9457 Problem Details DTOs with jFrame extension members:
+- `ErrorResponseResource` — base: type, title, status, detail, instance, errorCode, txId, traceId, spanId (+ extensions map)
+- `ValidationErrorResponseResource` — adds errors extension (List of field violations)
 - `ConstraintViolationResponseResource` — for Jakarta Bean Validation
-- `RateLimitErrorResponseResource` — adds limit, remaining, resetDate
+- `RateLimitErrorResponseResource` — adds limit, remaining, resetDate extensions
+- `InvalidSortErrorResponseResource` — adds sortableFields extension
+- `InvalidSearchErrorResponseResource` — adds searchableFields extension
+- `InvalidPageErrorResponseResource` — adds rejectedParameter and rejectedValue extensions
 - `ExceptionResponseFactory` — functional interface to create responses from exceptions
+- `ProblemDetails` — utility class for RFC 9457 helpers (type URI building, title from status)
 
 ## ECS Structured Logging
 
@@ -511,7 +514,7 @@ public WebClient webClient(HttpFilter httpFilter) {
 
 ## Error Response Enrichment
 
-`TracingResponseEnricher` — adds trace/span IDs to error responses, records exceptions on current span with HTTP attributes.
+`TracingResponseEnricher` (Spring) / `TracingEnricher` (Quarkus) — adds `traceId` and `spanId` extension members to Problem Details error responses, records exceptions on current span with HTTP attributes.
 
 ## Execution Timer
 
@@ -541,13 +544,16 @@ All extend `AbstractExceptionMapper<T>` (`@Provider @ApplicationScoped`).
 
 | Mapper | Exception | Status |
 |--------|-----------|--------|
-| `ApiExceptionMapper` | `ApiException` | 400 |
 | `HttpExceptionMapper` | `HttpException` | From `exception.getHttpStatus()` |
-| `RateLimitExceededExceptionMapper` | `RateLimitExceededException` | 429 + X-RateLimit-* headers |
+| `WebApplicationExceptionMapper` | `WebApplicationException` (JAX-RS) | From exception; 5xx → 500 |
+| `ConstraintViolationExceptionMapper` | `ConstraintViolationException` (Bean Validation) | 400 |
 | `ValidationExceptionMapper` | `ValidationException` | 400 |
+| `RateLimitExceptionMapper` | `RateLimitExceededException` | 429 + X-RateLimit-* headers |
 | `ThrowableMapper` | `Throwable` (catch-all) | 500 (generic message) |
 
-**Response enrichment:** `ErrorResponseEntityBuilder` creates base response via `DefaultErrorResponseFactory`, then applies 8 `ErrorResponseEnricher` beans: StatusCode, ErrorMessage, RequestInfo, TransactionId, ApiError, RateLimit, ConstraintViolation, ValidationError.
+**Response format:** RFC 9457 Problem Details (`application/problem+json`) with jFrame extension members.
+
+**Response enrichment:** `ErrorResponseEntityBuilder` creates base response via `DefaultErrorResponseFactory`, then applies 6 `ErrorResponseEnricher` beans: ErrorCode, ConstraintViolation, ValidationError, RateLimit, TransactionId, Tracing.
 
 ## JAX-RS Filters
 

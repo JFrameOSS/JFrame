@@ -5,14 +5,11 @@ import io.github.jframe.validation.ValidationError;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.PropertyNamingStrategy;
 
-import org.springframework.stereotype.Component;
-
 import static java.util.Objects.requireNonNull;
 
 /**
  * Assembler for validation resources.
  */
-@Component
 public class ValidationErrorResourceAssembler extends AbstractModelConverter<ValidationError, ValidationErrorResource> {
 
     private final ObjectMapper objectMapper;

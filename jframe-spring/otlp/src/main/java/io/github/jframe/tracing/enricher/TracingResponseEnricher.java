@@ -10,19 +10,23 @@ import lombok.RequiredArgsConstructor;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 import static io.github.jframe.logging.ecs.EcsFieldNames.*;
-import static io.github.jframe.logging.ecs.EcsFieldNames.USER_NAME;
 
 /**
  * Enriches the error response with tracing information when an error occurs in a web request.
  */
-@Component
+@Order(ErrorResponseEnricher.BUILT_IN_ORDER + 30)
+@ConditionalOnBooleanProperty(
+    name = "jframe.exception.enabled",
+    matchIfMissing = true
+)
 @RequiredArgsConstructor
 @ConditionalOnProperty(
     name = "jframe.otlp.disabled",
@@ -45,11 +49,8 @@ public class TracingResponseEnricher implements ErrorResponseEnricher {
         if (currentSpan.isRecording() && request instanceof ServletWebRequest servletWebRequest) {
             final HttpServletRequest httpServletRequest = (HttpServletRequest) servletWebRequest.getNativeRequest();
 
-            // Enrich the error response with trace and span IDs for correlation
             errorResponseResource.setTraceId(currentSpan.getSpanContext().getTraceId());
             errorResponseResource.setSpanId(currentSpan.getSpanContext().getSpanId());
-
-            // Enrich the span with error information
             currentSpan.recordException(throwable);
             currentSpan.setStatus(StatusCode.ERROR);
             currentSpan.setAttribute(SPAN_HTTP_REMOTE_USER.getKey(), EcsFields.getOrDefault(USER_NAME, AuthenticationConstants.ANONYMOUS));

@@ -88,8 +88,8 @@ That's it. All HTTP filters, exception handlers, and logging are auto-configured
 | Request/transaction ID tracking | `spring-core` | `quarkus-core` |
 | HTTP request/response logging | `spring-core` | `quarkus-core` |
 | Sensitive field masking | `spring-core` | `quarkus-core` |
-| Global exception handling | `spring-core` | `quarkus-core` |
-| Structured error responses | `spring-core` | `quarkus-core` |
+| Global exception handling (RFC 9457 Problem Details) | `spring-core` | `quarkus-core` |
+| Structured error responses (`application/problem+json`) | `spring-core` | `quarkus-core` |
 | Request-scoped entity caching | `spring-core` | `quarkus-core` |
 | Scheduled task context propagation | `spring-core` | `quarkus-core` |
 | JPA search specifications | `spring-jpa` | `quarkus-jpa` |

@@ -18,4 +18,5 @@ dependencies {
     // ======= OTHER DEPENDENCIES =======
     compileOnly("jakarta.servlet:jakarta.servlet-api:${retrieve("jakartaServletVersion")}")
     compileOnly("org.aspectj:aspectjweaver:${retrieve("aspectjVersion")}")
+    testImplementation(testFixtures(project(":jframe-core")))
 }

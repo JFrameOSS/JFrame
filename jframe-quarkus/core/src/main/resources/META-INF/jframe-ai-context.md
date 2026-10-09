@@ -9,11 +9,15 @@ All extend `AbstractExceptionMapper<T>` (`@Provider @ApplicationScoped`).
 | Mapper | Exception | Status |
 |--------|-----------|--------|
 | `HttpExceptionMapper` | `HttpException` | From `exception.getHttpStatus()` |
-| `RateLimitExceededExceptionMapper` | `RateLimitExceededException` | 429 + X-RateLimit-* headers |
+| `WebApplicationExceptionMapper` | `WebApplicationException` (JAX-RS) | From exception; 5xx → 500 |
+| `ConstraintViolationExceptionMapper` | `ConstraintViolationException` (Bean Validation) | 400 |
 | `ValidationExceptionMapper` | `ValidationException` | 400 |
+| `RateLimitExceptionMapper` | `RateLimitExceededException` | 429 + X-RateLimit-* headers |
 | `ThrowableMapper` | `Throwable` (catch-all) | 500 (generic message) |
 
-**Response enrichment:** `ErrorResponseEntityBuilder` creates base response via `DefaultErrorResponseFactory`, then applies 7 `ErrorResponseEnricher` beans: StatusCode, ErrorCode, RequestInfo, TransactionId, RateLimit, ConstraintViolation, ValidationError.
+**Response format:** RFC 9457 Problem Details (`application/problem+json`) with jFrame extension members.
+
+**Response enrichment:** `ErrorResponseEntityBuilder` creates base response via `DefaultErrorResponseFactory`, then applies 6 `ErrorResponseEnricher` beans: ErrorCode, ConstraintViolation, ValidationError, RateLimit, TransactionId, Tracing.
 
 ## JAX-RS Filters
 

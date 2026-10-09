@@ -1,6 +1,7 @@
 package io.github.jframe.exception.mapper;
 
 import io.github.jframe.exception.HttpException;
+import io.quarkus.arc.properties.IfBuildProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
@@ -14,6 +15,11 @@ import jakarta.ws.rs.ext.Provider;
  * Extends {@link AbstractExceptionMapper} which provides shared null-check and response-building logic.
  */
 @Provider
+@IfBuildProperty(
+    name = "jframe.exception.enabled",
+    stringValue = "true",
+    enableIfMissing = true
+)
 @ApplicationScoped
 public class HttpExceptionMapper extends AbstractExceptionMapper<HttpException> {
 

@@ -1,5 +1,6 @@
 package io.github.jframe.exception.mapper;
 
+import io.quarkus.arc.properties.IfBuildProperty;
 import lombok.extern.slf4j.Slf4j;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -16,6 +17,11 @@ import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
  */
 @Slf4j
 @Provider
+@IfBuildProperty(
+    name = "jframe.exception.enabled",
+    stringValue = "true",
+    enableIfMissing = true
+)
 @ApplicationScoped
 public class ThrowableMapper extends AbstractExceptionMapper<Throwable> {
 

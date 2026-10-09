@@ -3,7 +3,9 @@ package io.github.jframe.exception.enricher;
 import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
+import io.quarkus.arc.properties.IfBuildProperty;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
@@ -13,6 +15,12 @@ import jakarta.ws.rs.container.ContainerRequestContext;
  * <p>Only enriches when the resource is a {@link RateLimitErrorResponseResource}
  * and the throwable is a {@link RateLimitExceededException}.
  */
+@IfBuildProperty(
+    name = "jframe.exception.enabled",
+    stringValue = "true",
+    enableIfMissing = true
+)
+@Priority(ErrorResponseEnricher.BUILT_IN_PRIORITY)
 @ApplicationScoped
 public class RateLimitResponseEnricher implements ErrorResponseEnricher {
 

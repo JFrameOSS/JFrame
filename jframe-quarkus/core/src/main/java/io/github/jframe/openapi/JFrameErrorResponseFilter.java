@@ -1,11 +1,12 @@
 package io.github.jframe.openapi;
 
 import io.github.jframe.exception.resource.ErrorResponseResource;
+import io.github.jframe.exception.resource.ProblemDetails;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.openapi.OASFactory;
@@ -28,6 +29,11 @@ import static io.quarkus.smallrye.openapi.OpenApiFilter.RunStage.RUNTIME_PER_REQ
  * ensuring consistent error documentation across all endpoints without requiring per-endpoint {@code @APIResponse} annotations.
  */
 @Slf4j
+@IfBuildProperty(
+    name = "jframe.exception.enabled",
+    stringValue = "true",
+    enableIfMissing = true
+)
 @ApplicationScoped
 @OpenApiFilter(stages = RUNTIME_PER_REQUEST)
 public class JFrameErrorResponseFilter implements OASFilter {
@@ -36,7 +42,7 @@ public class JFrameErrorResponseFilter implements OASFilter {
     private static final String STATUS_429 = "429";
     private static final String STATUS_500 = "500";
 
-    private static final String MEDIA_TYPE_JSON = "application/json";
+    private static final String MEDIA_TYPE_PROBLEM_JSON = ProblemDetails.MEDIA_TYPE;
 
     @Override
     public void filterOpenAPI(final OpenAPI openAPI) {
@@ -44,14 +50,9 @@ public class JFrameErrorResponseFilter implements OASFilter {
             return;
         }
 
-        for (final Map.Entry<String, PathItem> pathEntry : openAPI.getPaths().getPathItems().entrySet()) {
-            final PathItem pathItem = pathEntry.getValue();
-            if (pathItem.getOperations() == null) {
-                continue;
-            }
-
-            for (final Map.Entry<PathItem.HttpMethod, Operation> operationEntry : pathItem.getOperations().entrySet()) {
-                addStandardErrorResponses(operationEntry.getValue());
+        for (final PathItem pathItem : openAPI.getPaths().getPathItems().values()) {
+            if (pathItem.getOperations() != null) {
+                pathItem.getOperations().values().forEach(JFrameErrorResponseFilter::addStandardErrorResponses);
             }
         }
     }
@@ -65,9 +66,7 @@ public class JFrameErrorResponseFilter implements OASFilter {
 
     private static APIResponses ensureResponses(final Operation operation) {
         if (operation.getResponses() == null) {
-            final APIResponses responses = OASFactory.createObject(APIResponses.class);
-            operation.setResponses(responses);
-            return responses;
+            operation.setResponses(OASFactory.createObject(APIResponses.class));
         }
         return operation.getResponses();
     }
@@ -81,14 +80,9 @@ public class JFrameErrorResponseFilter implements OASFilter {
     }
 
     private static APIResponse buildErrorResponse(final String description, final String schemaRef) {
-        final Schema schema = OASFactory.createObject(Schema.class)
-            .ref("#/components/schemas/" + schemaRef);
-
-        final MediaType mediaType = OASFactory.createObject(MediaType.class)
-            .schema(schema);
-
-        final Content content = OASFactory.createObject(Content.class)
-            .addMediaType(MEDIA_TYPE_JSON, mediaType);
+        final Schema schema = OASFactory.createObject(Schema.class).ref("#/components/schemas/" + schemaRef);
+        final MediaType mediaType = OASFactory.createObject(MediaType.class).schema(schema);
+        final Content content = OASFactory.createObject(Content.class).addMediaType(MEDIA_TYPE_PROBLEM_JSON, mediaType);
 
         return OASFactory.createObject(APIResponse.class)
             .description(description)

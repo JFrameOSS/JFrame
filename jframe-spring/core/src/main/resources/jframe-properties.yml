@@ -8,6 +8,10 @@ jframe:
     environment: dev
     url: http://localhost:8080
 
+  exception:
+    enabled: true
+    type-base-uri: https://jframeoss.github.io/jframe/problems/
+
   logging:
     disabled: false
     response-length: -1

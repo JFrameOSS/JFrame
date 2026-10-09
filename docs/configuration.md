@@ -27,6 +27,15 @@ HTTP logging configuration. Applies to both Spring and Quarkus core modules.
 | `jframe.logging.allowed-content-types` | `application/json, application/xml, text/plain, ...` | Content types eligible for body logging |
 | `jframe.logging.body-excluded-content-types` | `multipart/form-data` | Content types excluded from body logging |
 
+## Exception handling properties
+
+Error response format and handler configuration. Applies to both Spring and Quarkus core modules.
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `jframe.exception.enabled` | `true` | Enable/disable jFrame's global exception handler, enrichers, and OpenAPI error docs. When `false`, jFrame's error handling is off but the rest of jFrame (logging, Jackson, search, OTLP) still works. |
+| `jframe.exception.type-base-uri` | `https://jframeoss.github.io/jframe/problems/` | Base URI for the `type` field in RFC 9457 Problem Details responses. Override to point to your own documentation. |
+
 ### Filter toggles
 
 All filters support `enabled` and `order` properties. Defaults shown below.

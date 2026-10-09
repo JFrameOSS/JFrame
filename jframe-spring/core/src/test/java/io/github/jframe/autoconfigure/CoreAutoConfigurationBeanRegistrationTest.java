@@ -6,10 +6,8 @@ import io.github.jframe.exception.factory.DefaultExceptionResponseFactory;
 import io.github.jframe.exception.factory.ErrorResponseEntityBuilder;
 import io.github.jframe.exception.handler.JFrameResponseEntityExceptionHandler;
 import io.github.jframe.exception.handler.enricher.ErrorCodeResponseEnricher;
-import io.github.jframe.exception.handler.enricher.MethodArgumentNotValidResponseEnricher;
+import io.github.jframe.exception.handler.enricher.ErrorResponseEnricher;
 import io.github.jframe.exception.handler.enricher.RateLimitResponseEnricher;
-import io.github.jframe.exception.handler.enricher.RequestInfoResponseEnricher;
-import io.github.jframe.exception.handler.enricher.StatusCodeResponseEnricher;
 import io.github.jframe.exception.handler.enricher.TransactionIdResponseEnricher;
 import io.github.jframe.exception.handler.enricher.ValidationErrorResponseEnricher;
 import io.github.jframe.exception.resource.ObjectErrorResourceAssembler;
@@ -38,8 +36,12 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.mockito.Mockito.mock;
 
 /**
  * Characterization / regression test for {@link CoreAutoConfiguration} bean registration surface.
@@ -106,19 +108,9 @@ class CoreAutoConfigurationBeanRegistrationTest {
             // Given: default CoreAutoConfiguration context
             contextRunner.run(ctx -> {
                 // When / Then: every enricher picked up by component scan must survive the refactor
-                assertThat("RateLimitResponseEnricher", ctx.getBean(RateLimitResponseEnricher.class), is(notNullValue()));
-                assertThat("StatusCodeResponseEnricher", ctx.getBean(StatusCodeResponseEnricher.class), is(notNullValue()));
-                assertThat("RequestInfoResponseEnricher", ctx.getBean(RequestInfoResponseEnricher.class), is(notNullValue()));
-                // TransactionIdResponseEnricher is @ConditionalOnProperty(transaction-id.enabled) and
-                // jframe-properties.yml ships transaction-id.enabled=false, so it is ABSENT by default.
-                // It is asserted in the ConditionallyPresentWhenEnabled suite below.
                 assertThat("ErrorCodeResponseEnricher", ctx.getBean(ErrorCodeResponseEnricher.class), is(notNullValue()));
-                assertThat(
-                    "MethodArgumentNotValidResponseEnricher",
-                    ctx.getBean(MethodArgumentNotValidResponseEnricher.class),
-                    is(notNullValue())
-                );
                 assertThat("ValidationErrorResponseEnricher", ctx.getBean(ValidationErrorResponseEnricher.class), is(notNullValue()));
+                assertThat("RateLimitResponseEnricher", ctx.getBean(RateLimitResponseEnricher.class), is(notNullValue()));
             });
         }
 
@@ -319,6 +311,61 @@ class CoreAutoConfigurationBeanRegistrationTest {
                         is(notNullValue())
                     )
                 );
+        }
+    }
+
+    // =========================================================================
+    // Error handling switch and back-off
+    // =========================================================================
+
+
+    @Nested
+    @DisplayName("Error handling disabled via jframe.exception.enabled=false")
+    class ErrorHandlingDisabled {
+
+        @Test
+        @DisplayName("Should not register handler, builder or enrichers but keep the rest of jFrame")
+        void shouldNotRegisterErrorHandlingBeansWhenDisabled() {
+            // Given: error handling switched off
+            contextRunner
+                .withPropertyValues("jframe.exception.enabled=false", "jframe.logging.filters.transaction-id.enabled=true")
+                .run(ctx -> {
+                    // When / Then: no error-handling beans, other jFrame beans still present
+                    assertThat(ctx.getBeansOfType(JFrameResponseEntityExceptionHandler.class), is(anEmptyMap()));
+                    assertThat(ctx.getBeansOfType(ErrorResponseEntityBuilder.class), is(anEmptyMap()));
+                    assertThat(ctx.getBeansOfType(ErrorResponseEnricher.class), is(anEmptyMap()));
+                    assertThat(ctx.getBean(JacksonConfig.class), is(notNullValue()));
+                    assertThat(ctx.getBean(TransactionIdFilterConfiguration.class), is(notNullValue()));
+                });
+        }
+
+        @Test
+        @DisplayName("Should register handler when jframe.exception.enabled=true")
+        void shouldRegisterHandlerWhenExplicitlyEnabled() {
+            // Given: error handling explicitly on
+            contextRunner
+                .withPropertyValues("jframe.exception.enabled=true")
+                .run(ctx -> assertThat(ctx.getBean(JFrameResponseEntityExceptionHandler.class), is(notNullValue())));
+        }
+    }
+
+
+    @Nested
+    @DisplayName("Application-provided handler")
+    class ApplicationProvidedHandler {
+
+        @Test
+        @DisplayName("Should back off when application defines a handler of jFrame's handler type")
+        void shouldBackOffWhenApplicationDefinesHandler() {
+            // Given: the application registers its own handler bean
+            final JFrameResponseEntityExceptionHandler appHandler = mock(JFrameResponseEntityExceptionHandler.class);
+            contextRunner
+                .withBean("applicationExceptionHandler", JFrameResponseEntityExceptionHandler.class, () -> appHandler)
+                .run(ctx -> {
+                    // When / Then: only the application's handler exists
+                    assertThat(ctx.getBeansOfType(JFrameResponseEntityExceptionHandler.class), is(aMapWithSize(1)));
+                    assertThat(ctx.getBean(JFrameResponseEntityExceptionHandler.class), is(sameInstance(appHandler)));
+                });
         }
     }
 }

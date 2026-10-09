@@ -5,7 +5,6 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.PropertyNamingStrategies.SnakeCaseStrategy;
 import tools.jackson.databind.PropertyNamingStrategy;
 
-import org.springframework.stereotype.Component;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 
@@ -14,7 +13,6 @@ import static java.util.Objects.requireNonNull;
 /**
  * Assembler for object error resources.
  */
-@Component
 public class ObjectErrorResourceAssembler extends AbstractModelConverter<ObjectError, ValidationErrorResource> {
 
     private final ObjectMapper objectMapper;

@@ -1,6 +1,7 @@
 package io.github.jframe.exception.mapper;
 
 import io.github.jframe.exception.page.InvalidPageException;
+import io.quarkus.arc.properties.IfBuildProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
@@ -13,6 +14,11 @@ import jakarta.ws.rs.ext.Provider;
  * A dedicated mapper is required because {@link HttpExceptionMapper} does not branch on subtype.
  */
 @Provider
+@IfBuildProperty(
+    name = "jframe.exception.enabled",
+    stringValue = "true",
+    enableIfMissing = true
+)
 @ApplicationScoped
 public class InvalidPageExceptionMapper extends AbstractExceptionMapper<InvalidPageException> {
 

@@ -4,6 +4,15 @@ fun retrieve(property: String): String =
     project.findProperty(property)?.toString()?.replace("\"", "")
         ?: throw IllegalStateException("Property $property not found")
 
+plugins {
+    `java-test-fixtures`
+}
+
+// Test fixtures are for jFrame's own tests only; never publish them.
+listOf("testFixturesApiElements", "testFixturesRuntimeElements").forEach {
+    (components["java"] as AdhocComponentWithVariants).withVariantsFromConfiguration(configurations[it]) { skip() }
+}
+
 dependencies {
     // ======= API (transitive to consumers) =======
     api("org.apache.commons:commons-lang3:${retrieve("commonsLangVersion")}")
@@ -25,6 +34,11 @@ dependencies {
     implementation("org.slf4j:slf4j-api:${retrieve("slf4jVersion")}")
     implementation("tools.jackson.core:jackson-databind:${retrieve("jacksonVersion")}")
     implementation("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
+
+    // ======= TEST FIXTURES (shared RFC 9457 schema + expected bodies) =======
+    testFixturesImplementation("tools.jackson.core:jackson-databind:${retrieve("jacksonVersion")}")
+    testFixturesImplementation("org.hamcrest:hamcrest:${retrieve("hamcrestVersion")}")
+    testFixturesImplementation("com.networknt:json-schema-validator:${retrieve("jsonSchemaValidatorVersion")}")
 
     // ======= TEST =======
     testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")

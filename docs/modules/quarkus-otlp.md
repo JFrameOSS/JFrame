@@ -74,15 +74,18 @@ Quarkus OTEL extension auto-extracts inbound `traceparent` headers.
 
 ## Trace ID in error responses
 
-`TracingEnricher` adds `traceId` and `spanId` to error response JSON and enriches the OTEL span with error details:
+`TracingEnricher` adds `traceId` and `spanId` as extension members to error response Problem Details and enriches the OTEL span with error details:
 
 ```json
 {
-  "statusCode": 500,
+  "type": "https://jframeoss.github.io/jframe/problems/INTERNAL_SERVER_ERROR",
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "An unexpected error occurred",
+  "instance": "/api/users",
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "errorReason": "Internal server error",
-  "traceId": "abc123...",
-  "spanId": "def456..."
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "spanId": "00f067aa0ba902b7"
 }
 ```
 

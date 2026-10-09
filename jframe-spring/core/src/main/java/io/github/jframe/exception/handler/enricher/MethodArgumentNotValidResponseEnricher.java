@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.WebRequest;
@@ -19,7 +19,7 @@ import org.springframework.web.context.request.WebRequest;
  *
  * <p>It only applies to a {@link MethodArgumentNotValidException}.</p>
  */
-@Component
+@Order(ErrorResponseEnricher.BUILT_IN_ORDER + 10)
 @RequiredArgsConstructor
 public class MethodArgumentNotValidResponseEnricher implements ErrorResponseEnricher {
 

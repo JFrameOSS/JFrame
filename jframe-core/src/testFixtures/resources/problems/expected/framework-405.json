@@ -1,0 +1,1 @@
+{"type":"{{typeBaseUri}}METHOD_NOT_ALLOWED","title":"Method Not Allowed","status":405,"detail":"Method Not Allowed","instance":"/test/bad-request","errorCode":"METHOD_NOT_ALLOWED"}

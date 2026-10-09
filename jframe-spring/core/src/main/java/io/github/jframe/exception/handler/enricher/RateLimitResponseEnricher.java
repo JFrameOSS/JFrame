@@ -4,8 +4,8 @@ import io.github.jframe.exception.core.RateLimitExceededException;
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.exception.resource.RateLimitErrorResponseResource;
 
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
 
 /**
@@ -13,7 +13,7 @@ import org.springframework.web.context.request.WebRequest;
  *
  * <p>It only applies to a {@link RateLimitExceededException}.</p>
  */
-@Component
+@Order(ErrorResponseEnricher.BUILT_IN_ORDER + 10)
 public class RateLimitResponseEnricher implements ErrorResponseEnricher {
 
     /**

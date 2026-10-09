@@ -2,10 +2,11 @@ package io.github.jframe.exception.handler.enricher;
 
 import io.github.jframe.exception.resource.ErrorResponseResource;
 import io.github.jframe.logging.ecs.EcsFields;
+import io.github.jframe.logging.model.TransactionId;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
 
 import static io.github.jframe.logging.ecs.EcsFieldNames.TX_ID;
@@ -14,7 +15,7 @@ import static io.github.jframe.logging.filter.config.TransactionIdFilterConfigur
 /**
  * This enricher copies the http status value and text onto the error response resource.
  */
-@Component
+@Order(ErrorResponseEnricher.BUILT_IN_ORDER + 20)
 @ConditionalOnProperty(
     prefix = FILTER_PREFIX,
     name = "enabled",
@@ -33,6 +34,7 @@ public class TransactionIdResponseEnricher implements ErrorResponseEnricher {
         final Throwable throwable,
         final WebRequest request,
         final HttpStatus httpStatus) {
-        errorResponseResource.setTxId(EcsFields.get(TX_ID));
+        final String txId = TransactionId.get();
+        errorResponseResource.setTxId(txId == null ? EcsFields.get(TX_ID) : txId);
     }
 }
