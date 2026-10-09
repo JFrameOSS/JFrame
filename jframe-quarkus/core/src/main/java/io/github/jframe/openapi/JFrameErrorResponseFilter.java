@@ -25,7 +25,7 @@ import static io.quarkus.smallrye.openapi.OpenApiFilter.RunStage.RUNTIME_PER_REQ
 /**
  * OASFilter that automatically adds standard error response documentation to all operations.
  *
- * <p>Adds 400, 429, and 500 error responses to every operation that does not already define them,
+ * <p>Adds 400, 401, 403, 404, 429, and 500 error responses to every operation that does not already define them,
  * ensuring consistent error documentation across all endpoints without requiring per-endpoint {@code @APIResponse} annotations.
  */
 @Slf4j
@@ -39,6 +39,9 @@ import static io.quarkus.smallrye.openapi.OpenApiFilter.RunStage.RUNTIME_PER_REQ
 public class JFrameErrorResponseFilter implements OASFilter {
 
     private static final String STATUS_400 = "400";
+    private static final String STATUS_401 = "401";
+    private static final String STATUS_403 = "403";
+    private static final String STATUS_404 = "404";
     private static final String STATUS_429 = "429";
     private static final String STATUS_500 = "500";
 
@@ -60,6 +63,9 @@ public class JFrameErrorResponseFilter implements OASFilter {
     private static void addStandardErrorResponses(final Operation operation) {
         final APIResponses responses = ensureResponses(operation);
         addIfAbsent(responses, STATUS_400, "Bad Request", ErrorResponseResource.class.getSimpleName());
+        addIfAbsent(responses, STATUS_401, "Unauthorized", ErrorResponseResource.class.getSimpleName());
+        addIfAbsent(responses, STATUS_403, "Forbidden", ErrorResponseResource.class.getSimpleName());
+        addIfAbsent(responses, STATUS_404, "Not Found", ErrorResponseResource.class.getSimpleName());
         addIfAbsent(responses, STATUS_429, "Too Many Requests", RateLimitErrorResponseResource.class.getSimpleName());
         addIfAbsent(responses, STATUS_500, "Internal Server Error", ErrorResponseResource.class.getSimpleName());
     }

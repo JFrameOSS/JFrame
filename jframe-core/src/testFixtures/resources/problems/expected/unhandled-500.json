@@ -1,1 +1,1 @@
-{"type":"{{typeBaseUri}}INTERNAL_SERVER_ERROR","title":"Internal Server Error","status":500,"detail":"Internal server error","instance":"/test/unexpected","errorCode":"INTERNAL_SERVER_ERROR"}
+{"title":"Internal Server Error","status":500,"detail":"Internal server error","instance":"/test/unexpected","errorCode":"INTERNAL_SERVER_ERROR"}

@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -25,6 +26,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 /**
  * Cross-runtime parity: Spring bodies must equal the shared expected bodies in jframe-core test fixtures.
@@ -63,19 +65,36 @@ class ProblemDetailsParityTest {
             "GET, /test/invalid-sort, invalid-sort",
             "GET, /test/unexpected, unhandled-500",
             "GET, /test/does-not-exist, framework-404",
-            "PUT, /test/bad-request, framework-405"
+            "PUT, /test/bad-request, framework-405",
+            "GET, /test/bad-credentials, security-401",
+            "GET, /test/access-denied, security-403"
         }
     )
     @DisplayName("Should render body equal to the shared expected body")
     void shouldRenderSharedExpectedBody(final String method, final String path, final String expected) throws Exception {
-        // Given: Default type base URI, built-in enrichers only
+        // Given: No type base URI configured, built-in enrichers only
         // When: Calling the endpoint
         final MockHttpServletResponse response = perform(MockMvcRequestBuilders.request(HttpMethod.valueOf(method), path));
         final String json = response.getContentAsString();
 
         // Then: RFC 9457 conformant and identical to the Quarkus expectation
         ProblemJson.assertRfc9457(json, response.getStatus());
-        ProblemJson.assertMatchesExpected(json, expected, ProblemJson.DEFAULT_TYPE_BASE_URI);
+        ProblemJson.assertMatchesExpected(json, expected);
+    }
+
+    @Test
+    @DisplayName("Should render malformed JSON body equal to the shared unreadable-body expectation")
+    void shouldRenderSharedExpectedBodyWhenRequestBodyIsMalformed() throws Exception {
+        // Given: A malformed JSON request body
+        final MockHttpServletRequestBuilder request = post("/test/json-body").contentType(MediaType.APPLICATION_JSON).content("{\"name\":");
+
+        // When: Posting it
+        final MockHttpServletResponse response = perform(request);
+        final String json = response.getContentAsString();
+
+        // Then: RFC 9457 conformant and identical to the Quarkus expectation
+        ProblemJson.assertRfc9457(json, response.getStatus());
+        ProblemJson.assertMatchesExpected(json, "unreadable-body");
     }
 
     @Test

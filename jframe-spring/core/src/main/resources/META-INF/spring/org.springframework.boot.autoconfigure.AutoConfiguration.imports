@@ -1,1 +1,2 @@
 io.github.jframe.autoconfigure.CoreAutoConfiguration
+io.github.jframe.exception.fallback.ErrorFallbackAutoConfiguration

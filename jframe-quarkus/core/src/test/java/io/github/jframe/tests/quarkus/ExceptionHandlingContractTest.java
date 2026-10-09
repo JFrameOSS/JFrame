@@ -81,10 +81,10 @@ class ExceptionHandlingContractTest {
         final Response response = map(new HttpExceptionMapper(), exception, "/test/business");
         final Map<String, Object> body = body(response);
 
-        // Then: Standard members with default type base URI and errorCode; legacy fields gone
+        // Then: Standard members and errorCode, type omitted (no base URI); legacy fields gone
         assertThat(response.getStatus(), is(409));
         assertThat(response.getMediaType().toString(), is(ProblemJson.PROBLEM_JSON));
-        assertThat(body, hasEntry("type", ProblemJson.DEFAULT_TYPE_BASE_URI + "ORDER_CLOSED"));
+        assertThat(body, not(hasKey("type")));
         assertThat(body, hasEntry("title", "Conflict"));
         assertThat(body, hasEntry("status", 409));
         assertThat(body, hasEntry("detail", "Order is already closed"));
@@ -111,16 +111,16 @@ class ExceptionHandlingContractTest {
     }
 
     @Test
-    @DisplayName("Should URI-encode error code in type")
-    void shouldUriEncodeErrorCodeInType() {
+    @DisplayName("Should keep unsafe error code verbatim and omit type without base URI")
+    void shouldKeepErrorCodeVerbatimWhenNoTypeBaseUri() {
         // Given: An error code containing a space and a slash
         final HttpException exception = new HttpException(new TestApiError("BAD CODE/1", "Unsafe code", Response.Status.BAD_REQUEST));
 
         // When: Mapping it
         final Map<String, Object> body = body(map(new HttpExceptionMapper(), exception, "/test/unsafe-code"));
 
-        // Then: type percent-encodes the code, errorCode is verbatim
-        assertThat(body, hasEntry("type", ProblemJson.DEFAULT_TYPE_BASE_URI + "BAD%20CODE%2F1"));
+        // Then: errorCode verbatim, no type
+        assertThat(body, not(hasKey("type")));
         assertThat(body, hasEntry("errorCode", "BAD CODE/1"));
     }
 

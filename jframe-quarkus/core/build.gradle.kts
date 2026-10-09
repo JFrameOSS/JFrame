@@ -23,6 +23,7 @@ dependencies {
     testImplementation("io.quarkus:quarkus-arc:${retrieve("quarkusVersion")}")
     testImplementation("io.quarkus:quarkus-smallrye-openapi:${retrieve("quarkusVersion")}")
     testImplementation("io.quarkus:quarkus-core:${retrieve("quarkusVersion")}")
+    testImplementation("io.smallrye:smallrye-open-api-jaxrs:${retrieve("smallryeOpenApiVersion")}")
     testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")
     testImplementation("org.mockito:mockito-core:${retrieve("mockitoVersion")}")
     testImplementation("org.mockito:mockito-junit-jupiter:${retrieve("mockitoVersion")}")

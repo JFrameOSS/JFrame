@@ -72,7 +72,7 @@ public class ErrorResponseWriter {
         if (builder == null) {
             resource = new ErrorResponseResource();
             resource.setError(apiError);
-            ProblemDetails.apply(resource, status.value(), request.getRequestURI(), ProblemDetails.DEFAULT_TYPE_BASE_URI);
+            ProblemDetails.apply(resource, status.value(), request.getRequestURI(), null);
         } else {
             resource = builder.buildErrorResponseBody(new HttpException(apiError), status, new ServletWebRequest(request, response));
         }

@@ -105,7 +105,7 @@ RFC 9457 Problem Details body with jFrame extension members. Serialised as `appl
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `type` | String | Stable URI unique per error code (base URI + percent-encoded error code) |
+| `type` | String | Stable URI unique per error code (omitted unless `jframe.exception.type-base-uri` is configured; when configured, built from base URI + percent-encoded error code) |
 | `title` | String | HTTP reason phrase (e.g. "Not Found") or family label (e.g. "Server Error") for non-standard codes |
 | `status` | int | HTTP status code |
 | `detail` | String | Human-readable error message |

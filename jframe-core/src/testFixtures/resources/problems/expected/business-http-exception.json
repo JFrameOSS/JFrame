@@ -1,1 +1,1 @@
-{"type":"{{typeBaseUri}}ORDER_CLOSED","title":"Conflict","status":409,"detail":"Order is already closed","instance":"/test/business","errorCode":"ORDER_CLOSED"}
+{"title":"Conflict","status":409,"detail":"Order is already closed","instance":"/test/business","errorCode":"ORDER_CLOSED"}

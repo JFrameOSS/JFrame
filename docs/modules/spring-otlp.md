@@ -144,7 +144,6 @@ When tracing is enabled, `TracingResponseEnricher` adds `traceId` and `spanId` a
 
 ```json
 {
-  "type": "https://jframeoss.github.io/jframe/problems/INTERNAL_SERVER_ERROR",
   "title": "Internal Server Error",
   "status": 500,
   "detail": "An unexpected error occurred",

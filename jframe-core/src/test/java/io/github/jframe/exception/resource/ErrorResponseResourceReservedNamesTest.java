@@ -117,7 +117,7 @@ class ErrorResponseResourceReservedNamesTest extends UnitTest {
         final ErrorResponseResource resource = new ErrorResponseResource();
         resource.setErrorCode("ORDER_CLOSED");
         resource.setDetail("Order is already closed");
-        ProblemDetails.apply(resource, 409, "/orders/1", null);
+        ProblemDetails.apply(resource, 409, "/orders/1", "https://example.test/problems/");
         resource.setTxId("tx");
         resource.setTraceId("trace");
         resource.setSpanId("span");

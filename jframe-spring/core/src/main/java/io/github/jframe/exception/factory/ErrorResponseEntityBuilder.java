@@ -35,7 +35,7 @@ public class ErrorResponseEntityBuilder {
     public ErrorResponseEntityBuilder(final ExceptionResponseFactory exceptionResponseFactory,
                                       final List<ErrorResponseEnricher> errorResponseEnrichers,
                                       @Value(
-                                          "${" + TYPE_BASE_URI_PROPERTY + ":" + ProblemDetails.DEFAULT_TYPE_BASE_URI + "}"
+                                          "${" + TYPE_BASE_URI_PROPERTY + ":}"
                                       ) final String typeBaseUri) {
         this.exceptionResponseFactory = requireNonNull(exceptionResponseFactory);
         this.typeBaseUri = typeBaseUri;

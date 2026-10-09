@@ -79,7 +79,7 @@ Each sub-config has `enabled()`: `transactionId` (default: `false`), `requestId`
 
 ## OpenAPI Integration
 
-`JFrameErrorResponseFilter` (`OASFilter`) — auto-adds standard error responses (400, 429, 500) to all OpenAPI operations.
+`JFrameErrorResponseFilter` (`OASFilter`) — auto-adds standard error responses (400, 401, 403, 404, 429, 500) to all OpenAPI operations with RFC 9457 Problem Details schemas.
 
 ## Scheduled Task Support
 

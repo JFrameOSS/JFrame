@@ -98,10 +98,10 @@ public class ErrorResponseWriterTest {
         // When: Writing a FORBIDDEN error via the fallback path
         ErrorResponseWriter.write(request, response, Response.Status.FORBIDDEN, "ACCESS_DENIED", "Access denied");
 
-        // Then: Still a valid problem with default type URI
+        // Then: Still a valid problem, type omitted
         ProblemJson.assertRfc9457(response.getContentAsString(), 403);
         final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
-        assertThat(body, hasEntry("type", ProblemJson.DEFAULT_TYPE_BASE_URI + "ACCESS_DENIED"));
+        assertThat(body, not(hasKey("type")));
         assertThat(body, hasEntry("instance", "/api/secure"));
     }
 

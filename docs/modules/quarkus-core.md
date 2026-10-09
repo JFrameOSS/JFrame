@@ -96,7 +96,6 @@ RFC 9457 Problem Details with jFrame extension members:
 
 ```json
 {
-  "type": "https://jframeoss.github.io/jframe/problems/USER_001",
   "title": "Not Found",
   "status": 404,
   "detail": "User not found",
@@ -108,7 +107,7 @@ RFC 9457 Problem Details with jFrame extension members:
 }
 ```
 
-Content type: `application/problem+json`. Absent extension members are omitted (never `null`).
+Content type: `application/problem+json`. Absent extension members are omitted (never `null`). `type` is omitted unless `jframe.exception.type-base-uri` is configured.
 
 ### Built-in enrichers
 
@@ -212,10 +211,17 @@ The interceptor generates a single UUID used for both `RequestId` and `Transacti
 | Status | Description | Schema |
 |--------|-------------|--------|
 | 400 | Bad Request | `ErrorResponseResource` |
+| 401 | Unauthorized | `ErrorResponseResource` |
+| 403 | Forbidden | `ErrorResponseResource` |
+| 404 | Not Found | `ErrorResponseResource` |
 | 429 | Too Many Requests | `RateLimitErrorResponseResource` |
 | 500 | Internal Server Error | `ErrorResponseResource` |
 
 No configuration needed — activates automatically with `quarkus-smallrye-openapi`.
+
+### Known limitation: 401/403 from Quarkus Security
+
+Quarkus Security (401/403) raised by authentication/authorisation filters keep Quarkus's native responses (no jFrame Problem Details body). Custom exception mappers would break authentication challenges (e.g. OIDC code flow redirect, `WWW-Authenticate` header).
 
 ## Startup logging
 

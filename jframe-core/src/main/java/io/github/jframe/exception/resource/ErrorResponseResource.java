@@ -81,6 +81,7 @@ public class ErrorResponseResource {
     }
 
     /** Sets {@code errorCode} and {@code detail} from the given {@link ApiError}. */
+    @JsonIgnore
     public void setError(final ApiError apiError) {
         this.errorCode = apiError.getErrorCode();
         this.detail = apiError.getReason();
@@ -107,6 +108,7 @@ public class ErrorResponseResource {
     }
 
     /** Returns the custom extension members, serialised at top level. */
+    @JsonIgnore
     @JsonAnyGetter
     public Map<String, Object> getExtensions() {
         return Collections.unmodifiableMap(extensions);

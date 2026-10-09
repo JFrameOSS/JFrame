@@ -1,1 +1,1 @@
-{"type":"{{typeBaseUri}}INVALID_SORT","title":"Bad Request","status":400,"detail":"Invalid sort field or direction","instance":"/test/invalid-sort","errorCode":"INVALID_SORT","rejectedField":"password","sortableFields":["name","createdAt"]}
+{"title":"Bad Request","status":400,"detail":"Invalid sort field or direction","instance":"/test/invalid-sort","errorCode":"INVALID_SORT","rejectedField":"password","sortableFields":["name","createdAt"]}

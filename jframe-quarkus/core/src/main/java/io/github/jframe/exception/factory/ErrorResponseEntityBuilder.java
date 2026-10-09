@@ -56,18 +56,18 @@ public class ErrorResponseEntityBuilder {
             factory,
             enricherInstance.stream().toList(),
             ConfigProvider.getConfig().getOptionalValue(TYPE_BASE_URI_PROPERTY, String.class)
-                .orElse(ProblemDetails.DEFAULT_TYPE_BASE_URI)
+                .orElse(null)
         );
     }
 
     /**
-     * Constructor for use without CDI; uses the default {@code type} base URI.
+     * Constructor for use without CDI; omits {@code type}.
      *
      * @param factory   the resource factory
      * @param enrichers the enrichers to apply
      */
     ErrorResponseEntityBuilder(final DefaultErrorResponseFactory factory, final List<ErrorResponseEnricher> enrichers) {
-        this(factory, enrichers, ProblemDetails.DEFAULT_TYPE_BASE_URI);
+        this(factory, enrichers, null);
     }
 
     private ErrorResponseEntityBuilder(

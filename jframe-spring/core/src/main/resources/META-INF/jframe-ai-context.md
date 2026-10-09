@@ -50,21 +50,22 @@ The `RequestResponseLogFilter` and `RequestDurationFilter` short-circuit when DE
 
 ## Global Exception Handling
 
-`JFrameResponseEntityExceptionHandler` — `@RestControllerAdvice`, `Ordered.HIGHEST_PRECEDENCE`.
+`JFrameResponseEntityExceptionHandler` — registered as `@Bean` (`@ConditionalOnMissingBean`), `@Order(Ordered.LOWEST_PRECEDENCE)` (fallback; application `@RestControllerAdvice` / `@ExceptionHandler` beans take precedence). All bodies are RFC 9457 Problem Details (`application/problem+json`). Switch off with `jframe.exception.enabled=false`.
 
 | Exception | Status | Response Type |
 |-----------|--------|---------------|
 | `HttpException` | Varies | `ErrorResponseResource` |
 | `RateLimitExceededException` | 429 | `RateLimitErrorResponseResource` + X-RateLimit-* headers |
-| `ApiException` | 400 | `ApiErrorResponseResource` |
 | `ValidationException` | 400 | `ValidationErrorResponseResource` |
-| `BadCredentialsException` | 401 | `ErrorResponseResource` |
+| `AuthenticationException` | 401 | `ErrorResponseResource` |
 | `AccessDeniedException` | 403 | `ErrorResponseResource` |
 | `MethodArgumentNotValidException` | 400 | `MethodArgumentNotValidResponseResource` |
-| `NoResourceFoundException` | 404 | `ErrorResponseResource` |
+| Other Spring MVC exceptions (404, 405, 415, ...) | Varies | `ErrorResponseResource` |
 | `Throwable` | 500 | `ErrorResponseResource` |
 
-**Enrichers** — 8 `ErrorResponseEnricher` beans populate response fields: StatusCode, ErrorMessage, RequestInfo, TransactionId, ApiError, RateLimit, MethodArgumentNotValid, ValidationError.
+**Fallback** — `JFrameErrorController` replaces Boot's `/error` handling, so errors from filters and `sendError` are Problem Details too. Backs off when the app defines its own `ErrorController`.
+
+**Enrichers** — `ErrorResponseEnricher` beans, ordered by `@Order` (built-ins at `ErrorResponseEnricher.BUILT_IN_ORDER`): ErrorCode, TransactionId, RateLimit, MethodArgumentNotValid, ValidationError (+ Tracing with spring-otlp).
 
 ## Outbound HTTP Logging
 

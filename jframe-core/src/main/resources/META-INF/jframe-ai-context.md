@@ -14,11 +14,11 @@ RuntimeException
       └─ ValidationException (+ ValidationResult with List<ValidationError>)
 ```
 
-**Error Response Resources** — DTOs for JSON error responses:
-- `ErrorResponseResource` — base: method, uri, query, contentType, statusCode, errorCode, errorReason, cause (nullable), txId, traceId, spanId
-- `ValidationErrorResponseResource` — adds List<ValidationErrorResource> (code + field)
+**Error Response Resources** — DTOs for RFC 9457 Problem Details JSON responses:
+- `ErrorResponseResource` — base: type (omitted unless configured), title, status, detail, instance, errorCode, txId, traceId, spanId (extension members)
+- `ValidationErrorResponseResource` — adds errors extension (List<ValidationErrorResource> with code + field)
 - `ConstraintViolationResponseResource` — for Jakarta Bean Validation
-- `RateLimitErrorResponseResource` — adds limit, remaining, resetDate
+- `RateLimitErrorResponseResource` — adds limit, remaining, resetDate extensions
 - `ExceptionResponseFactory` — functional interface to create responses from exceptions
 
 ## ECS Structured Logging

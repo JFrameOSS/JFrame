@@ -10,7 +10,6 @@ jframe:
 
   exception:
     enabled: true
-    type-base-uri: https://jframeoss.github.io/jframe/problems/
 
   logging:
     disabled: false

@@ -34,7 +34,7 @@ Error response format and handler configuration. Applies to both Spring and Quar
 | Property | Default | Description |
 |----------|---------|-------------|
 | `jframe.exception.enabled` | `true` | Enable/disable jFrame's global exception handler, enrichers, and OpenAPI error docs. When `false`, jFrame's error handling is off but the rest of jFrame (logging, Jackson, search, OTLP) still works. |
-| `jframe.exception.type-base-uri` | `https://jframeoss.github.io/jframe/problems/` | Base URI for the `type` field in RFC 9457 Problem Details responses. Override to point to your own documentation. |
+| `jframe.exception.type-base-uri` | *(omitted)* | Base URI for the `type` field in RFC 9457 Problem Details responses. When absent, `type` is omitted (RFC 9457 semantics: `about:blank`). Set this to point to your own error documentation. |
 
 ### Filter toggles
 

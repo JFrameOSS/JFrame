@@ -19,6 +19,15 @@ class JFrameErrorResponseFilterTest extends UnitTest {
 
     private static final String PROBLEM_JSON = "application/problem+json";
 
+    private static final String[] STANDARD_CODES = {
+        "400",
+        "401",
+        "403",
+        "404",
+        "429",
+        "500"
+    };
+
     private static OpenAPI anOpenApiWithOperation(final Operation operation) {
         return OASFactory.createOpenAPI()
             .paths(OASFactory.createPaths().addPathItem("/orders", OASFactory.createPathItem().GET(operation)));
@@ -33,17 +42,18 @@ class JFrameErrorResponseFilterTest extends UnitTest {
         // When: Filtering the document
         new JFrameErrorResponseFilter().filterOpenAPI(anOpenApiWithOperation(operation));
 
-        // Then: 400/429/500 use problem+json only, with Problem Details schemas
-        for (final String code : new String[] {
-            "400",
-            "429",
-            "500"
-        }) {
+        // Then: 400/401/403/404/429/500 (Spring parity) use problem+json only, with Problem Details schemas
+        assertThat(operation.getResponses().getAPIResponses().keySet(), containsInAnyOrder(STANDARD_CODES));
+        for (final String code : STANDARD_CODES) {
             final APIResponse response = operation.getResponses().getAPIResponse(code);
             assertThat(code, response.getContent().getMediaTypes().keySet(), contains(PROBLEM_JSON));
             final MediaType mediaType = response.getContent().getMediaType(PROBLEM_JSON);
             assertThat(code, mediaType.getSchema().getRef(), startsWith("#/components/schemas/"));
         }
+        assertThat(
+            operation.getResponses().getAPIResponse("401").getContent().getMediaType(PROBLEM_JSON).getSchema().getRef(),
+            endsWith("/ErrorResponseResource")
+        );
         assertThat(
             operation.getResponses().getAPIResponse("429").getContent().getMediaType(PROBLEM_JSON).getSchema().getRef(),
             endsWith("RateLimitErrorResponseResource")
@@ -67,6 +77,6 @@ class JFrameErrorResponseFilterTest extends UnitTest {
         // Then: Own 400 untouched, each code exactly once
         final APIResponses responses = operation.getResponses();
         assertThat(responses.getAPIResponse("400"), is(sameInstance(own)));
-        assertThat(responses.getAPIResponses().keySet(), containsInAnyOrder("400", "429", "500"));
+        assertThat(responses.getAPIResponses().keySet(), containsInAnyOrder(STANDARD_CODES));
     }
 }

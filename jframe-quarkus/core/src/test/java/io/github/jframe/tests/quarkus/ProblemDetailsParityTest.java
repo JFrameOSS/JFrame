@@ -17,6 +17,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import jakarta.enterprise.inject.Instance;
@@ -28,6 +30,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.metadata.ConstraintDescriptor;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
@@ -57,6 +60,8 @@ class ProblemDetailsParityTest {
     private static final String ROOT_PATH = "/app";
     private static final String CUSTOM_TYPE_BASE_URI = "https://errors.example.com/";
 
+    private static final String SECRET = "jdbc:postgresql://db/secret";
+
     @NotNull
     private static Object notNullHolder;
 
@@ -79,7 +84,14 @@ class ProblemDetailsParityTest {
             Arguments.of(new InvalidSortException("password", List.of("name", "createdAt")), "/test/invalid-sort", "invalid-sort"),
             Arguments.of(new IllegalStateException("jdbc:postgresql://db/secret"), "/test/unexpected", "unhandled-500"),
             Arguments.of(new NotFoundException(), "/test/does-not-exist", "framework-404"),
-            Arguments.of(new NotAllowedException("GET"), "/test/bad-request", "framework-405")
+            Arguments.of(new NotAllowedException("GET"), "/test/bad-request", "framework-405"),
+            Arguments.of(new CompletionException(new NotFoundException()), "/test/unexpected", "unhandled-500"),
+            Arguments.of(new ExecutionException(new NotFoundException()), "/test/unexpected", "unhandled-500"),
+            Arguments.of(
+                new WebApplicationException(new IllegalArgumentException(SECRET), Response.Status.BAD_REQUEST),
+                "/test/json-body",
+                "unreadable-body"
+            )
         );
     }
 
@@ -87,7 +99,7 @@ class ProblemDetailsParityTest {
     @MethodSource("scenarios")
     @DisplayName("Should render body equal to the shared expected body")
     void shouldRenderSharedExpectedBody(final Throwable exception, final String path, final String expected) {
-        // Given: Default type base URI, built-in enrichers, runtime mapper selection
+        // Given: No type base URI configured, built-in enrichers, runtime mapper selection
         final ErrorResponseEntityBuilder builder = aBuilder(builtInEnrichersPlus());
 
         // When: Mapping the exception
@@ -95,7 +107,7 @@ class ProblemDetailsParityTest {
 
         // Then: RFC 9457 conformant and identical to the Spring expectation
         assertThat(response.getMediaType().toString(), is(ProblemJson.PROBLEM_JSON));
-        ProblemJson.assertMatchesExpected(QuarkusProblems.conformantJson(response), expected, ProblemJson.DEFAULT_TYPE_BASE_URI);
+        ProblemJson.assertMatchesExpected(QuarkusProblems.conformantJson(response), expected);
     }
 
     @Test
@@ -132,6 +144,41 @@ class ProblemDetailsParityTest {
     }
 
     @Test
+    @DisplayName("Should percent-encode error code in type when base URI configured")
+    void shouldPercentEncodeErrorCodeInConfiguredType() {
+        // Given: Configured base URI and an unsafe error code
+        final ErrorResponseEntityBuilder builder = withConfig(
+            Map.of(ErrorResponseEntityBuilder.TYPE_BASE_URI_PROPERTY, CUSTOM_TYPE_BASE_URI),
+            () -> new ErrorResponseEntityBuilder(new DefaultErrorResponseFactory(), anInstance(builtInEnrichersPlus()))
+        );
+        final HttpException exception = new HttpException(new TestApiError("BAD CODE/1", "Unsafe code", Response.Status.BAD_REQUEST));
+
+        // When: Mapping it
+        final Response response = QuarkusProblems.map(exception, builder, aRequest("/test/unsafe-code"));
+
+        // Then: type percent-encodes the code
+        assertThat(ProblemJson.parse(QuarkusProblems.conformantJson(response)), hasEntry("type", CUSTOM_TYPE_BASE_URI + "BAD%20CODE%2F1"));
+    }
+
+    @Test
+    @DisplayName("Should omit type when jframe.exception.type-base-uri is blank")
+    void shouldOmitTypeWhenTypeBaseUriBlank() {
+        // Given: Blank base URI property
+        final ErrorResponseEntityBuilder builder = withConfig(
+            Map.of(ErrorResponseEntityBuilder.TYPE_BASE_URI_PROPERTY, " "),
+            () -> new ErrorResponseEntityBuilder(new DefaultErrorResponseFactory(), anInstance(builtInEnrichersPlus()))
+        );
+        final HttpException exception =
+            new HttpException(new TestApiError("ORDER_CLOSED", "Order is already closed", Response.Status.CONFLICT));
+
+        // When: Mapping it
+        final Response response = QuarkusProblems.map(exception, builder, aRequest("/test/business"));
+
+        // Then: Same as not configured
+        ProblemJson.assertMatchesExpected(QuarkusProblems.conformantJson(response), "business-http-exception");
+    }
+
+    @Test
     @DisplayName("Should render ConstraintViolationException as 400 VALIDATION_ERROR with errors")
     void shouldRenderConstraintViolationAsValidationError() throws Exception {
         // Given: A bean-validation failure on field 'name'
@@ -148,7 +195,7 @@ class ProblemDetailsParityTest {
         // Then: 400 VALIDATION_ERROR listing the field
         assertThat(response.getStatus(), is(400));
         assertThat(body, hasEntry("errorCode", "VALIDATION_ERROR"));
-        assertThat(body, hasEntry("type", ProblemJson.DEFAULT_TYPE_BASE_URI + "VALIDATION_ERROR"));
+        assertThat(body, not(hasKey("type")));
         final List<?> errors = (List<?>) body.get("errors");
         assertThat(errors, hasSize(1));
         assertThat(((Map<?, ?>) errors.get(0)).get("field"), is("name"));

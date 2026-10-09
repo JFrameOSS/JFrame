@@ -78,7 +78,6 @@ Quarkus OTEL extension auto-extracts inbound `traceparent` headers.
 
 ```json
 {
-  "type": "https://jframeoss.github.io/jframe/problems/INTERNAL_SERVER_ERROR",
   "title": "Internal Server Error",
   "status": 500,
   "detail": "An unexpected error occurred",

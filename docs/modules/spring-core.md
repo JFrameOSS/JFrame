@@ -89,7 +89,7 @@ The `@ConditionalOnMissingBean` on the default ensures your bean takes precedenc
 
 ## Exception handling
 
-`JFrameResponseEntityExceptionHandler` is a `@RestControllerAdvice` that converts exceptions to RFC 9457 Problem Details error responses (`application/problem+json`).
+`JFrameResponseEntityExceptionHandler` is a `@RestControllerAdvice` that converts exceptions to RFC 9457 Problem Details error responses (`application/problem+json`). Registered with `@Order(Ordered.LOWEST_PRECEDENCE)` so application `@RestControllerAdvice` / `@ExceptionHandler` beans take precedence for exceptions they handle (including jFrame `HttpException` subtypes); jFrame handles the rest. Disabled via `jframe.exception.enabled=false`; backs off if the application defines its own `ErrorController`.
 
 ### Handled exceptions
 
@@ -100,7 +100,13 @@ The `@ConditionalOnMissingBean` on the default ensures your bean takes precedenc
 | `RateLimitExceededException` | 429 | `RateLimitErrorResponseResource` (with limit headers) |
 | `MethodArgumentNotValidException` | 400 | Validation errors from `@Valid` |
 | Spring MVC exceptions (404, 405, 415, etc.) | Dynamic | `ErrorResponseResource` with jFrame enrichment |
+| `AuthenticationException` | 401 | `ErrorResponseResource` |
+| `AccessDeniedException` | 403 | `ErrorResponseResource` |
 | `Throwable` (catch-all) | 500 | `ErrorResponseResource` |
+
+### Fallback `/error` controller
+
+`JFrameErrorController` handles errors outside MVC (exceptions thrown in filters, `response.sendError`) and returns jFrame Problem Details instead of Spring Boot's default error body. The `instance` field is set to the original request path. `txId` is included only when one exists (from header or thread context); never fabricated. Disabled via `jframe.exception.enabled=false`; backs off if the application defines its own `ErrorController`.
 
 ### Error response format
 
@@ -108,7 +114,6 @@ RFC 9457 Problem Details with jFrame extension members:
 
 ```json
 {
-  "type": "https://jframeoss.github.io/jframe/problems/USER_001",
   "title": "Not Found",
   "status": 404,
   "detail": "User not found",
@@ -120,7 +125,7 @@ RFC 9457 Problem Details with jFrame extension members:
 }
 ```
 
-Content type: `application/problem+json`. Absent extension members are omitted (never `null`).
+Content type: `application/problem+json`. Absent extension members are omitted (never `null`). `type` is omitted unless `jframe.exception.type-base-uri` is configured.
 
 ### Built-in enrichers
 

@@ -52,10 +52,10 @@ class ValidationContractTest {
         ProblemJson.assertRfc9457(response.getContentAsString(), response.getStatus());
         final Map<String, Object> body = ProblemJson.parse(response.getContentAsString());
 
-        // Then: jFrame output unchanged, type uses documented default
+        // Then: jFrame output unchanged, type omitted (no base URI configured)
         assertThat(response.getStatus(), is(400));
         assertThat(response.getContentType(), startsWith(ProblemJson.PROBLEM_JSON));
-        assertThat(body, hasEntry("type", ProblemJson.DEFAULT_TYPE_BASE_URI + "VALIDATION_ERROR"));
+        assertThat(body, not(hasKey("type")));
         assertThat(body, hasEntry("errorCode", "VALIDATION_ERROR"));
         assertThat((List<?>) body.get("errors"), hasSize(2));
     }

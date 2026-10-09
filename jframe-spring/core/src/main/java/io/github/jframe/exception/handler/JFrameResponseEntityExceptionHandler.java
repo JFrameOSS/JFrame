@@ -23,7 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -41,7 +41,7 @@ import static org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON;
  */
 @Slf4j
 @RequiredArgsConstructor
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.LOWEST_PRECEDENCE)
 @SuppressWarnings(
     {
         "PMD.ExcessiveImports",
@@ -151,7 +151,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
     }
 
     /**
-     * Handles {@code BadCredentialsException} errors.
+     * Handles {@code AuthenticationException} errors.
      *
      * @param exception the exception
      * @param request   the current request
@@ -159,7 +159,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
      */
     @ResponseBody
     @ResponseStatus(UNAUTHORIZED)
-    @ExceptionHandler(BadCredentialsException.class)
+    @ExceptionHandler(AuthenticationException.class)
     @ApiResponse(
         responseCode = "401",
         description = "Unauthorized",
@@ -168,7 +168,7 @@ public class JFrameResponseEntityExceptionHandler extends ResponseEntityExceptio
             schema = @Schema(implementation = ErrorResponseResource.class)
         )
     )
-    public ResponseEntity<ErrorResponseResource> handleBadCredentials(final BadCredentialsException exception, final WebRequest request) {
+    public ResponseEntity<ErrorResponseResource> handleAuthentication(final AuthenticationException exception, final WebRequest request) {
         return ResponseEntity
             .status(UNAUTHORIZED)
             .contentType(APPLICATION_PROBLEM_JSON)

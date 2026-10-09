@@ -9,22 +9,18 @@ import jakarta.ws.rs.core.Response;
  */
 public final class ProblemDetails {
 
-    /** Default {@code type} base URI when {@code jframe.exception.type-base-uri} is unset. */
-    public static final String DEFAULT_TYPE_BASE_URI = "https://jframeoss.github.io/jframe/problems/";
-
     /** Problem Details media type. */
     public static final String MEDIA_TYPE = "application/problem+json";
 
     private ProblemDetails() {
     }
 
-    /** Builds the {@code type} URI: base URI plus percent-encoded error code; {@code null} without a code. */
+    /** Builds the {@code type} URI: base URI plus percent-encoded error code; {@code null} without a base or code. */
     public static String type(final String baseUri, final String errorCode) {
-        if (errorCode == null) {
+        if (errorCode == null || baseUri == null || baseUri.isBlank()) {
             return null;
         }
-        final String base = baseUri == null || baseUri.isBlank() ? DEFAULT_TYPE_BASE_URI : baseUri;
-        return base + URLEncoder.encode(errorCode, StandardCharsets.UTF_8).replace("+", "%20");
+        return baseUri + URLEncoder.encode(errorCode, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
     /** Returns the HTTP reason phrase for the status, used as {@code title}. */
