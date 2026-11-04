@@ -102,6 +102,7 @@ Type-safe, framework-agnostic search criteria system.
 | `NUMERIC` | `NumericField` | `= number` | `!value` prefix |
 | `MULTI_NUMERIC` | `MultiNumericField` | `IN (numbers)` | No |
 | `NUMERIC_RANGE` | `NumericRangeField` | `>= from AND/OR <= to` | No |
+| `NULL_CHECK` | `NullCheckField` | `IS NOT NULL` (true) / `IS NULL` (false) | No |
 
 ### DTOs (REST API)
 

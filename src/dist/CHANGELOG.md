@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`MULTI_NUMERIC` search type** — `MultiNumericField` generates an `IN (...)` predicate from a list of integer values; input via `textValueList` (strings parsed to integers, unparseable values skipped)
 - **`NUMERIC_RANGE` search type** — `NumericRangeField` generates `>=` and/or `<=` predicates from optional `fromNumericValue` / `toNumericValue` integers; both bounds are nullable
+- **`NULL_CHECK` search type** — `NullCheckField` generates `IS NOT NULL` (`textValue` `true`) or `IS NULL` (`false`) on a column
 
 ## [1.0.0] — 2026-04-03
 

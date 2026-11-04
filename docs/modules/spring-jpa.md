@@ -343,6 +343,7 @@ The client sends a `SortablePageInput` as JSON:
 | `DATE` | — | — | ✅ | — | — |
 | `MULTI_NUMERIC` | — | ✅ (parsed as integers) | — | — | — |
 | `NUMERIC_RANGE` | — | — | — | ✅ (both nullable) | — |
+| `NULL_CHECK` | ✅ (`true` = not null, `false` = null) | — | — | — | — |
 
 ### Inverse search
 
@@ -384,6 +385,7 @@ Generates `role != 'DISABLED'` instead of `role = 'DISABLED'`.
 | `MULTI_NUMERIC` | `IN (?, ?, ...)` | Multiple numeric values |
 | `NUMERIC_RANGE` | `>= ? AND/OR <= ?` | Numeric range (from/to, both nullable) |
 | `BOOLEAN` | `= ?` | Boolean flag |
+| `NULL_CHECK` | `IS NOT NULL` / `IS NULL` | Null check (`true` = not null) |
 | `DATE` | `>= ? AND <= ?` | Date range (from/to) |
 | `ENUM` | `= ?` | Single enum value |
 | `MULTI_ENUM` | `IN (?, ?, ...)` | Multiple enum values |

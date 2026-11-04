@@ -12,6 +12,7 @@ import io.github.jframe.datasource.search.fields.MultiEnumField;
 import io.github.jframe.datasource.search.fields.MultiFuzzyField;
 import io.github.jframe.datasource.search.fields.MultiNumericField;
 import io.github.jframe.datasource.search.fields.MultiTextField;
+import io.github.jframe.datasource.search.fields.NullCheckField;
 import io.github.jframe.datasource.search.fields.NumericField;
 import io.github.jframe.datasource.search.fields.NumericRangeField;
 import io.github.jframe.datasource.search.fields.TextField;
@@ -115,6 +116,7 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
             addField("custom", "u.custom", false);
             addField("ids", "u.id", SearchType.MULTI_NUMERIC, false);
             addField("score", "u.score", SearchType.NUMERIC_RANGE, false);
+            addField("pendingDeletion", "u.deleted_at", SearchType.NULL_CHECK, false);
         }
     }
 
@@ -490,6 +492,39 @@ public class AbstractPanacheSearchMetaDataTest extends UnitTest {
         assertThat(result, hasSize(1));
         assertThat(result.get(0), is(instanceOf(BooleanField.class)));
         assertThat(((BooleanField) result.get(0)).isValue(), is(true));
+    }
+
+    @Test
+    @DisplayName("Should produce NullCheckField criterium for NULL_CHECK search type")
+    public void shouldProduceNullCheckFieldCriteriumForNullCheckSearchType() {
+        // Given: A search input for the 'pendingDeletion' NULL_CHECK field
+        final SearchInput input = aSearchInput("pendingDeletion", "True");
+
+        // When: Converting to search criteria
+        final List<SearchCriterium> result = fullMetaData.toSearchCriteria(List.of(input));
+
+        // Then: A single NullCheckField criterium is returned on the mapped column
+        assertThat(result, hasSize(1));
+        assertThat(result.get(0), is(instanceOf(NullCheckField.class)));
+        assertThat(((NullCheckField) result.get(0)).isValue(), is(true));
+        assertThat(result.get(0).getColumnName(), is("u.deleted_at"));
+    }
+
+    @Test
+    @DisplayName("Should throw InvalidSearchException when NULL_CHECK value is not true or false")
+    public void shouldThrowInvalidSearchExceptionWhenNullCheckValueIsInvalid() {
+        // Given: A non-boolean literal for the NULL_CHECK field
+        final SearchInput input = aSearchInput("pendingDeletion", "yes");
+
+        // When: Converting to search criteria
+        final InvalidSearchException exception = assertThrows(
+            InvalidSearchException.class,
+            () -> fullMetaData.toSearchCriteria(List.of(input))
+        );
+
+        // Then: Field and raw value are rejected
+        assertThat(exception.getRejectedField(), is("pendingDeletion"));
+        assertThat(exception.getRejectedValue(), is("yes"));
     }
 
     @Test

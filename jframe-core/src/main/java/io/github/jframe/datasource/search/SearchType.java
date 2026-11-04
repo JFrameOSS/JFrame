@@ -24,7 +24,8 @@ public enum SearchType {
     MULTI_FUZZY("For use by multiple like-operators on strings, which are combined depending on operator"),
     MULTI_COLUMN_FUZZY("For use by multiple like-operators on multiple columns, which are combined depending on operator"),
     MULTI_NUMERIC("For use by an in-operator on a set of numeric values"),
-    NUMERIC_RANGE("For use by range operators (>= and <=) on a numeric value");
+    NUMERIC_RANGE("For use by range operators (>= and <=) on a numeric value"),
+    NULL_CHECK("For use by an is-null / is-not-null operator on any column");
 
     private final String description;
 
