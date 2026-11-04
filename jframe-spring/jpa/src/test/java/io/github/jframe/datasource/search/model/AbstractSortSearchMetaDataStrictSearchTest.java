@@ -2,6 +2,7 @@ package io.github.jframe.datasource.search.model;
 
 import io.github.jframe.datasource.search.SearchType;
 import io.github.jframe.datasource.search.fields.InvalidFieldValueException;
+import io.github.jframe.datasource.search.fields.NullCheckField;
 import io.github.jframe.datasource.search.model.input.SearchInput;
 import io.github.jframe.exception.search.InvalidSearchException;
 import io.github.support.TestStatus;
@@ -89,6 +90,39 @@ class AbstractSortSearchMetaDataStrictSearchTest extends UnitTest {
 
         // Then: Field and raw value rejected
         assertThat(exception.getRejectedField(), is(equalTo("active")));
+        assertThat(exception.getRejectedValue(), is(equalTo("yes")));
+    }
+
+    @Test
+    @DisplayName("Should produce NullCheckField criterium for NULL_CHECK search type")
+    void shouldProduceNullCheckFieldForNullCheckSearchType() {
+        // Given: A NULL_CHECK field mapped to a nested column
+        final NullCheckMetaData nullCheckMetaData = new NullCheckMetaData();
+        final SearchInput input = aTextSearch("pendingDeletion", "True");
+
+        // When: Converting to criteria
+        final List<SearchCriterium> criteria = nullCheckMetaData.toSearchCriteria(List.of(input));
+
+        // Then: A NullCheckField on the mapped column with parsed value
+        assertThat(criteria, hasSize(1));
+        assertThat(criteria.getFirst(), is(instanceOf(NullCheckField.class)));
+        assertThat(criteria.getFirst().getColumnName(), is(equalTo("parent.deletedAt")));
+        assertThat(((NullCheckField) criteria.getFirst()).isValue(), is(true));
+    }
+
+    @Test
+    @DisplayName("Should throw InvalidSearchException when NULL_CHECK value is not true or false")
+    void shouldThrowWhenNullCheckValueIsInvalid() {
+        // Given: A non-boolean literal for the NULL_CHECK field
+        final NullCheckMetaData nullCheckMetaData = new NullCheckMetaData();
+        final SearchInput input = aTextSearch("pendingDeletion", "yes");
+
+        // When: Converting to criteria
+        final InvalidSearchException exception =
+            assertThrows(InvalidSearchException.class, () -> nullCheckMetaData.toSearchCriteria(List.of(input)));
+
+        // Then: Field and raw value rejected
+        assertThat(exception.getRejectedField(), is(equalTo("pendingDeletion")));
         assertThat(exception.getRejectedValue(), is(equalTo("yes")));
     }
 
@@ -213,6 +247,15 @@ class AbstractSortSearchMetaDataStrictSearchTest extends UnitTest {
         input.setTextValue(value);
         return input;
     }
+
+    static class NullCheckMetaData extends AbstractSortSearchMetaData {
+
+        NullCheckMetaData() {
+            super();
+            addField("pendingDeletion", "parent.deletedAt", SearchType.NULL_CHECK, false);
+        }
+    }
+
 
     static class TestMetaData extends AbstractSortSearchMetaData {
 

@@ -10,6 +10,7 @@ import io.github.jframe.datasource.search.fields.MultiEnumField;
 import io.github.jframe.datasource.search.fields.MultiFuzzyField;
 import io.github.jframe.datasource.search.fields.MultiNumericField;
 import io.github.jframe.datasource.search.fields.MultiTextField;
+import io.github.jframe.datasource.search.fields.NullCheckField;
 import io.github.jframe.datasource.search.fields.NumericField;
 import io.github.jframe.datasource.search.fields.NumericRangeField;
 import io.github.jframe.datasource.search.fields.TextField;
@@ -23,6 +24,8 @@ import java.util.Locale;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -62,6 +65,10 @@ class BaseSearchSpecificationTest extends UnitTest {
     private Predicate predicate;
     @Mock
     private Predicate notPredicate;
+    @Mock
+    private Join<Object, Object> join;
+    @Mock
+    private Join<Object, Object> nestedJoin;
 
     @BeforeEach
     public void setUp() {
@@ -93,6 +100,101 @@ class BaseSearchSpecificationTest extends UnitTest {
         // Then: Root gets 'active' and cb.equal is called with boolean true
         verify(root).get("active");
         verify(cb).equal(path, true);
+    }
+
+    @Test
+    @DisplayName("Should create IS NOT NULL predicate for NullCheckField with value true")
+    void shouldCreateIsNotNullPredicateForNullCheckFieldWithValueTrue() {
+        // Given: A NullCheckField for 'deletedAt' with value 'true'
+        final BaseSearchSpecification<Object> spec = aSpec(new NullCheckField("deletedAt", "true"));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Column is checked for not null only
+        verify(root).get("deletedAt");
+        verify(cb).isNotNull(path);
+        verify(cb, never()).isNull(any());
+        verify(cb, never()).equal(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should create IS NULL predicate for NullCheckField with value false")
+    void shouldCreateIsNullPredicateForNullCheckFieldWithValueFalse() {
+        // Given: A NullCheckField for 'deletedAt' with value 'false'
+        final BaseSearchSpecification<Object> spec = aSpec(new NullCheckField("deletedAt", "false"));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Column is checked for null only
+        verify(root).get("deletedAt");
+        verify(cb).isNull(path);
+        verify(cb, never()).isNotNull(any());
+        verify(cb, never()).equal(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should create IS NOT NULL predicate for NullCheckField with mixed-case value")
+    void shouldCreateIsNotNullPredicateForNullCheckFieldWithMixedCaseValue() {
+        // Given: A NullCheckField with value 'TRUE'
+        final BaseSearchSpecification<Object> spec = aSpec(new NullCheckField("deletedAt", "TRUE"));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Treated as true
+        verify(cb).isNotNull(path);
+    }
+
+    @Test
+    @DisplayName("Should create IS NULL predicate for NullCheckField with null value")
+    void shouldCreateIsNullPredicateForNullCheckFieldWithNullValue() {
+        // Given: A NullCheckField without a value (defaults to false, like BooleanField)
+        final BaseSearchSpecification<Object> spec = aSpec(new NullCheckField("deletedAt", null));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Column is checked for null
+        verify(cb).isNull(path);
+        verify(cb, never()).isNotNull(any());
+    }
+
+    @Test
+    @DisplayName("Should resolve nested column path through left join for NullCheckField")
+    void shouldResolveNestedColumnPathThroughLeftJoinForNullCheckField() {
+        // Given: A NullCheckField on a one-level nested path
+        lenient().when(root.join("parent", JoinType.LEFT)).thenReturn(join);
+        lenient().when(join.get("deletedAt")).thenReturn(path);
+        final BaseSearchSpecification<Object> spec = aSpec(new NullCheckField("parent.deletedAt", "true"));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Join is used and IS NOT NULL applies to the joined attribute
+        verify(root).join("parent", JoinType.LEFT);
+        verify(join).get("deletedAt");
+        verify(cb).isNotNull(path);
+    }
+
+    @Test
+    @DisplayName("Should resolve multi-level nested column path for NullCheckField with value false")
+    void shouldResolveMultiLevelNestedColumnPathForNullCheckField() {
+        // Given: A NullCheckField on a two-level nested path
+        lenient().when(root.join("parent", JoinType.LEFT)).thenReturn(join);
+        lenient().when(join.join("child", JoinType.LEFT)).thenReturn(nestedJoin);
+        lenient().when(nestedJoin.get("deletedAt")).thenReturn(path);
+        final BaseSearchSpecification<Object> spec = aSpec(new NullCheckField("parent.child.deletedAt", "false"));
+
+        // When: Building the predicate
+        spec.toPredicate(root, query, cb);
+
+        // Then: Both joins are used and IS NULL applies to the leaf attribute
+        verify(root).join("parent", JoinType.LEFT);
+        verify(join).join("child", JoinType.LEFT);
+        verify(nestedJoin).get("deletedAt");
+        verify(cb).isNull(path);
     }
 
     @Test

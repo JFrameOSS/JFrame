@@ -265,6 +265,7 @@ The client sends a `SortablePageInput` as JSON:
 | `MULTI_COLUMN_FUZZY` | ✅ | — | — | — | — |
 | `MULTI_NUMERIC` | — | ✅ (parsed as integers) | — | — | — |
 | `NUMERIC_RANGE` | — | — | — | ✅ (both nullable) | — |
+| `NULL_CHECK` | ✅ (`true` = not null, `false` = null) | — | — | — | — |
 | `DATE` | — | — | ✅ | — | — |
 
 ### Inverse search

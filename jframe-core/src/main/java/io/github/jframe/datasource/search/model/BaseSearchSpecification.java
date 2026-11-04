@@ -11,6 +11,7 @@ import io.github.jframe.datasource.search.fields.MultiEnumField;
 import io.github.jframe.datasource.search.fields.MultiFuzzyField;
 import io.github.jframe.datasource.search.fields.MultiNumericField;
 import io.github.jframe.datasource.search.fields.MultiTextField;
+import io.github.jframe.datasource.search.fields.NullCheckField;
 import io.github.jframe.datasource.search.fields.NumericField;
 import io.github.jframe.datasource.search.fields.NumericRangeField;
 import io.github.jframe.datasource.search.fields.TextField;
@@ -119,6 +120,10 @@ public class BaseSearchSpecification<T> implements SearchSpecification<T> {
             case BOOLEAN -> {
                 final BooleanField f = (BooleanField) crit;
                 predicates.add(cb.equal(path, f.isValue()));
+            }
+            case NULL_CHECK -> {
+                final NullCheckField f = (NullCheckField) crit;
+                predicates.add(f.isValue() ? cb.isNotNull(path) : cb.isNull(path));
             }
             case ENUM -> {
                 final EnumField f = (EnumField) crit;

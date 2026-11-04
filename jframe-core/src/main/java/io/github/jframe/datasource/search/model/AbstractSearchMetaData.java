@@ -11,6 +11,7 @@ import io.github.jframe.datasource.search.fields.MultiEnumField;
 import io.github.jframe.datasource.search.fields.MultiFuzzyField;
 import io.github.jframe.datasource.search.fields.MultiNumericField;
 import io.github.jframe.datasource.search.fields.MultiTextField;
+import io.github.jframe.datasource.search.fields.NullCheckField;
 import io.github.jframe.datasource.search.fields.NumericField;
 import io.github.jframe.datasource.search.fields.NumericRangeField;
 import io.github.jframe.datasource.search.fields.TextField;
@@ -76,6 +77,7 @@ public abstract class AbstractSearchMetaData {
         factories.put(SearchType.DATE, (c, i) -> new DateField(c.getFirst(), i.getFromDateValue(), i.getToDateValue()));
         factories.put(SearchType.NUMERIC, (c, i) -> new NumericField(c.getFirst(), i.getTextValue()));
         factories.put(SearchType.BOOLEAN, (c, i) -> new BooleanField(c.getFirst(), i.getTextValue()));
+        factories.put(SearchType.NULL_CHECK, (c, i) -> new NullCheckField(c.getFirst(), i.getTextValue()));
         factories.put(SearchType.ENUM, (c, i) -> new EnumField(c.getFirst(), enumClasses.get(i.getFieldName()), i.getTextValue()));
         factories.put(
             SearchType.MULTI_ENUM,
