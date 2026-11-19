@@ -21,6 +21,7 @@ import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -195,6 +196,19 @@ class OpenTelemetryAutoConfigurationBeanRegistrationTest {
                 assertThat("TracingResponseEnricher", ctx.getBean(TracingResponseEnricher.class), is(notNullValue()));
                 assertThat("TracingAspect", ctx.getBean(TracingAspect.class), is(notNullValue()));
                 assertThat("TracingScheduledTaskEnricher", ctx.getBean(TracingScheduledTaskEnricher.class), is(notNullValue()));
+            });
+        }
+
+        @Test
+        @DisplayName("Should back off tracer bean when application defines its own Tracer")
+        void shouldBackOffTracerWhenApplicationDefinesTracer() {
+            // Given: an application-defined Tracer
+            final Tracer custom = mock(Tracer.class);
+
+            // When / Then: the custom tracer is the only Tracer and is injected
+            otlpEnabledRunner.withBean("customTracer", Tracer.class, () -> custom).run(ctx -> {
+                assertThat(ctx.getBeansOfType(Tracer.class).size(), is(1));
+                assertThat(ctx.getBean(Tracer.class), is(sameInstance(custom)));
             });
         }
 

@@ -11,6 +11,10 @@ jframe:
   exception:
     enabled: true
 
+  datasource:
+    proxy:
+      enabled: true
+
   logging:
     disabled: false
     response-length: -1

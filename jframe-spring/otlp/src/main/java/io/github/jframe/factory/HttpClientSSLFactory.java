@@ -1,7 +1,5 @@
 package io.github.jframe.factory;
 
-import io.github.jframe.exception.HttpException;
-import io.github.jframe.exception.JFrameErrorCode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
@@ -76,7 +74,7 @@ public class HttpClientSSLFactory {
                 }
             };
         } catch (final Exception exception) {
-            throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, exception);
+            throw new IllegalStateException("Failed to configure TLS for mode " + options.mode(), exception);
         }
     }
 
@@ -102,7 +100,7 @@ public class HttpClientSSLFactory {
      *
      * @return The list with the configured trust manager
      */
-    public static TrustManager[] getTrustAllManager() {
+    private static TrustManager[] getTrustAllManager() {
         return new TrustManager[] {
             new X509TrustManager() {
 

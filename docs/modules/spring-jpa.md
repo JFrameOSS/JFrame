@@ -4,7 +4,7 @@ JPA search specifications, paginated queries, and SQL query logging for Spring D
 
 ## SQL query logging
 
-`DatasourceProxyConfiguration` automatically wraps every `DataSource` bean with a logging proxy. All executed SQL appears at `DEBUG` level — no configuration needed.
+`DatasourceProxyConfiguration` automatically wraps every `DataSource` bean with a logging proxy. All executed SQL appears at `DEBUG` level — no configuration needed. Opt out with `jframe.datasource.proxy.enabled=false`.
 
 ```
 DEBUG n.t.d.l.l.SLF4JQueryLoggingListener —

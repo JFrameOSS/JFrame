@@ -1,9 +1,11 @@
 package io.github.jframe.factory;
 
-import io.github.jframe.exception.HttpException;
 import io.github.support.UnitTest;
 
 import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.nio.file.NoSuchFileException;
 import java.security.KeyStore;
 import java.util.stream.Stream;
 
@@ -14,9 +16,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.ssl.SslStoreBundle;
 
-import static io.github.jframe.exception.JFrameErrorCode.INTERNAL_SERVER_ERROR;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,16 +53,27 @@ class HttpClientSSLFactoryTest extends UnitTest {
     }
 
     @Test
-    @DisplayName("Should throw internal server error when trust store does not exist")
-    void shouldThrowInternalServerErrorWhenTrustStoreDoesNotExist() {
+    @DisplayName("Should throw IllegalStateException with cause when trust store does not exist")
+    void shouldThrowIllegalStateWhenTrustStoreDoesNotExist() {
         // Given: Options pointing to a missing trust store
         final TlsOptions options = TlsOptions.customTrustStore("/does/not/exist.p12", PASSWORD);
 
         // When: Creating the request factory
-        final HttpException exception = assertThrows(HttpException.class, () -> factory.createRequestFactory(options, 5, 10));
+        final IllegalStateException exception =
+            assertThrows(IllegalStateException.class, () -> factory.createRequestFactory(options, 5, 10));
 
-        // Then: The error code is internal server error
-        assertThat(exception.getErrorCode(), is(equalTo(INTERNAL_SERVER_ERROR.getErrorCode())));
+        // Then: The I/O failure is kept as cause
+        assertThat(exception.getCause(), is(instanceOf(NoSuchFileException.class)));
+    }
+
+    @Test
+    @DisplayName("Should not expose the trust-all manager publicly")
+    void shouldNotExposeTrustAllManager() throws Exception {
+        // When: Looking up the trust-all manager
+        final Method method = HttpClientSSLFactory.class.getDeclaredMethod("getTrustAllManager");
+
+        // Then: It is private
+        assertThat(Modifier.isPrivate(method.getModifiers()), is(true));
     }
 
     @Test
