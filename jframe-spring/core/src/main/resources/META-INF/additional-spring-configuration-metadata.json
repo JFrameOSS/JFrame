@@ -31,7 +31,7 @@
       "type": "java.lang.Boolean",
       "description": "Whether the Request ID filter is enabled. When enabled, the filter extracts or generates a unique request ID from HTTP headers and makes it available via SLF4J MDC for request correlation.",
       "sourceType": "io.github.jframe.logging.filter.config.RequestIdFilterConfiguration",
-      "defaultValue": true
+      "defaultValue": false
     },
     {
       "name": "jframe.logging.filters.request-id.order",
@@ -45,7 +45,7 @@
       "type": "java.lang.Boolean",
       "description": "Whether the Transaction ID filter is enabled. When enabled, the filter extracts or generates a unique transaction ID that spans multiple requests belonging to the same business transaction.",
       "sourceType": "io.github.jframe.logging.filter.config.TransactionIdFilterConfiguration",
-      "defaultValue": true
+      "defaultValue": false
     },
     {
       "name": "jframe.logging.filters.transaction-id.order",

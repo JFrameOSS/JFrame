@@ -1,32 +1,28 @@
 description = "JFrame Quarkus JPA - Panache search specification adapter and page utilities for Quarkus"
 
-fun retrieve(property: String): String =
-    project.findProperty(property)?.toString()?.replace("\"", "")
-        ?: throw IllegalStateException("Property $property not found")
-
 dependencies {
     api(project(":jframe-quarkus-core"))
 
     // Quarkus Panache API — compileOnly (provided by consumer)
-    compileOnly("io.quarkus:quarkus-hibernate-orm-panache:${retrieve("quarkusVersion")}")
+    compileOnly(libs.quarkus.hibernate.orm.panache)
     // Jackson annotations on jframe-core API — compileOnly (annotation types on PageResource/AppliedSort)
-    compileOnly("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
+    compileOnly(libs.jackson.annotations)
     // Swagger annotations on jframe-core API — compileOnly (annotation types needed to compile against core classes)
-    compileOnly("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
+    compileOnly(libs.swagger.annotations)
 
     // Agroal DataSource API — compileOnly (provided by consumer's quarkus-agroal)
     compileOnly("io.agroal:agroal-api")
 
     // DataSource proxy — CDI producer for SQL query logging
-    implementation("net.ttddyy:datasource-proxy:${retrieve("datasourceProxyVersion")}")
+    implementation(libs.datasource.proxy)
 
     // Test dependencies
     testImplementation("io.agroal:agroal-api")
-    testImplementation("io.quarkus:quarkus-hibernate-orm-panache:${retrieve("quarkusVersion")}")
-    testImplementation("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
-    testImplementation("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
-    testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")
-    testImplementation("org.mockito:mockito-core:${retrieve("mockitoVersion")}")
-    testImplementation("org.mockito:mockito-junit-jupiter:${retrieve("mockitoVersion")}")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:${retrieve("junitVersion")}")
+    testImplementation(libs.quarkus.hibernate.orm.panache)
+    testImplementation(libs.swagger.annotations)
+    testImplementation(libs.jackson.annotations)
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }

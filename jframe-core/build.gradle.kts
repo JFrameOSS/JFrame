@@ -1,9 +1,5 @@
 description = "JFrame Core - Framework-agnostic core models and utilities"
 
-fun retrieve(property: String): String =
-    project.findProperty(property)?.toString()?.replace("\"", "")
-        ?: throw IllegalStateException("Property $property not found")
-
 plugins {
     `java-test-fixtures`
 }
@@ -15,40 +11,40 @@ listOf("testFixturesApiElements", "testFixturesRuntimeElements").forEach {
 
 dependencies {
     // ======= API (transitive to consumers) =======
-    api("org.apache.commons:commons-lang3:${retrieve("commonsLangVersion")}")
-    api("org.apache.commons:commons-collections4:${retrieve("commonsCollectionVersion")}")
+    api(libs.commons.lang3)
+    api(libs.commons.collections4)
     // Hamcrest is used in public API signatures (FieldRejection, ValidationResult)
-    api("org.hamcrest:hamcrest:${retrieve("hamcrestVersion")}")
+    api(libs.hamcrest)
 
     // Exposed in public API: HttpException.getHttpStatus() returns Response.Status
-    api("jakarta.ws.rs:jakarta.ws.rs-api:${retrieve("jakartaWsrsVersion")}")
+    api(libs.jakarta.wsrs.api)
 
     // ======= COMPILE-ONLY (provided by consumer) =======
-    compileOnly("jakarta.persistence:jakarta.persistence-api:${retrieve("jakartaPersistenceVersion")}")
-    compileOnly("jakarta.annotation:jakarta.annotation-api:${retrieve("jakartaAnnotationVersion")}")
+    compileOnly(libs.jakarta.persistence.api)
+    compileOnly(libs.jakarta.annotation.api)
     // OpenAPI schema-name annotations: visible to consumers' compilers (avoids missing-annotation warnings), never at runtime
-    compileOnlyApi("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
-    compileOnlyApi("org.eclipse.microprofile.openapi:microprofile-openapi-api:${retrieve("microprofileOpenApiVersion")}")
-    compileOnly("org.jspecify:jspecify:${retrieve("jspecifyVersion")}")
-    compileOnly("net.ttddyy:datasource-proxy:${retrieve("datasourceProxyVersion")}")
+    compileOnlyApi(libs.swagger.annotations)
+    compileOnlyApi(libs.microprofile.openapi.api)
+    compileOnly(libs.jspecify)
+    compileOnly(libs.datasource.proxy)
 
     // ======= IMPLEMENTATION =======
-    implementation("org.slf4j:slf4j-api:${retrieve("slf4jVersion")}")
-    implementation("tools.jackson.core:jackson-databind:${retrieve("jacksonVersion")}")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
+    implementation(libs.slf4j.api)
+    implementation(libs.jackson.databind)
+    implementation(libs.jackson.annotations)
 
     // ======= TEST FIXTURES (shared RFC 9457 schema + expected bodies) =======
-    testFixturesImplementation("tools.jackson.core:jackson-databind:${retrieve("jacksonVersion")}")
-    testFixturesImplementation("org.hamcrest:hamcrest:${retrieve("hamcrestVersion")}")
-    testFixturesImplementation("com.networknt:json-schema-validator:${retrieve("jsonSchemaValidatorVersion")}")
+    testFixturesImplementation(libs.jackson.databind)
+    testFixturesImplementation(libs.hamcrest)
+    testFixturesImplementation(libs.json.schema.validator)
 
     // ======= TEST =======
-    testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")
-    testImplementation("org.mockito:mockito-junit-jupiter:${retrieve("mockitoVersion")}")
-    testImplementation("jakarta.persistence:jakarta.persistence-api:${retrieve("jakartaPersistenceVersion")}")
-    testImplementation("net.ttddyy:datasource-proxy:${retrieve("datasourceProxyVersion")}")
-    testCompileOnly("io.swagger.core.v3:swagger-annotations-jakarta:${retrieve("swaggerVersion")}")
-    testCompileOnly("jakarta.annotation:jakarta.annotation-api:${retrieve("jakartaAnnotationVersion")}")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:${retrieve("junitVersion")}")
-    testRuntimeOnly("ch.qos.logback:logback-classic:${retrieve("logbackVersion")}")
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.mockito.junit.jupiter)
+    testImplementation(libs.jakarta.persistence.api)
+    testImplementation(libs.datasource.proxy)
+    testCompileOnly(libs.swagger.annotations)
+    testCompileOnly(libs.jakarta.annotation.api)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.logback.classic)
 }

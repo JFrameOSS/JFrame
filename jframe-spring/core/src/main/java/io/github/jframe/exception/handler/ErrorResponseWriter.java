@@ -36,38 +36,6 @@ public class ErrorResponseWriter {
     private static final ObjectMapper FALLBACK_MAPPER = JsonMapper.builder().build();
 
     /**
-     * Writes a Problem Details error response from loose values.
-     *
-     * <p>For 401/403 the detail is always the reason phrase; a {@code null} code falls back to the status' {@link JFrameErrorCode}.
-     *
-     * @param request     the HTTP request
-     * @param response    the HTTP response to write to
-     * @param status      the HTTP status
-     * @param errorCode   the application error code (nullable)
-     * @param errorReason the error reason (nullable)
-     * @throws IOException if writing to the response fails
-     * @deprecated use {@link #write(HttpServletRequest, HttpServletResponse, ApiError)} or
-     *             {@link #write(HttpServletRequest, HttpServletResponse, HttpException)}
-     */
-    @Deprecated(
-        forRemoval = true,
-        since = "1.8.0"
-    )
-    public static void write(
-        final HttpServletRequest request,
-        final HttpServletResponse response,
-        final Response.Status status,
-        final String errorCode,
-        final String errorReason) throws IOException {
-        final boolean security = status == Response.Status.UNAUTHORIZED || status == Response.Status.FORBIDDEN;
-        final String reason = security ? status.getReasonPhrase() : errorReason;
-        final String code = errorCode == null
-            ? JFrameErrorCode.forStatus(status.getStatusCode()).map(JFrameErrorCode::getErrorCode).orElse(status.name())
-            : errorCode;
-        write(request, response, new SimpleApiError(code, reason, status));
-    }
-
-    /**
      * Writes a Problem Details error response from an {@link ApiError}.
      *
      * @param request  the HTTP request

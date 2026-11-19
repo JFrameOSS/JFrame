@@ -1,33 +1,6 @@
-pluginManagement {
-    val springBootPluginVersion = providers.gradleProperty("springBootPluginVersion").get()
-    val springDependencyPluginVersion = providers.gradleProperty("springDependencyPluginVersion").get()
-    val qualityPluginVersion = providers.gradleProperty("qualityPluginVersion").get()
-    val cycloneDxPluginVersion = providers.gradleProperty("cycloneDxPluginVersion").get()
-    val spotbugsPluginVersion = providers.gradleProperty("spotbugsPluginVersion").get()
-    val lombokPluginVersion = providers.gradleProperty("lombokPluginVersion").get()
-    val spotlessPluginVersion = providers.gradleProperty("spotlessPluginVersion").get()
-    val dependencyUpdatesPluginVersion = providers.gradleProperty("dependencyUpdatesPluginVersion").get()
-    val publishingVersion = providers.gradleProperty("publishingVersion").get()
-    val nmcpPluginVersion = providers.gradleProperty("nmcpPluginVersion").get()
-    val jandexPluginVersion = providers.gradleProperty("jandexPluginVersion").get()
-
-    plugins {
-        id("org.springframework.boot") version springBootPluginVersion
-        id("io.spring.dependency-management") version springDependencyPluginVersion
-        id("ru.vyarus.quality") version qualityPluginVersion
-        id("org.cyclonedx.bom") version cycloneDxPluginVersion
-        id("com.github.spotbugs") version spotbugsPluginVersion
-        id("io.freefair.lombok") version lombokPluginVersion
-        id("com.diffplug.spotless") version spotlessPluginVersion
-        id("io.github.ben-manes.versions") version dependencyUpdatesPluginVersion
-        id("publishing") version publishingVersion
-        id("com.gradleup.nmcp.settings") version nmcpPluginVersion
-        id("com.github.vlsi.jandex") version jandexPluginVersion
-    }
-}
-
+// Settings plugins resolve before the version catalog exists, so nmcp's version lives here.
 plugins {
-    id("com.gradleup.nmcp.settings")
+    id("com.gradleup.nmcp.settings") version "1.6.2"
 }
 
 nmcpSettings {

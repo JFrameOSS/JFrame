@@ -1,0 +1,11 @@
+{
+  "properties": [
+    {
+      "name": "jframe.datasource.proxy.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether every DataSource bean is wrapped in a ProxyDataSource for SQL query logging.",
+      "sourceType": "io.github.jframe.datasource.config.DatasourceProxyConfiguration",
+      "defaultValue": true
+    }
+  ]
+}

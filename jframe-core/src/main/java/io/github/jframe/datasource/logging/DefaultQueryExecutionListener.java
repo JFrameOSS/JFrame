@@ -1,6 +1,5 @@
 package io.github.jframe.datasource.logging;
 
-import lombok.extern.slf4j.Slf4j;
 import net.ttddyy.dsproxy.ExecutionInfo;
 import net.ttddyy.dsproxy.QueryInfo;
 import net.ttddyy.dsproxy.listener.logging.DefaultQueryLogEntryCreator;
@@ -14,7 +13,6 @@ import java.util.List;
  * <p>Accepts a pluggable {@link DefaultQueryLogEntryCreator} for formatting. When no
  * creator is provided, uses the datasource-proxy default.
  */
-@Slf4j
 public class DefaultQueryExecutionListener extends SLF4JQueryLoggingListener {
 
     /** Creates a new listener with the default query log entry creator. */
@@ -34,9 +32,9 @@ public class DefaultQueryExecutionListener extends SLF4JQueryLoggingListener {
     }
 
     @Override
-    public void beforeQuery(final ExecutionInfo execInfo, final List<QueryInfo> queryInfoList) {
-        if (SqlStatementLogging.isSuppressed()) {
-            log.debug("SQL statement logging is currently suppressed; skipping logging for this query.");
+    public void afterQuery(final ExecutionInfo execInfo, final List<QueryInfo> queryInfoList) {
+        if (!SqlStatementLogging.isSuppressed()) {
+            super.afterQuery(execInfo, queryInfoList);
         }
     }
 }

@@ -24,10 +24,9 @@ public class JsonPasswordMasker implements Masker {
             builder.next();
             if (readUntilStartOfJsonValue(builder)) {
                 final int indexOfStartPassword = builder.getCurrentIndex();
-                if (readUntilEndOfJsonValue(builder)) {
-                    builder.maskPasswordAt(indexOfStartPassword + 1);
-                    return true;
-                }
+                readUntilEndOfJsonValue(builder);
+                builder.maskPasswordAt(indexOfStartPassword + 1);
+                return true;
             }
 
             builder.reset();
@@ -51,25 +50,20 @@ public class JsonPasswordMasker implements Masker {
         return false;
     }
 
-    /**
-     * Returns the index of the QUOTE that ends the JSON value.
-     *
-     * <p>Will return {@code null} if there is no quote found.
-     */
-    private static boolean readUntilEndOfJsonValue(final MaskedPasswordBuilder builder) {
+    /** Advances to the QUOTE that ends the JSON value, or to end of input (e.g. truncated body). */
+    private static void readUntilEndOfJsonValue(final MaskedPasswordBuilder builder) {
         boolean escape = false;
         while (builder.hasNext()) {
             builder.next();
             if (!escape && builder.currentCharIs(QUOTE)) {
-                return true;
+                return;
             }
-            escape = builder.currentCharIs(JSON_ESCAPE);
+            escape = !escape && builder.currentCharIs(JSON_ESCAPE);
         }
-        return false;
     }
 
     private static void readWhiteSpaces(final MaskedPasswordBuilder builder) {
-        while (builder.currentCharIsWhitespace() && builder.hasNext()) {
+        while (builder.currentCharIsWhitespace()) {
             builder.next();
         }
     }

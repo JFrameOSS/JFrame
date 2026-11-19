@@ -36,6 +36,12 @@ Error response format and handler configuration. Applies to both Spring and Quar
 | `jframe.exception.enabled` | `true` | Enable/disable jFrame's global exception handler, enrichers, and OpenAPI error docs. When `false`, jFrame's error handling is off but the rest of jFrame (logging, Jackson, search, OTLP) still works. |
 | `jframe.exception.type-base-uri` | *(omitted)* | Base URI for the `type` field in RFC 9457 Problem Details responses. When absent, `type` is omitted (RFC 9457 semantics: `about:blank`). Set this to point to your own error documentation. |
 
+## Datasource properties (Spring)
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `jframe.datasource.proxy.enabled` | `true` | Wrap every `DataSource` bean in a SQL-logging `ProxyDataSource` (`jframe-spring-jpa`). |
+
 ### Filter toggles
 
 All filters support `enabled` and `order` properties. Defaults shown below.

@@ -5,7 +5,7 @@ package io.github.jframe.util;
 public final class HttpRequestLogging {
 
     /** The state store per thread. */
-    private static final ThreadLocal<HttpRequestLoggingState> THREAD_LOCAL_STORE = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> THREAD_LOCAL_STORE = new ThreadLocal<>();
 
     /** Utility constructor. */
     private HttpRequestLogging() {
@@ -30,7 +30,7 @@ public final class HttpRequestLogging {
     public static HttpRequestLoggingState suppress(final boolean suppressed) {
         final HttpRequestLoggingState suppressor = new HttpRequestLoggingState();
         if (suppressed) {
-            THREAD_LOCAL_STORE.set(suppressor);
+            THREAD_LOCAL_STORE.set(Boolean.TRUE);
         }
         return suppressor;
     }
@@ -61,5 +61,14 @@ public final class HttpRequestLogging {
     /** Continue with normal logging. */
     public static void clear() {
         THREAD_LOCAL_STORE.remove();
+    }
+
+    /** Restore the suppression state that was active before a {@link #suppress(boolean)} call. */
+    static void restore(final boolean previouslySuppressed) {
+        if (previouslySuppressed) {
+            THREAD_LOCAL_STORE.set(Boolean.TRUE);
+        } else {
+            THREAD_LOCAL_STORE.remove();
+        }
     }
 }

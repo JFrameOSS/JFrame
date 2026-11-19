@@ -1,5 +1,10 @@
 package io.github.jframe.tracing;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import io.github.jframe.logging.HttpLogger;
 import io.github.jframe.logging.masker.type.PasswordMasker;
 import io.github.support.UnitTest;
 import io.opentelemetry.api.trace.Span;
@@ -8,12 +13,16 @@ import io.opentelemetry.api.trace.StatusCode;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
@@ -58,6 +67,8 @@ class HttpFilterTest extends UnitTest {
     private SpanContext spanContext;
 
     private HttpFilter httpFilter;
+
+    private final List<Runnable> cleanups = new ArrayList<>();
 
     @Override
     @BeforeEach
@@ -226,6 +237,7 @@ class HttpFilterTest extends UnitTest {
         when(clientHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(clientHttpResponse.getBody()).thenReturn(new ByteArrayInputStream(responseBody.getBytes()));
         when(passwordMasker.maskPasswordsIn(responseBody)).thenReturn(maskedResponse);
+        captureHttpLogger(Level.DEBUG);
 
         // When: Using the request interceptor
         final ClientHttpRequestInterceptor interceptor = httpFilter.getRequestInterceptor(SERVICE_NAME_VALUE);
@@ -233,6 +245,65 @@ class HttpFilterTest extends UnitTest {
 
         // Then: Password masker is called to mask sensitive data
         verify(passwordMasker).maskPasswordsIn(responseBody);
+    }
+
+    @Test
+    @DisplayName("Should mask credential request headers in debug log")
+    void shouldMaskCredentialHeadersWhenLoggingRequest() throws IOException {
+        // Given: A request carrying credentials and DEBUG logging captured
+        final ClientHttpRequest request = aMockedClientHttpRequest();
+        request.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer secret-token");
+        request.getHeaders().add(HttpHeaders.COOKIE, "SESSION=secret-session");
+        when(execution.execute(any(), any())).thenReturn(clientHttpResponse);
+        setupSuccessfulResponse();
+        final ListAppender<ILoggingEvent> appender = captureHttpLogger(Level.DEBUG);
+
+        // When: Intercepting the request
+        httpFilter.getRequestInterceptor(SERVICE_NAME_VALUE).intercept(request, aRequestBody(), execution);
+
+        // Then: Credentials never reach the log
+        final String logged = appender.list.toString();
+        assertThat(logged, containsString("Authorization: ***"));
+        assertThat(logged, not(containsString("secret-token")));
+        assertThat(logged, not(containsString("secret-session")));
+    }
+
+    @Test
+    @DisplayName("Should not buffer response body when DEBUG is disabled")
+    void shouldNotBufferResponseWhenDebugIsDisabled() throws IOException {
+        // Given: DEBUG logging disabled for the http logger
+        final ClientHttpRequest request = aMockedClientHttpRequest();
+        when(execution.execute(any(), any())).thenReturn(clientHttpResponse);
+        setupSuccessfulResponse();
+        captureHttpLogger(Level.INFO);
+
+        // When: Intercepting the request
+        final ClientHttpResponse response = httpFilter.getRequestInterceptor(SERVICE_NAME_VALUE)
+            .intercept(request, aRequestBody(), execution);
+
+        // Then: The original response is returned and its body is not read
+        assertThat(response, is(sameInstance(clientHttpResponse)));
+        verify(clientHttpResponse, never()).getBody();
+    }
+
+    private ListAppender<ILoggingEvent> captureHttpLogger(final Level level) {
+        final Logger logger = (Logger) LoggerFactory.getLogger(HttpLogger.class);
+        final Level previous = logger.getLevel();
+        final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(level);
+        cleanups.add(() -> {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        });
+        return appender;
+    }
+
+    @AfterEach
+    void restoreLoggers() {
+        cleanups.forEach(Runnable::run);
+        cleanups.clear();
     }
 
     private void setupSpanMocks() {

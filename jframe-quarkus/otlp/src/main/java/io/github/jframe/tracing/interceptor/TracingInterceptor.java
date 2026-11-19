@@ -86,19 +86,22 @@ public class TracingInterceptor {
      * @throws Exception if the intercepted method throws
      */
     @AroundInvoke
+    public Object aroundInvoke(final InvocationContext context) throws Exception {
+        if (config.disabled()) {
+            return context.proceed();
+        }
+        final String methodName = context.getMethod().getName();
+        return isExcluded(methodName) ? context.proceed() : proceedInSpan(context, methodName);
+    }
+
     @SuppressWarnings(
         {
             "try",
             "PMD.UnusedLocalVariable"
         }
     )
-    public Object aroundInvoke(final InvocationContext context) throws Exception {
+    private Object proceedInSpan(final InvocationContext context, final String methodName) throws Exception {
         final String className = resolveClassName(context.getTarget().getClass().getSimpleName());
-        final String methodName = context.getMethod().getName();
-
-        if (config.disabled() || isExcluded(methodName)) {
-            return context.proceed();
-        }
 
         final String spanName = resolveSpanName(context, className, methodName);
         final Span span = resolveTracer()

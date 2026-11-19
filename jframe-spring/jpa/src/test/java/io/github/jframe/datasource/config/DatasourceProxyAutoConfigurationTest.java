@@ -1,49 +1,41 @@
 package io.github.jframe.datasource.config;
 
+import net.ttddyy.dsproxy.support.ProxyDataSource;
+
+import javax.sql.DataSource;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.not;
+import static org.mockito.Mockito.mock;
 
-/**
- * Characterization / regression test for the jframe-spring-jpa auto-configuration surface.
- *
- * <p>Asserts that {@link DatasourceProxyConfiguration} is registered via the jpa module's own
- * {@code META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports} entry
- * point — not as an accidental side-effect of another module's component scan.
- */
-@DisplayName("Characterization Test - jframe-spring-jpa auto-configuration surface")
+/** Context-runner tests for {@link DatasourceProxyConfiguration}. */
+@DisplayName("Datasource Proxy - Spring auto-configuration")
 class DatasourceProxyAutoConfigurationTest {
 
-    /**
-     * Boots a context using ONLY {@link DatasourceProxyConfiguration} as the auto-configuration
-     * entry point — exactly the way Spring Boot's auto-configuration mechanism loads it
-     * when the imports file is present.
-     */
-    @Test
-    @DisplayName("Should register DatasourceProxyConfiguration via jpa module's own auto-configuration")
-    void shouldRegisterDatasourceProxyConfigurationViaJpaAutoConfiguration() {
-        // Given: ONLY the jpa module's auto-configuration is applied (no core @ComponentScan as crutch)
-        final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(DatasourceProxyConfiguration.class))
-            .withPropertyValues(
-                "jframe.application.name=test-service",
-                "jframe.application.group=io.github.jframe",
-                "jframe.application.version=0.0.1"
-            );
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+        .withConfiguration(AutoConfigurations.of(DatasourceProxyConfiguration.class))
+        .withBean("dataSource", DataSource.class, () -> mock(DataSource.class));
 
-        // When: the context starts / Then: DatasourceProxyConfiguration must be present
-        contextRunner.run(
-            ctx -> assertThat(
-                "DatasourceProxyConfiguration must be registered by the jpa module's own "
-                    + "auto-configuration — not as a side-effect of core's @ComponentScan",
-                ctx.getBean(DatasourceProxyConfiguration.class),
-                is(notNullValue())
-            )
-        );
+    @Test
+    @DisplayName("Should wrap DataSource with ProxyDataSource by default")
+    void shouldWrapDataSourceByDefault() {
+        // When / Then: the DataSource is proxied
+        contextRunner.run(ctx -> assertThat(ctx.getBean(DataSource.class), is(instanceOf(ProxyDataSource.class))));
+    }
+
+    @Test
+    @DisplayName("Should not wrap DataSource when jframe.datasource.proxy.enabled=false")
+    void shouldNotWrapDataSourceWhenDisabled() {
+        // When / Then: the DataSource is left untouched
+        contextRunner
+            .withPropertyValues("jframe.datasource.proxy.enabled=false")
+            .run(ctx -> assertThat(ctx.getBean(DataSource.class), is(not(instanceOf(ProxyDataSource.class)))));
     }
 }

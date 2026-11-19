@@ -1,9 +1,5 @@
 description = "JFrame Quarkus OTLP - OpenTelemetry tracing interceptors and configuration for Quarkus"
 
-fun retrieve(property: String): String =
-    project.findProperty(property)?.toString()?.replace("\"", "")
-        ?: throw IllegalStateException("Property $property not found")
-
 tasks.named<ProcessResources>("processResources") {
     val projectVersion = project.version.toString()
     filesMatching("META-INF/quarkus-extension.properties") {
@@ -15,21 +11,28 @@ dependencies {
     api(project(":jframe-quarkus-core"))
 
     // Jackson annotations — compileOnly (transitive from jframe-core, not visible via quarkus-core chain)
-    compileOnly("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
+    compileOnly(libs.jackson.annotations)
 
-    // Quarkus APIs — compileOnly (provided by consumer's Quarkus runtime)
-    compileOnly("io.quarkus:quarkus-arc:${retrieve("quarkusVersion")}")
-    compileOnly("io.quarkus:quarkus-core:${retrieve("quarkusVersion")}")
-    compileOnly("io.quarkus:quarkus-opentelemetry:${retrieve("quarkusVersion")}")
-    compileOnly("io.quarkus:quarkus-security:${retrieve("quarkusVersion")}")
+    // Runtime extensions this extension builds on — api so consumers get them transitively
+    // (deployment counterparts are declared in otlp-deployment).
+    api(libs.quarkus.arc)
+    api(libs.quarkus.core)
+    api(libs.quarkus.opentelemetry)
+    // Optional: SecurityIdentity is resolved via Instance<>; consumers opt into security themselves.
+    compileOnly(libs.quarkus.security)
+
+    // CVE floor: guava/protobuf are transitive via quarkus-opentelemetry gRPC; quarkus-bom pins older versions.
+    constraints {
+        api(libs.guava)
+        api(libs.protobuf.java)
+    }
 
     // Test dependencies
-    testImplementation("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
-    testImplementation("org.junit.jupiter:junit-jupiter:${retrieve("junitVersion")}")
-    testImplementation("org.mockito:mockito-core:${retrieve("mockitoVersion")}")
-    testImplementation("org.mockito:mockito-junit-jupiter:${retrieve("mockitoVersion")}")
-    testImplementation("io.smallrye.config:smallrye-config:${retrieve("smallryeConfigVersion")}")
-    testImplementation("io.quarkus:quarkus-opentelemetry:${retrieve("quarkusVersion")}")
-    testImplementation("io.quarkus:quarkus-security:${retrieve("quarkusVersion")}")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:${retrieve("junitVersion")}")
+    testImplementation(libs.jackson.annotations)
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.junit.jupiter)
+    testImplementation(libs.smallrye.config)
+    testImplementation(libs.quarkus.security)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }

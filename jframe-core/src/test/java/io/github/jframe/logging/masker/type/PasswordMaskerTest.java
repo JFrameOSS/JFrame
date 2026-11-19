@@ -8,6 +8,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -279,5 +281,41 @@ class PasswordMaskerTest extends UnitTest {
 
         // Then: Password is masked up to newline
         assertThat(result, is("password=***\nusername=john"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @DisplayName("Should mask edge-case input without leaking or throwing")
+    @CsvSource(
+        delimiter = '|',
+        quoteCharacter = '`',
+        value = {
+            "escaped backslash before closing quote | {\"password\":\"abc\\\\\",\"user\":\"john\"} | {\"password\":\"***\",\"user\":\"john\"}",
+            "truncated value                        | {\"password\":\"secr                           | {\"password\":\"***",
+            "input ends after key                   | {\"password\"                                  | {\"password\"",
+            "input ends after colon                 | {\"password\":                                 | {\"password\":",
+            "input ends after opening quote         | {\"password\":\"                               | {\"password\":\"***",
+            "locale-sensitive char before key       | {\"\u0130\":\"x\",\"password\":\"secret\"}     | {\"\u0130\":\"x\",\"password\":\"***\"}"
+        }
+    )
+    void maskPasswordsIn_withEdgeCaseInput_shouldMask(final String scenario, final String input, final String expected) {
+        // Given: A PasswordMasker for the default field
+        final PasswordMasker masker = new PasswordMasker(List.of("password"));
+
+        // When: Masking the edge-case input
+        final String result = masker.maskPasswordsIn(input);
+
+        // Then: The value is masked and the rest is preserved
+        assertThat(result, is(expected));
+    }
+
+    @Test
+    @DisplayName("Should detect names containing a configured field, case-insensitively")
+    void masksField_withConfiguredField_shouldMatchCaseInsensitively() {
+        // Given: A PasswordMasker for the secret field
+        final PasswordMasker masker = new PasswordMasker(List.of("secret"));
+
+        // When / Then: Names containing the field match, others do not
+        assertThat(masker.masksField("X-Client-Secret"), is(true));
+        assertThat(masker.masksField("Content-Type"), is(false));
     }
 }

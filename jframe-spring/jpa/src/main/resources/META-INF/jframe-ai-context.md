@@ -71,7 +71,7 @@ public class UserMapper extends PageMapper<UserResource, User> {
 
 ## SQL Query Logging
 
-`DatasourceProxyConfiguration` — `BeanPostProcessor` that auto-wraps all `DataSource` beans with `ProxyDataSource`.
+`DatasourceProxyConfiguration` — `BeanPostProcessor` that auto-wraps all `DataSource` beans with `ProxyDataSource`. Opt out: `jframe.datasource.proxy.enabled=false`.
 - Uses `PrettyQueryEntryCreator` (Hibernate FormatStyle: NONE, BASIC, DDL, HIGHLIGHT)
 - Logs via `DefaultQueryExecutionListener` (from jframe-core)
 - No manual configuration required

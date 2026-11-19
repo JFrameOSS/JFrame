@@ -5,8 +5,8 @@
 **Enterprise-grade utilities for Spring Boot and Quarkus applications**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Spring Boot](https://img.shields.io/badge/spring--boot-4.1.0-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/quarkus-3.38.2-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
+[![Spring Boot](https://img.shields.io/badge/spring--boot-4.1.2-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/quarkus-3.40.1.2-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
 [![Java](https://img.shields.io/badge/java-21-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.java.net/projects/jdk/21/)
 
 [Features](#-features) •
@@ -46,7 +46,7 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 ### Prerequisites
 
 - Java 21+ (Temurin recommended)
-- Spring Boot 4.1.0+ **or** Quarkus 3.20.3+
+- Spring Boot 4.1.2+ **or** Quarkus 3.40+
 - Gradle 9.x
 
 ### Installation
@@ -55,9 +55,9 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-spring-core:1.8.1")
-    implementation("io.github.jframeoss:jframe-spring-jpa:1.8.1")   // optional
-    implementation("io.github.jframeoss:jframe-spring-otlp:1.8.1")  // optional
+    implementation("io.github.jframeoss:jframe-spring-core:1.9.0")
+    implementation("io.github.jframeoss:jframe-spring-jpa:1.9.0")   // optional
+    implementation("io.github.jframeoss:jframe-spring-otlp:1.9.0")  // optional
 }
 ```
 
@@ -65,9 +65,9 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.jframeoss:jframe-quarkus-core:1.8.1")
-    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.8.1")   // optional
-    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.8.1")  // optional
+    implementation("io.github.jframeoss:jframe-quarkus-core:1.9.0")
+    implementation("io.github.jframeoss:jframe-quarkus-jpa:1.9.0")   // optional
+    implementation("io.github.jframeoss:jframe-quarkus-otlp:1.9.0")  // optional
 }
 ```
 
@@ -147,6 +147,8 @@ Newest first. See the [migration index](./docs/migration/README.md) for the full
 
 | Version | Guide | What changed |
 |---------|-------|--------------|
+| 1.9.0 | [Hardening](./docs/migration/1.9.0-hardening.md) | **Breaking** — credential headers masked in outbound logs, `ErrorResponseWriter`/`HttpLogger` signatures, Quarkus `OpenTelemetryConfig` is a `@ConfigMapping` interface |
+| 1.9.0 | [HTTP Client TLS](./docs/migration/1.9.0-http-client-tls.md) | **Breaking** — `HttpClientSSLFactory.createRequestFactory(TlsOptions, int, int)` replaces the boolean signature |
 | 1.8.0 | [Problem Details](./docs/migration/1.8.0-problem-details.md) | **Breaking** — error bodies are RFC 9457 `application/problem+json`; app exception handlers now win over jFrame |
 | 1.6.1 | [Spring Log Export](./docs/migration/1.6.1-spring-log-export.md) | `jframe.otlp.logs.enabled` now works on Spring — log records start exporting |
 | 1.6.0 | [OTLP Opt-In](./docs/migration/1.6.0-otlp-opt-in.md) | Telemetry is opt-in, Opt-In process attributes excluded, `sampling-rate` now honoured |

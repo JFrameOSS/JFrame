@@ -1,8 +1,5 @@
 package io.github.jframe.factory;
 
-import io.github.jframe.exception.HttpException;
-import io.github.jframe.exception.JFrameErrorCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
@@ -12,16 +9,18 @@ import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.Objects;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 
@@ -29,107 +28,71 @@ import static io.github.jframe.util.constants.Constants.Protocols.TLS;
 import static java.security.KeyStore.getDefaultType;
 import static javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm;
 
-/**
- * Factory for creating HTTP request factories with SSL/TLS configuration. Supports both secure (with truststore) and insecure (trust-all)
- * configurations.
- */
+/** Creates HTTP request factories with TLS configured according to {@link TlsOptions}. */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class HttpClientSSLFactory {
 
     /**
-     * Creates an HTTP request factory with appropriate SSL configuration.
+     * Creates an HTTP request factory.
      *
-     * @param useSecureConnection   true for secure connection with truststore, false for trust-all
-     * @param trustStorePath        the path to the truststore file containing the certificates
-     * @param trustStorePassword    the associated password for the truststore
-     * @param connectTimeoutSeconds connection timeout in seconds
+     * @param options               TLS trust configuration
+     * @param connectTimeoutSeconds connect and connection-request timeout in seconds
      * @param readTimeoutSeconds    read timeout in seconds
-     * @return configured HttpComponentsClientHttpRequestFactory
+     * @return configured request factory
      */
     public HttpComponentsClientHttpRequestFactory createRequestFactory(
-        final boolean useSecureConnection,
-        final String trustStorePath,
-        final String trustStorePassword,
+        final TlsOptions options,
         final int connectTimeoutSeconds,
         final int readTimeoutSeconds) {
 
-        final HttpClientBuilder builder = HttpClients.custom();
+        Objects.requireNonNull(options, "options");
+        final Duration connectTimeout = Duration.ofSeconds(connectTimeoutSeconds);
+        final PoolingHttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+            .setTlsSocketStrategy(createTlsStrategy(options))
+            .setDefaultConnectionConfig(ConnectionConfig.custom().setConnectTimeout(Timeout.of(connectTimeout)).build())
+            .build();
+
+        final HttpComponentsClientHttpRequestFactory requestFactory =
+            new HttpComponentsClientHttpRequestFactory(HttpClients.custom().setConnectionManager(connectionManager).build());
+        requestFactory.setConnectionRequestTimeout(connectTimeout);
+        requestFactory.setReadTimeout(Duration.ofSeconds(readTimeoutSeconds));
+        return requestFactory;
+    }
+
+    private static DefaultClientTlsStrategy createTlsStrategy(final TlsOptions options) {
         try {
-            final PoolingHttpClientConnectionManager connectionManager;
-
-            if (useSecureConnection) {
-                log.info("Creating secure HTTP client with truststore");
-                connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
-                    .setTlsSocketStrategy(
-                        new DefaultClientTlsStrategy(
-                            createSecureSSLContext(trustStorePath, trustStorePassword)
-                        )
-                    )
-                    .build();
-            } else {
-                log.warn("Creating insecure HTTP client that accepts all SSL certificates");
-                connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
-                    .setTlsSocketStrategy(
-                        new DefaultClientTlsStrategy(
-                            createTrustAllSSLContext(),
-                            (hostname, session) -> true
-                        )
-                    ) // Accept all hostnames
-                    .build();
-            }
-
-            builder.setConnectionManager(connectionManager);
-
-            final HttpComponentsClientHttpRequestFactory requestFactory =
-                new HttpComponentsClientHttpRequestFactory(builder.build());
-            requestFactory.setConnectionRequestTimeout(Duration.ofSeconds(connectTimeoutSeconds));
-            requestFactory.setReadTimeout(Duration.ofSeconds(readTimeoutSeconds));
-
-            return requestFactory;
+            return switch (options.mode()) {
+                case DEFAULT -> new DefaultClientTlsStrategy(SSLContext.getDefault());
+                case CUSTOM -> new DefaultClientTlsStrategy(
+                    createTrustStoreContext(options.trustStorePath(), options.trustStorePassword())
+                );
+                case SSL_BUNDLE -> new DefaultClientTlsStrategy(options.sslBundle().createSslContext());
+                case TRUST_ALL -> {
+                    log.warn("Creating insecure HTTP client that accepts all SSL certificates");
+                    yield new DefaultClientTlsStrategy(createContext(getTrustAllManager()), (hostname, session) -> true);
+                }
+            };
         } catch (final Exception exception) {
-            throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, exception);
+            throw new IllegalStateException("Failed to configure TLS for mode " + options.mode(), exception);
         }
     }
 
-    /**
-     * Creates an SSL context that trusts all certificates. WARNING: Only use in development/testing environments.
-     */
-    private SSLContext createTrustAllSSLContext() {
-        try {
-            final SSLContext sslContext = SSLContext.getInstance(TLS);
-            sslContext.init(
-                null,
-                getTrustAllManager(),
-                new SecureRandom()
-            );
-
-            return sslContext;
-        } catch (final Exception exception) {
-            throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, exception);
+    private static SSLContext createTrustStoreContext(final String path, final String password) throws Exception {
+        log.info("Initializing SSL context with truststore: {}", path);
+        final KeyStore trustStore = KeyStore.getInstance(getDefaultType());
+        try (InputStream input = Files.newInputStream(Paths.get(path))) {
+            trustStore.load(input, password.toCharArray());
         }
+        final TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(getDefaultAlgorithm());
+        trustManagerFactory.init(trustStore);
+        return createContext(trustManagerFactory.getTrustManagers());
     }
 
-
-    /**
-     * Creates a secure SSL context using the provided truststore.
-     */
-    private SSLContext createSecureSSLContext(final String trustStorePath, final String trustStorePassword) {
-        try (InputStream trustStoreFile = Files.newInputStream(Paths.get(trustStorePath))) {
-            log.info("Initializing secure SSL Context with truststore: {}", trustStorePath);
-            final KeyStore trustStore = KeyStore.getInstance(getDefaultType());
-            trustStore.load(trustStoreFile, trustStorePassword.toCharArray());
-
-            final TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(getDefaultAlgorithm());
-            trustManagerFactory.init(trustStore);
-
-            final SSLContext sslContext = SSLContext.getInstance(TLS);
-            sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
-            return sslContext;
-        } catch (final Exception exception) {
-            throw new HttpException(JFrameErrorCode.INTERNAL_SERVER_ERROR, exception);
-        }
+    private static SSLContext createContext(final TrustManager... trustManagers) throws Exception {
+        final SSLContext sslContext = SSLContext.getInstance(TLS);
+        sslContext.init(null, trustManagers, new SecureRandom());
+        return sslContext;
     }
 
     /**
@@ -137,7 +100,7 @@ public class HttpClientSSLFactory {
      *
      * @return The list with the configured trust manager
      */
-    public static TrustManager[] getTrustAllManager() {
+    private static TrustManager[] getTrustAllManager() {
         return new TrustManager[] {
             new X509TrustManager() {
 
@@ -158,5 +121,4 @@ public class HttpClientSSLFactory {
             },
         };
     }
-
 }

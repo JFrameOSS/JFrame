@@ -1,0 +1,13 @@
+title = "JFrame gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Test fixtures and false positives"
+paths = [
+  '''.*/src/test/.*''',
+  '''\.opencode/.*''',
+  '''\.gradle/.*''',
+  '''build/.*''',
+]

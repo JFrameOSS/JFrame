@@ -1,0 +1,8 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "platform": "github",
+  "repositories": ["JFrameOSS/JFrame"],
+  "onboarding": false,
+  "requireConfig": "required",
+  "allowedUnsafeExecutions": ["gradleWrapper"]
+}

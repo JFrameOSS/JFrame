@@ -10,6 +10,14 @@ import static io.github.jframe.util.constants.Constants.Characters.*;
  */
 public class UriQueryStringPasswordMasker implements Masker {
 
+    private static final char[] VALUE_TERMINATORS = {
+        AMPERSAND,
+        QUOTE,
+        LT,
+        NEW_LINE,
+        CARRIAGE_RETURN,
+    };
+
     /**
      * {@inheritDoc}
      *
@@ -39,7 +47,7 @@ public class UriQueryStringPasswordMasker implements Masker {
     private static void readUntilEndOfQueryParameterValue(final MaskedPasswordBuilder builder) {
         while (builder.hasNext()) {
 
-            if (builder.currentCharIsOneOf(AMPERSAND, QUOTE, LT, NEW_LINE, CARRIAGE_RETURN)) {
+            if (builder.currentCharIsOneOf(VALUE_TERMINATORS)) {
                 break;
             }
             builder.next();

@@ -5,13 +5,46 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.9.0] — 2026-11-19
 
 ### Added
 
 - **`MULTI_NUMERIC` search type** — `MultiNumericField` generates an `IN (...)` predicate from a list of integer values; input via `textValueList` (strings parsed to integers, unparseable values skipped)
 - **`NUMERIC_RANGE` search type** — `NumericRangeField` generates `>=` and/or `<=` predicates from optional `fromNumericValue` / `toNumericValue` integers; both bounds are nullable
 - **`NULL_CHECK` search type** — `NullCheckField` generates `IS NOT NULL` (`textValue` `true`) or `IS NULL` (`false`) on a column
+- **`jframe.datasource.proxy.enabled`** (default `true`) — opt out of the SQL-logging `DataSource` proxy
+- **`TlsOptions` for `HttpClientSSLFactory`** — choose TLS trust explicitly: `defaultTrustStore()` (JVM cacerts, certificate + hostname verification), `customTrustStore(path, password)`, `sslBundle(SslBundle)` (Spring Boot `spring.ssl.bundle.*`) or `trustAll()` (development only, logs a warning)
+
+### Changed
+
+- **BREAKING: `HttpClientSSLFactory.createRequestFactory(TlsOptions, connectTimeoutSeconds, readTimeoutSeconds)`** — replaces the boolean signature; see [migration guide](../../docs/migration/1.9.0-http-client-tls.md)
+- **BREAKING: TLS setup failures** in `HttpClientSSLFactory.createRequestFactory` throw `IllegalStateException` (with cause) instead of `HttpException` (500)
+- **`tracer` bean** backs off when the application defines its own `Tracer`
+- **Connect timeout** — `connectTimeoutSeconds` now also sets the socket connect timeout, not only the connection-pool checkout timeout
+- **BREAKING: Quarkus `OpenTelemetryConfig`** is now a `@ConfigMapping` interface; malformed values fail at startup
+- **BREAKING: `jframe-quarkus-otlp`** exposes `quarkus-arc`, `quarkus-core` and `quarkus-opentelemetry` as `api` dependencies
+- **BREAKING: `HttpLogger.logRequest` / `logResponse`** take a `PasswordMasker`
+- **Spring outbound response body** is buffered only when `HttpLogger` DEBUG logging is enabled
+
+### Removed
+
+- **BREAKING: `ErrorResponseWriter.write(request, response, Response.Status, String, String)`** — deprecated since 1.8.0; use `write(request, response, ApiError)` or `write(request, response, HttpException)`
+- **BREAKING: `HttpClientSSLFactory.getTrustAllManager()`** is now private; use `TlsOptions.trustAll()`
+- **BREAKING: `DatasourceProxyConfiguration` no longer implements `BeanPostProcessor`** — the post-processor is a static `@Bean`
+- **Stale `jframe.logging.filters.tracing-id.*` configuration metadata** (filter removed in 1.5.0)
+- **`createRequestFactory(boolean, String, String, int, int)`** — use `TlsOptions.customTrustStore(...)` for `true`, `TlsOptions.trustAll()` (or preferably `defaultTrustStore()`) for `false`
+
+### Fixed
+
+- **SQL logging suppression** now actually suppresses query logging
+- **Nested suppression** (`SqlStatementLogging`, `HttpRequestLogging`) restores the outer state on close
+- **`AntStylePathMatcher`** no longer suffers catastrophic backtracking on pathological patterns
+- **Reactive outbound response** is no longer returned with a consumed body after logging
+
+### Security
+
+- **Password masker leaks and crashes** — escaped backslash before closing quote, truncated/unterminated values, input ending after key and Unicode case folding
+- **Credential headers masked in outbound logging** — `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie` and headers named after a fields-to-mask entry (Spring `HttpLogger`, Quarkus `OutboundLoggingFilter`)
 
 ## [1.0.0] — 2026-04-03
 

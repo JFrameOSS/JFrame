@@ -15,6 +15,7 @@ import io.opentelemetry.api.trace.Tracer;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -29,8 +30,6 @@ import org.springframework.context.annotation.Import;
  * <p>Must run after {@link CoreAutoConfiguration} because this class's {@link #tracer} bean
  * needs {@link ApplicationProperties}, which is only enabled via
  * {@code @EnableConfigurationProperties} in {@link CoreAutoConfiguration}.
- * The former duplicate {@code @PropertySource} declaration has been removed — the single
- * source in {@link CoreAutoConfiguration} is canonical.
  */
 @AutoConfiguration
 @AutoConfigureAfter(CoreAutoConfiguration.class)
@@ -62,9 +61,10 @@ public class OpenTelemetryAutoConfiguration {
      *
      * @param openTelemetry         the OpenTelemetry instance
      * @param applicationProperties the application properties containing name and version
-     * @return a Tracer instance
+     * @return a Tracer instance, unless the application defines its own
      */
     @Bean
+    @ConditionalOnMissingBean(Tracer.class)
     @ConditionalOnProperty(
         name = "jframe.otlp.disabled",
         havingValue = "false"

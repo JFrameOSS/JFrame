@@ -28,7 +28,7 @@ import org.jspecify.annotations.NonNull;
  *           }
  *           }
  *           }
- *           </pre>
+ * </pre>
  *
  * @param <K> the type of the entity identifier (e.g. {@link Long}, {@link UUID})
  * @param <V> the type of the cached entity (e.g. Channel, User)

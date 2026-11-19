@@ -1,0 +1,180 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [develop, master, 'release/**', 'hotfix/**']
+    tags: ['*.*.*']
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    branches: [develop, master, 'release/**', 'hotfix/**']
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # =============================================================================
+  # PATH FILTERS
+  # =============================================================================
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      deps: ${{ steps.filter.outputs.deps }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            deps:
+              - '**/gradle.lockfile'
+              - 'gradle/libs.versions.toml'
+              - '**/build.gradle.kts'
+              - 'mise.toml'
+              - 'trivy.yaml'
+
+  # =============================================================================
+  # SECURITY - DEPENDENCIES & LICENCES (trivy; deps changes + nightly)
+  # =============================================================================
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.deps == 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
+        with:
+          install: true
+          install_args: "aqua:aquasecurity/trivy"
+
+      - name: Trivy DB cache key
+        id: trivy-key
+        run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Trivy DB
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ steps.trivy-key.outputs.date }}
+
+      - name: Vulnerability scan (fixed HIGH/CRITICAL, blocking)
+        run: >-
+          .github/scripts/trivy-fs-scan.sh "Vulnerabilities (fixed HIGH/CRITICAL)"
+          --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1
+
+      - name: Licence gate (HIGH/CRITICAL, blocking)
+        if: always()
+        run: >-
+          .github/scripts/trivy-fs-scan.sh "Licence gate (HIGH/CRITICAL, see trivy.yaml)"
+          --scanners license --severity HIGH,CRITICAL --exit-code 1
+
+      - name: Licence report (all severities, informational)
+        if: always()
+        continue-on-error: true
+        run: >-
+          .github/scripts/trivy-fs-scan.sh "Licence report (all severities, informational)"
+          --config '' --scanners license
+
+      - name: Full report (scheduled, incl. unfixed)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: >-
+          trivy fs --config '' --scanners vuln,license
+          --skip-dirs '**/node_modules' --skip-dirs '**/build'
+          --format json --output trivy-full-report.json .
+
+      - name: Upload full report
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: trivy-full-report
+          path: trivy-full-report.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  # =============================================================================
+  # SECURITY - SECRETS (gitleaks; PR/push new commits, full history nightly)
+  # =============================================================================
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
+        with:
+          install: true
+          install_args: "aqua:gitleaks/gitleaks"
+
+      - name: Scan for secrets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          range=()
+          case "$EVENT_NAME" in
+            pull_request) range=(--log-opts="origin/${BASE_REF}..HEAD") ;;
+            push)
+              if [[ ! "$BEFORE_SHA" =~ ^0+$ ]]; then
+                range=(--log-opts="${BEFORE_SHA}..${HEAD_SHA}")
+              fi
+              ;;
+          esac
+          rc=0
+          gitleaks git --redact --no-banner --log-level warn \
+            --report-format json --report-path gitleaks-report.json \
+            "${range[@]}" . || rc=$?
+          {
+            echo "### Secret scan (exit $rc)"
+            echo "Range: ${range[*]:-full history}"
+            if [ "$rc" -ne 0 ] && [ -s gitleaks-report.json ]; then
+              echo "Findings: $(jq 'length' gitleaks-report.json)"
+              jq -r '.[:50][] | "- `\(.File):\(.StartLine)` \(.RuleID) (commit \(.Commit[0:8]))"' gitleaks-report.json
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
+
+  # =============================================================================
+  # DEPENDENCY GRAPH (develop only; feeds GitHub Dependency Graph, non-blocking)
+  # =============================================================================
+  dependency-graph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-java-gradle
+        with:
+          cache-read-only: 'false'
+
+      - name: Submit dependency graph
+        uses: gradle/actions/dependency-submission@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          dependency-graph-continue-on-failure: true

@@ -1,7 +1,4 @@
 description = "JFrame Spring OpenTelemetry - Provides OpenTelemetry integration with custom tracing, logging, and monitoring capabilities"
-fun retrieve(property: String): String =
-    project.findProperty(property)?.toString()?.replace("\"", "")
-        ?: throw IllegalStateException("Property $property not found")
 
 dependencies {
     api(project(":jframe-spring-core"))
@@ -11,12 +8,12 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-webflux")
 
     // ======= OTEL DEPENDENCIES (https://opentelemetry.io/docs/getting-started/) =======
-    api("org.apache.httpcomponents.client5:httpclient5:${retrieve("httpClientVersion")}")
-    api("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:${retrieve("openTelemetryInstrumentationVersion")}")
-    api("io.opentelemetry.semconv:opentelemetry-semconv:${retrieve("openTelemetrySemconvVersion")}")
+    api(libs.httpclient5)
+    api(libs.opentelemetry.spring.boot.starter)
+    api(libs.opentelemetry.semconv)
 
     // ======= OTHER DEPENDENCIES =======
-    compileOnly("jakarta.servlet:jakarta.servlet-api:${retrieve("jakartaServletVersion")}")
-    compileOnly("org.aspectj:aspectjweaver:${retrieve("aspectjVersion")}")
+    compileOnly(libs.jakarta.servlet.api)
+    compileOnly(libs.aspectjweaver)
     testImplementation(testFixtures(project(":jframe-core")))
 }
