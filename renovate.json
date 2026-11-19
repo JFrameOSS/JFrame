@@ -117,5 +117,6 @@
   },
   "ignoreDeps": [
     "verification:jframe"
-  ]
+  ],
+  "platformAutomerge": false
 }
