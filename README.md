@@ -46,7 +46,7 @@ JFrame provides structured exception handling, ECS-compliant logging, paginated 
 ### Prerequisites
 
 - Java 21+ (Temurin recommended)
-- Spring Boot 4.1.0+ **or** Quarkus 3.20.3+
+- Spring Boot 4.1.2+ **or** Quarkus 3.40+
 - Gradle 9.x
 
 ### Installation
