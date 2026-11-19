@@ -28,10 +28,14 @@
     "mise"
   ],
   "ignoreUnstable": true,
-  "ignoredVersions": [
-    "/[.-](alpha|beta|rc|cr|m|milestone)[.-]?\\d*$/i"
-  ],
   "packageRules": [
+    {
+      "description": "Published library: never take pre-releases",
+      "matchManagers": [
+        "gradle"
+      ],
+      "allowedVersions": "!/[.-](alpha|beta|rc|cr|m|milestone)[.-]?\\d*$/i"
+    },
     {
       "description": "Bundle all non-major updates into one PR",
       "matchUpdateTypes": [
