@@ -7,7 +7,6 @@ import static java.util.Objects.requireNonNull;
 /**
  * A string visitor that builds the same string, but then with masked passwords.
  */
-@Getter
 public class MaskedPasswordBuilder {
 
     /** Constant for the masked password. */
@@ -22,13 +21,8 @@ public class MaskedPasswordBuilder {
     /** The string that contains the {@link MaskedPasswordBuilder#pattern} string. */
     private final String stringToMask;
 
-    /** Lowercase copy of {@link #stringToMask} used by {@link #findNextPassword()} for case-insensitive search. */
-    private final String lowerCaseStringToMask;
-
-    /** Lowercase copy of {@link #pattern} used by {@link #findNextPassword()} for case-insensitive search. */
-    private final String lowerCasePattern;
-
     /** The index of the current character. */
+    @Getter
     private int currentIndex;
 
     /** The saved index, set by {@link MaskedPasswordBuilder#mark()} method. */
@@ -51,8 +45,6 @@ public class MaskedPasswordBuilder {
         this.stringToMask = requireNonNull(stringToMask);
         this.pattern = pattern;
         this.patternLength = pattern.length();
-        this.lowerCaseStringToMask = stringToMask.toLowerCase();
-        this.lowerCasePattern = pattern.toLowerCase();
     }
 
     /**
@@ -75,8 +67,8 @@ public class MaskedPasswordBuilder {
      * @param choices Check whether the current char is one of the choices.
      * @return {@code true} of the current character is one of the {@code choices}.
      */
-    public boolean currentCharIsOneOf(final Character... choices) {
-        for (final Character choice : choices) {
+    public boolean currentCharIsOneOf(final char... choices) {
+        for (final char choice : choices) {
             if (currentCharIs(choice)) {
                 return true;
             }
@@ -85,26 +77,22 @@ public class MaskedPasswordBuilder {
     }
 
     /**
-     * Returns {@code true} if the current character is {@code character}.
+     * Returns {@code true} if the current character is {@code character}; {@code false} at end of input.
      *
      * @param character The character to check.
      * @return {@code true} if the current character is {@code character}.
      */
-    public boolean currentCharIs(final Character character) {
-        return character.equals(getCurrentChar());
+    public boolean currentCharIs(final char character) {
+        return hasNext() && stringToMask.charAt(currentIndex) == character;
     }
 
     /**
-     * Returns {@code true} if the current character is a whitespace.
+     * Returns {@code true} if the current character is a whitespace; {@code false} at end of input.
      *
      * @return {@code true} if the current character is a whitespace.
      */
     public boolean currentCharIsWhitespace() {
-        return Character.isWhitespace(getCurrentChar());
-    }
-
-    private Character getCurrentChar() {
-        return stringToMask.charAt(currentIndex);
+        return hasNext() && Character.isWhitespace(stringToMask.charAt(currentIndex));
     }
 
     /** Saves the current index, to be used by {@link MaskedPasswordBuilder#reset}. */
@@ -124,7 +112,7 @@ public class MaskedPasswordBuilder {
      *
      * @param index the index in the current buffer to append the masked password at.
      */
-    public void maskPasswordAt(final Integer index) {
+    public void maskPasswordAt(final int index) {
         result.append(stringToMask, lastAddedIndex, index).append(MASKED_PASSWORD);
         lastAddedIndex = currentIndex;
     }
@@ -135,12 +123,14 @@ public class MaskedPasswordBuilder {
      * @return {@code true} if there is another password to be found in the string to mask.
      */
     public boolean findNextPassword() {
-        final int index = lowerCaseStringToMask.indexOf(lowerCasePattern, currentIndex);
-        if (index == -1) {
-            return false;
+        final int lastStart = stringToMask.length() - patternLength;
+        for (int index = currentIndex; index <= lastStart; index++) {
+            if (stringToMask.regionMatches(true, index, pattern, 0, patternLength)) {
+                currentIndex = index + patternLength;
+                return true;
+            }
         }
-        currentIndex = index + patternLength;
-        return true;
+        return false;
     }
 
     /**

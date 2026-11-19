@@ -3,7 +3,11 @@ package io.github.jframe.logging.masker.type;
 import io.github.jframe.logging.masker.MaskedPasswordBuilder;
 import io.github.jframe.logging.masker.Masker;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Class the mask passwords in a string, so log files will not contain plain text (or encrypted) passwords.
@@ -11,15 +15,10 @@ import java.util.*;
 public class PasswordMasker {
 
     /** The list of password maskers. */
-    private static final List<Masker> PASSWORD_MASKERS = new ArrayList<>();
-
-    static {
-        PASSWORD_MASKERS.add(new JsonPasswordMasker());
-        PASSWORD_MASKERS.add(new UriQueryStringPasswordMasker());
-    }
+    private static final List<Masker> PASSWORD_MASKERS = List.of(new JsonPasswordMasker(), new UriQueryStringPasswordMasker());
 
     /** The list of fields to mask. */
-    private final Set<String> fieldsToMask = new HashSet<>();
+    private final Set<String> fieldsToMask = new LinkedHashSet<>();
 
     /**
      * The constructor.
@@ -46,6 +45,17 @@ public class PasswordMasker {
             masked = maskPasswords(masked, fieldToMask);
         }
         return masked;
+    }
+
+    /**
+     * Returns {@code true} if {@code name} contains a configured field to mask, case-insensitively.
+     *
+     * @param name the field or header name.
+     * @return {@code true} if values named {@code name} must be masked.
+     */
+    public boolean masksField(final String name) {
+        final String lowerName = name.toLowerCase(Locale.ROOT);
+        return fieldsToMask.stream().anyMatch(field -> lowerName.contains(field.toLowerCase(Locale.ROOT)));
     }
 
     private static String maskPasswords(final String input, final String pattern) {
