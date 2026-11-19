@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`MULTI_NUMERIC` search type** — `MultiNumericField` generates an `IN (...)` predicate from a list of integer values; input via `textValueList` (strings parsed to integers, unparseable values skipped)
 - **`NUMERIC_RANGE` search type** — `NumericRangeField` generates `>=` and/or `<=` predicates from optional `fromNumericValue` / `toNumericValue` integers; both bounds are nullable
 - **`NULL_CHECK` search type** — `NullCheckField` generates `IS NOT NULL` (`textValue` `true`) or `IS NULL` (`false`) on a column
+- **`TlsOptions` for `HttpClientSSLFactory`** — choose TLS trust explicitly: `defaultTrustStore()` (JVM cacerts, certificate + hostname verification), `customTrustStore(path, password)`, `sslBundle(SslBundle)` (Spring Boot `spring.ssl.bundle.*`) or `trustAll()` (development only, logs a warning)
+
+### Changed
+
+- **BREAKING: `HttpClientSSLFactory.createRequestFactory(TlsOptions, connectTimeoutSeconds, readTimeoutSeconds)`** — replaces the boolean signature; see [migration guide](../../docs/migration/1.9.0-http-client-tls.md)
+- **Connect timeout** — `connectTimeoutSeconds` now also sets the socket connect timeout, not only the connection-pool checkout timeout
+
+### Removed
+
+- **`createRequestFactory(boolean, String, String, int, int)`** — use `TlsOptions.customTrustStore(...)` for `true`, `TlsOptions.trustAll()` (or preferably `defaultTrustStore()`) for `false`
 
 ## [1.0.0] — 2026-04-03
 
