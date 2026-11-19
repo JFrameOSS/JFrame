@@ -84,4 +84,4 @@ public void slowMethod() { ... }
 
 ## SSL Factory
 
-`HttpClientSSLFactory.createRequestFactory(useSecure, trustStorePath, trustStorePassword, connectTimeout, readTimeout)` — creates `HttpComponentsClientHttpRequestFactory` with optional TLS.
+`HttpClientSSLFactory.createRequestFactory(TlsOptions options, connectTimeout, readTimeout)` — creates `HttpComponentsClientHttpRequestFactory`. `TlsOptions`: `defaultTrustStore()` (JVM cacerts, verified), `customTrustStore(path, password)`, `sslBundle(bundle)`, `trustAll()` (dev only).

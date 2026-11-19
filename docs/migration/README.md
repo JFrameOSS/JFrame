@@ -2,6 +2,12 @@
 
 Every breaking or behaviour-changing release has a guide. Read the guides for each version between the one you are on and the one you are moving to, oldest first.
 
+## 1.9.0
+
+| Guide | What changed |
+|-------|--------------|
+| [HTTP Client TLS](./1.9.0-http-client-tls.md) | `HttpClientSSLFactory.createRequestFactory(boolean, String, String, int, int)` removed; use `createRequestFactory(TlsOptions, int, int)` with `defaultTrustStore()`, `customTrustStore(path, password)`, `sslBundle(SslBundle)` or `trustAll()`; `connectTimeoutSeconds` now also sets the socket connect timeout |
+
 ## 1.8.0
 
 | Guide | What changed |

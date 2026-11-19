@@ -166,13 +166,18 @@ Create SSL-enabled RestTemplate request factories:
 @Autowired
 private HttpClientSSLFactory sslFactory;
 
-// Secure (with truststore)
+// Verified TLS with JVM default trust store (recommended)
 HttpComponentsClientHttpRequestFactory factory =
-    sslFactory.createRequestFactory(true, truststorePath, password, 10, 30);
+    sslFactory.createRequestFactory(TlsOptions.defaultTrustStore(), 10, 30);
+
+// Verified TLS with custom truststore file
+sslFactory.createRequestFactory(TlsOptions.customTrustStore(truststorePath, password), 10, 30);
+
+// Verified TLS with a Spring Boot SSL bundle
+sslFactory.createRequestFactory(TlsOptions.sslBundle(sslBundles.getBundle("otlp")), 10, 30);
 
 // Trust-all (development only — NOT for production!)
-HttpComponentsClientHttpRequestFactory factory =
-    sslFactory.createRequestFactory(false, null, null, 10, 30);
+sslFactory.createRequestFactory(TlsOptions.trustAll(), 10, 30);
 ```
 
-Parameters: `useSecureConnection`, `trustStorePath`, `trustStorePassword`, `connectTimeoutSeconds`, `readTimeoutSeconds`.
+Parameters: `TlsOptions options`, `connectTimeoutSeconds` (connect and connection-request timeout), `readTimeoutSeconds`.
