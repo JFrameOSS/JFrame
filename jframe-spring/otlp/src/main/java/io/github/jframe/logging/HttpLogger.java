@@ -3,6 +3,7 @@ package io.github.jframe.logging;
 import io.github.jframe.logging.ecs.EcsFields;
 import io.github.jframe.logging.masker.type.PasswordMasker;
 import io.github.jframe.logging.util.HttpBodyUtil;
+import io.github.jframe.logging.util.HttpHeaderMasker;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -56,34 +57,45 @@ public final class HttpLogger {
                     logResponse(
                         response.statusCode(),
                         response.headers().asHttpHeaders(),
-                        HttpBodyUtil.compressAndMaskBody(bodyContent, responseLength, passwordMasker)
+                        HttpBodyUtil.compressAndMaskBody(bodyContent, responseLength, passwordMasker),
+                        passwordMasker
                     );
-                    return ClientResponse.create(response.statusCode(), response.strategies())
-                        .headers(headers -> headers.addAll(response.headers().asHttpHeaders()))
-                        .body(Flux.just(dataBuffer))
-                        .request(response.request())
-                        .build();
                 } catch (final Exception e) {
                     log.warn("Failed to log response body: {}", e.getMessage());
-                    logResponse(response.statusCode(), response.headers().asHttpHeaders(), "[ERROR_READING_BODY]");
-                    return response;
+                    logResponse(response.statusCode(), response.headers().asHttpHeaders(), "[ERROR_READING_BODY]", passwordMasker);
                 }
+                return ClientResponse.create(response.statusCode(), response.strategies())
+                    .headers(headers -> headers.addAll(response.headers().asHttpHeaders()))
+                    .body(Flux.just(dataBuffer))
+                    .request(response.request())
+                    .build();
             })
             .onErrorResume(throwable -> {
                 log.warn("Failed to read response body for logging: {}", throwable.getMessage());
-                logResponse(response.statusCode(), response.headers().asHttpHeaders(), "[ERROR_READING_BODY]");
+                logResponse(response.statusCode(), response.headers().asHttpHeaders(), "[ERROR_READING_BODY]", passwordMasker);
                 return Mono.just(response);
             });
     }
 
     /**
+     * Returns whether request/response logging is enabled.
+     *
+     * @return {@code true} if DEBUG is enabled for this logger
+     */
+    public static boolean isEnabled() {
+        return log.isDebugEnabled();
+    }
+
+    /**
      * Logs the details of an HTTP response, including status code, headers, and body for a non-reactive context.
      *
-     * @param statusCode the HTTP status code of the response
-     * @param headers    the HTTP headers of the response
-     * @param body       the body of the response, can be null or empty
+     * @param statusCode     the HTTP status code of the response
+     * @param headers        the HTTP headers of the response
+     * @param body           the body of the response, can be null or empty
+     * @param passwordMasker the password masker to use for masking sensitive headers
      */
-    public static void logResponse(final HttpStatusCode statusCode, final HttpHeaders headers, final String body) {
+    public static void logResponse(final HttpStatusCode statusCode, final HttpHeaders headers, final String body,
+        final PasswordMasker passwordMasker) {
         if (!log.isDebugEnabled()) {
             return;
         }
@@ -94,7 +106,7 @@ public final class HttpLogger {
         message.append("Headers:\n");
 
         appendTraceHeaders(message);
-        appendHeaders(message, headers);
+        appendHeaders(message, headers, passwordMasker);
         appendBodyIfPresent(message, body);
 
         message.setLength(message.length() - 1);
@@ -104,11 +116,13 @@ public final class HttpLogger {
     /**
      * Logs the details of an HTTP request, including method, URI, headers, and body for a non-reactive context.
      *
-     * @param method  the HTTP method of the request (e.g., GET, POST)
-     * @param uri     the URI of the request
-     * @param headers the HTTP headers of the request
+     * @param method         the HTTP method of the request (e.g., GET, POST)
+     * @param uri            the URI of the request
+     * @param headers        the HTTP headers of the request
+     * @param passwordMasker the password masker to use for masking sensitive headers
      */
-    public static void logRequest(final HttpMethod method, final URI uri, final HttpHeaders headers) {
+    public static void logRequest(final HttpMethod method, final URI uri, final HttpHeaders headers,
+        final PasswordMasker passwordMasker) {
         if (!log.isDebugEnabled()) {
             return;
         }
@@ -117,15 +131,19 @@ public final class HttpLogger {
         message.append(REQUEST_PREFIX).append('\n');
         message.append("Request: ").append(method).append(' ').append(uri).append('\n');
         message.append("Headers:\n");
-        appendHeaders(message, headers);
+        appendHeaders(message, headers, passwordMasker);
 
         message.setLength(message.length() - 1);
         log.debug(message.toString());
     }
 
-    private static void appendHeaders(final StringBuilder builder, final HttpHeaders headers) {
+    private static void appendHeaders(final StringBuilder builder, final HttpHeaders headers, final PasswordMasker passwordMasker) {
         headers.forEach(
-            (key, values) -> builder.append('\t').append(key).append(": ").append(String.join(", ", values)).append('\n')
+            (key, values) -> builder.append('\t')
+                .append(key)
+                .append(": ")
+                .append(HttpHeaderMasker.mask(key, String.join(", ", values), passwordMasker))
+                .append('\n')
         );
     }
 

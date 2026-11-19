@@ -23,7 +23,7 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)
-    testRuntimeOnly(libs.logback.classic)
+    testImplementation(libs.logback.classic)
     testImplementation(libs.resteasy.core)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(testFixtures(project(":jframe-core")))

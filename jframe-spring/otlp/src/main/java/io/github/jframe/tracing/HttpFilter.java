@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import org.slf4j.MDC;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ClientResponse;
@@ -50,10 +52,12 @@ public class HttpFilter {
     public ClientHttpRequestInterceptor getRequestInterceptor(final String serviceName) {
         log.debug("Creating request interceptor for service: '{}'", serviceName);
         return (request, body, execution) -> {
-            log.trace("Processing Interceptor with MDC context: {}", MDC.getCopyOfContextMap());
+            if (log.isTraceEnabled()) {
+                log.trace("Processing Interceptor with MDC context: {}", MDC.getCopyOfContextMap());
+            }
             addHeaderIfPresent(request.getHeaders(), REQ_ID_HEADER, EcsFields.get(REQUEST_ID));
             addHeaderIfPresent(request.getHeaders(), TX_ID_HEADER, EcsFields.get(TX_ID));
-            logRequest(request.getMethod(), request.getURI(), request.getHeaders());
+            logRequest(request.getMethod(), request.getURI(), request.getHeaders(), passwordMasker);
 
             spanManager.ifPresent(sm -> sm.injectTraceContext(request.getHeaders()));
             final Span span = spanManager
@@ -61,18 +65,12 @@ public class HttpFilter {
                 .orElse(null);
 
             try {
-                final BufferedClientHttpResponse bufferedResponse = new BufferedClientHttpResponse(execution.execute(request, body));
-                final String maskedBody = HttpBodyUtil.compressAndMaskBody(
-                    bufferedResponse.getBodyAsString(),
-                    responseLength,
-                    passwordMasker
-                );
-                logResponse(bufferedResponse.getStatusCode(), bufferedResponse.getHeaders(), maskedBody);
+                final ClientHttpResponse response = logResponseIfEnabled(execution.execute(request, body));
                 if (nonNull(span)) {
-                    spanManager.get().enrichOutboundSpan(span, bufferedResponse.getStatusCode(), bufferedResponse.getHeaders());
+                    spanManager.get().enrichOutboundSpan(span, response.getStatusCode(), response.getHeaders());
                 }
 
-                return bufferedResponse;
+                return response;
             } catch (final Exception e) {
                 if (nonNull(span)) {
                     span.recordException(e);
@@ -101,7 +99,9 @@ public class HttpFilter {
     }
 
     private Mono<ClientRequest> processRequest(final ClientRequest request, final String serviceName) {
-        log.trace("Processing Exchange Filter with MDC context: {}", MDC.getCopyOfContextMap());
+        if (log.isTraceEnabled()) {
+            log.trace("Processing Exchange Filter with MDC context: {}", MDC.getCopyOfContextMap());
+        }
         final ClientRequest.Builder builder = ClientRequest.from(request);
         addHeaderIfPresent(builder, REQ_ID_HEADER, EcsFields.get(REQUEST_ID));
         addHeaderIfPresent(builder, TX_ID_HEADER, EcsFields.get(TX_ID));
@@ -113,7 +113,7 @@ public class HttpFilter {
         });
 
         final ClientRequest enrichedRequest = builder.build();
-        logRequest(enrichedRequest.method(), enrichedRequest.url(), enrichedRequest.headers());
+        logRequest(enrichedRequest.method(), enrichedRequest.url(), enrichedRequest.headers(), passwordMasker);
         return Mono.just(enrichedRequest);
     }
 
@@ -132,6 +132,16 @@ public class HttpFilter {
         });
 
         return logReactiveResponse(response, responseLength, passwordMasker);
+    }
+
+    private ClientHttpResponse logResponseIfEnabled(final ClientHttpResponse response) throws IOException {
+        if (!isEnabled()) {
+            return response;
+        }
+        final BufferedClientHttpResponse bufferedResponse = new BufferedClientHttpResponse(response);
+        final String maskedBody = HttpBodyUtil.compressAndMaskBody(bufferedResponse.getBodyAsString(), responseLength, passwordMasker);
+        logResponse(bufferedResponse.getStatusCode(), bufferedResponse.getHeaders(), maskedBody, passwordMasker);
+        return bufferedResponse;
     }
 
     private void tagEcsFields(final HttpHeaders headers) {

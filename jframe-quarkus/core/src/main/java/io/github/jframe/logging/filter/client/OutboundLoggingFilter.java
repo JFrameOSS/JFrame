@@ -2,10 +2,16 @@ package io.github.jframe.logging.filter.client;
 
 import io.github.jframe.logging.LoggingConfig;
 import io.github.jframe.logging.filter.FilterConfig;
+import io.github.jframe.logging.masker.type.PasswordMasker;
+import io.github.jframe.logging.util.HttpHeaderMasker;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.client.ClientRequestContext;
@@ -34,16 +40,21 @@ public class OutboundLoggingFilter implements ClientRequestFilter, ClientRespons
 
     private final LoggingConfig loggingConfig;
     private final FilterConfig filterConfig;
+    private final PasswordMasker passwordMasker;
 
     /**
      * Creates a new {@code OutboundLoggingFilter} with the given logging and filter configuration.
      *
-     * @param loggingConfig the logging configuration used to determine whether logging is enabled
-     * @param filterConfig  the filter configuration used to determine whether the filter is enabled
+     * @param loggingConfig  the logging configuration used to determine whether logging is enabled
+     * @param filterConfig   the filter configuration used to determine whether the filter is enabled
+     * @param passwordMasker the masker used to mask sensitive header values
      */
-    public OutboundLoggingFilter(final LoggingConfig loggingConfig, final FilterConfig filterConfig) {
+    public OutboundLoggingFilter(final LoggingConfig loggingConfig,
+                                 final FilterConfig filterConfig,
+                                 final PasswordMasker passwordMasker) {
         this.loggingConfig = loggingConfig;
         this.filterConfig = filterConfig;
+        this.passwordMasker = passwordMasker;
     }
 
     @Override
@@ -57,7 +68,7 @@ public class OutboundLoggingFilter implements ClientRequestFilter, ClientRespons
         final boolean enabled = isLoggingEnabled(uri);
         requestContext.setProperty(PROPERTY_KEY, enabled);
         if (enabled) {
-            log.debug("[EXTERNAL] Outbound request is: {} {} {}", method, uri, headers);
+            log.debug("[EXTERNAL] Outbound request is: {} {} {}", method, uri, mask(headers));
         }
     }
 
@@ -71,9 +82,24 @@ public class OutboundLoggingFilter implements ClientRequestFilter, ClientRespons
             log.debug(
                 "[EXTERNAL] Incoming response is: {} {}",
                 responseContext.getStatus(),
-                responseContext.getHeaders()
+                mask(responseContext.getHeaders())
             );
         }
+    }
+
+    private Map<String, String> mask(final Map<String, ? extends List<?>> headers) {
+        return headers.entrySet().stream().collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> HttpHeaderMasker.mask(
+                    entry.getKey(),
+                    entry.getValue().stream().map(String::valueOf).collect(Collectors.joining(", ")),
+                    passwordMasker
+                ),
+                (first, second) -> first,
+                TreeMap::new
+            )
+        );
     }
 
     private boolean isLoggingEnabled(final URI uri) {
