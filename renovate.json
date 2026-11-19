@@ -87,9 +87,35 @@
         "mise"
       ],
       "pinDigests": false
+    },
+    {
+      "description": "Capped at Spring Boot's OTel API pin (otelVersionGuard); raise cap when Boot bumps OTel",
+      "matchPackageNames": [
+        "io.opentelemetry.instrumentation{/,}**"
+      ],
+      "allowedVersions": "<2.29"
+    },
+    {
+      "description": "Aligned to quarkus-bom; bump manually with Quarkus",
+      "matchPackageNames": [
+        "io.smallrye{/,}**",
+        "org.eclipse.microprofile{/,}**"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "aquasecurity org IP allow list blocks GitHub lookups; use Docker Hub tags",
+      "matchPackageNames": [
+        "aquasecurity/trivy"
+      ],
+      "overrideDatasource": "docker",
+      "overridePackageName": "aquasec/trivy"
     }
   ],
   "constraints": {
     "java": "25"
-  }
+  },
+  "ignoreDeps": [
+    "verification:jframe"
+  ]
 }
