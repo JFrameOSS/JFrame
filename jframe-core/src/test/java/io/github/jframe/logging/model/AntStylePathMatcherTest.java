@@ -2,11 +2,14 @@ package io.github.jframe.logging.model;
 
 import io.github.support.UnitTest;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 /**
  * Tests for {@link AntStylePathMatcher}.
@@ -316,5 +319,16 @@ public class AntStylePathMatcherTest extends UnitTest {
 
         // Then: Exact empty match
         assertThat(result, is(true));
+    }
+
+    @Test
+    @DisplayName("Should reject pathological pattern and path in linear time")
+    public void shouldRejectPathologicalInputQuickly() {
+        // Given: A pattern with many wildcards and a long non-matching path
+        final AntStylePathMatcher matcher = new AntStylePathMatcher("/**/a/**/a/**/a/**/a/**/a/**/b");
+        final String path = "/a".repeat(200);
+
+        // When / Then: Matching completes quickly without a match
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> assertThat(matcher.matches(path), is(false)));
     }
 }

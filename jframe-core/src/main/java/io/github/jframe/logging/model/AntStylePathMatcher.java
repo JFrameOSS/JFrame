@@ -6,14 +6,14 @@ package io.github.jframe.logging.model;
  * <p>Patterns may contain:
  * <ul>
  * <li>{@code ?} — matches exactly one character</li>
- * <li>{@code *} — matches zero or more characters within a single path segment</li>
- * <li>{@code **} — matches zero or more path segments</li>
+ * <li>{@code *} — matches one or more characters within a single path segment</li>
+ * <li>{@code **} — matches any remainder of the path (including none), across segments</li>
  * </ul>
  */
 public class AntStylePathMatcher {
 
-    /** Wildcard character matching any single character except path separators. */
-    private static final char SINGLE_WILDCARD = '*';
+    /** Wildcard character; {@code *} matches within a segment, {@code **} across segments. */
+    private static final char WILDCARD = '*';
 
     /** Wildcard character matching exactly one non-separator character. */
     private static final char QUESTION_MARK = '?';
@@ -67,99 +67,45 @@ public class AntStylePathMatcher {
         return doMatch(patternToMatch, path);
     }
 
-    private boolean doMatch(final String pat, final String str) {
-        return matchPattern(pat, 0, str, 0);
+    /** Bottom-up DP: {@code dp[pi][si]} is {@code true} if {@code pat[pi..]} matches {@code str[si..]}. */
+    private static boolean doMatch(final String pat, final String str) {
+        final boolean[][] dp = new boolean[pat.length() + 1][str.length() + 1];
+        dp[pat.length()][str.length()] = true;
+        for (int pi = pat.length() - 1; pi >= 0; pi--) {
+            if (pat.startsWith("**", pi)) {
+                fillDoubleWildcard(pat, pi, dp, str.length());
+            } else {
+                fillRow(pat.charAt(pi), dp[pi], dp[pi + 1], str);
+            }
+        }
+        return dp[0][0];
     }
 
-    @SuppressWarnings(
-        {
-            "CyclomaticComplexity",
-            "checkstyle:ReturnCount",
-            "checkstyle:NPathComplexity"
-        }
-    )
-    private boolean matchPattern(final String pat, final int pi, final String str, final int si) {
-        final int patLen = pat.length();
-        final int strLen = str.length();
-
-        // Base case: both exhausted
-        if (pi == patLen && si == strLen) {
-            return true;
-        }
-
-        // Pattern exhausted but string not
-        if (pi == patLen) {
-            return false;
-        }
-
-        // Check for ** wildcard
-        if (pi + 1 < patLen && pat.charAt(pi) == SINGLE_WILDCARD && pat.charAt(pi + 1) == SINGLE_WILDCARD) {
-            return matchDoubleWildcard(pat, pi, str, si, patLen, strLen);
-        }
-
-        // Check for single * wildcard
-        if (pat.charAt(pi) == SINGLE_WILDCARD) {
-            return matchSingleWildcard(pat, pi, str, si, strLen);
-        }
-
-        // Check for ? wildcard — matches exactly one non-slash character
-        if (pat.charAt(pi) == QUESTION_MARK) {
-            if (si >= strLen || str.charAt(si) == PATH_SEPARATOR) {
-                return false;
+    /** {@code *} matches one or more non-separator chars, {@code ?} one, any other char itself. */
+    private static void fillRow(final char pc, final boolean[] row, final boolean[] next, final String str) {
+        for (int si = str.length() - 1; si >= 0; si--) {
+            final char sc = str.charAt(si);
+            if (pc == WILDCARD) {
+                row[si] = sc != PATH_SEPARATOR && (next[si + 1] || row[si + 1]);
+            } else if (pc == QUESTION_MARK) {
+                row[si] = sc != PATH_SEPARATOR && next[si + 1];
+            } else {
+                row[si] = pc == sc && next[si + 1];
             }
-            return matchPattern(pat, pi + 1, str, si + 1);
         }
-
-        // Literal character match
-        if (si < strLen && pat.charAt(pi) == str.charAt(si)) {
-            return matchPattern(pat, pi + 1, str, si + 1);
-        }
-
-        return false;
     }
 
-    @SuppressWarnings("checkstyle:ReturnCount")
-    private boolean matchDoubleWildcard(
-        final String pat, final int pi, final String str, final int si,
-        final int patLen, final int strLen) {
-        // Move past the **
-        final int nextPi = pi + 2;
-
-        // Skip any trailing slash after **
-        final int adjustedPi;
-        if (nextPi < patLen && pat.charAt(nextPi) == PATH_SEPARATOR) {
-            adjustedPi = nextPi + 1;
-        } else {
-            adjustedPi = nextPi;
+    /** {@code **} (plus an optional trailing {@code /}) matches any remainder of the path, crossing separators. */
+    private static void fillDoubleWildcard(final String pat, final int pi, final boolean[][] dp, final int strLen) {
+        int rest = pi + 2;
+        if (rest < pat.length() && pat.charAt(rest) == PATH_SEPARATOR) {
+            rest++;
         }
-
-        // ** at end of pattern matches everything
-        if (adjustedPi >= patLen) {
-            return true;
+        final boolean matchesAll = rest >= pat.length();
+        boolean anySuffix = false;
+        for (int si = strLen; si >= 0; si--) {
+            anySuffix = anySuffix || dp[rest][si];
+            dp[pi][si] = matchesAll || anySuffix;
         }
-
-        // Try matching the rest of the pattern against every suffix of str
-        for (int i = si; i <= strLen; i++) {
-            if (matchPattern(pat, adjustedPi, str, i)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean matchSingleWildcard(
-        final String pat, final int pi, final String str, final int si, final int strLen) {
-        final int nextPi = pi + 1;
-        // * matches one or more chars within a single segment (no slash crossing, no empty match)
-        for (int i = si + 1; i <= strLen; i++) {
-            // Don't let * match across path separator
-            if (str.charAt(i - 1) == PATH_SEPARATOR) {
-                break;
-            }
-            if (matchPattern(pat, nextPi, str, i)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

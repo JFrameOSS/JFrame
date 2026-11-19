@@ -4,7 +4,7 @@ package io.github.jframe.datasource.logging;
 public final class SqlStatementLogging {
 
     /** The state store per thread. */
-    private static final ThreadLocal<SqlLoggingState> THREAD_LOCAL_STORE = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> THREAD_LOCAL_STORE = new ThreadLocal<>();
 
     /** Utility constructor. */
     private SqlStatementLogging() {
@@ -29,7 +29,7 @@ public final class SqlStatementLogging {
     public static SqlLoggingState suppress(final boolean suppressed) {
         final SqlLoggingState suppressor = new SqlLoggingState();
         if (suppressed) {
-            THREAD_LOCAL_STORE.set(suppressor);
+            THREAD_LOCAL_STORE.set(Boolean.TRUE);
         }
         return suppressor;
     }
@@ -51,5 +51,14 @@ public final class SqlStatementLogging {
     /** Continue with normal logging. */
     public static void clear() {
         THREAD_LOCAL_STORE.remove();
+    }
+
+    /** Restore the suppression state that was active before a {@link #suppress(boolean)} call. */
+    static void restore(final boolean previouslySuppressed) {
+        if (previouslySuppressed) {
+            THREAD_LOCAL_STORE.set(Boolean.TRUE);
+        } else {
+            THREAD_LOCAL_STORE.remove();
+        }
     }
 }
