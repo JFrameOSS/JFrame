@@ -9,29 +9,53 @@ import java.util.Calendar.YEAR
 import java.util.Objects.nonNull
 
 // =============== PROJECT PROPERTIES =================
+buildscript {
+    configurations.classpath { resolutionStrategy.activateDependencyLocking() }
+}
+
 plugins {
     id("java") apply true
     id("java-library") apply true
-    id("io.freefair.lombok") apply true
+    alias(libs.plugins.lombok) apply true
 
-    id("org.springframework.boot") apply false
-    id("io.spring.dependency-management") apply false
+    alias(libs.plugins.spring.boot) apply false
+    alias(libs.plugins.spring.dependency.management) apply false
 
-    id("com.github.vlsi.jandex") apply false
+    alias(libs.plugins.jandex) apply false
 
-    id("com.diffplug.spotless") apply true
+    alias(libs.plugins.spotless) apply true
     id("project-report") apply true
-    id("ru.vyarus.quality") apply true
-    id("org.cyclonedx.bom") apply true
-    id("com.github.spotbugs") apply true
+    alias(libs.plugins.quality) apply true
+    alias(libs.plugins.cyclonedx) apply true
+    alias(libs.plugins.spotbugs) apply true
     id("maven-publish") apply true
     id("signing") apply true
-    id("io.github.ben-manes.versions") apply true
 }
 
 repositories {
     configureRepositories()
 }
+
+// =============== DEPENDENCY LOCKING =================
+allprojects {
+    dependencyLocking { lockAllConfigurations() }
+}
+
+/** Regenerate all lockfiles: `./gradlew resolveAndLockAll --write-locks`. */
+tasks.register("resolveAndLockAll") {
+    group = "help"
+    description = "Resolves all resolvable configurations of all projects to (re)write dependency lockfiles."
+    notCompatibleWithConfigurationCache("Resolves configurations at execution time")
+    doFirst {
+        require(gradle.startParameter.isWriteDependencyLocks) { "$path must be run with --write-locks" }
+    }
+    doLast {
+        allprojects.forEach { p -> p.configurations.filter { it.isCanBeResolved }.forEach { it.resolve() } }
+    }
+}
+
+// Root catalog captured for subprojects{}: their own `libs` extension does not exist yet at this point.
+val catalog = libs
 
 // =============== SUBPROJECTS CONFIGURATION =================
 subprojects {
@@ -46,12 +70,14 @@ subprojects {
     apply(plugin = "com.github.spotbugs")
     apply(plugin = "maven-publish")
     apply(plugin = "signing")
-    apply(plugin = "io.github.ben-manes.versions")
     apply(plugin = "project-report")
 
     if (project.name.startsWith("jframe-spring-")) {
         apply(plugin = "org.springframework.boot")
         apply(plugin = "io.spring.dependency-management")
+        // Boot manages jackson-core at its own line while the catalog's jackson-databind wins; a
+        // mixed pair fails at runtime with NoSuchMethodError. Align the whole Jackson 3 family.
+        extra["jackson-bom.version"] = catalog.versions.jackson.asProvider().get()
     }
 
     if (project.name.startsWith("jframe-quarkus-")) {
@@ -79,10 +105,10 @@ subprojects {
     configurations.all {
         // jackson-annotations:2.22 is required by tools.jackson.databind:3.x but gets downgraded by
         // springdoc/swagger's jackson-bom:2.21.x constraint. Enforce the minimum required version.
-        resolutionStrategy.force("com.fasterxml.jackson.core:jackson-annotations:${retrieve("jacksonAnnotationsVersion")}")
+        resolutionStrategy.force(catalog.jackson.annotations)
         resolutionStrategy.eachDependency {
             if (requested.group == "com.fasterxml.jackson.core" && requested.name == "jackson-annotations") {
-                useVersion(retrieve("jacksonAnnotationsVersion"))
+                useVersion(catalog.versions.jackson.annotations.get())
                 because("tools.jackson.databind 3.x requires jackson-annotations 2.22; springdoc BOM downgrades to 2.21")
             }
         }
@@ -110,7 +136,7 @@ subprojects {
                                 separator = "\n  - ",
                                 prefix =
                                     "OpenTelemetry version conflict. Align " +
-                                        "openTelemetryInstrumentationVersion with the release train " +
+                                        "opentelemetry-instrumentation (gradle/libs.versions.toml) with the release train " +
                                         "targeting the API version Spring Boot pins:\n  - ",
                             ),
                         )
@@ -128,7 +154,7 @@ subprojects {
             compileOnly("org.springframework.boot:spring-boot-starter-web")
 
             // ======= TEST DEPENDENCIES =======
-            testImplementation("jakarta.servlet:jakarta.servlet-api:${retrieve("jakartaServletVersion")}")
+            testImplementation(catalog.jakarta.servlet.api)
             testImplementation("org.springframework.boot:spring-boot-test")
             testImplementation("org.springframework.boot:spring-boot-starter-test") {
                 exclude("com.vaadin.external.google", module = "android-json")
@@ -232,16 +258,16 @@ subprojects {
         autoRegistration = true
         configDir = "${rootDir}/src/quality/config/"
 
-        spotbugsVersion = retrieve("spotbugsVersion")
+        spotbugsVersion = catalog.versions.spotbugs.get()
         spotbugs = true
 
-        pmdVersion = retrieve("pmdVersion")
+        pmdVersion = catalog.versions.pmd.get()
         pmd = true
 
-        checkstyleVersion = retrieve("checkstyleVersion")
+        checkstyleVersion = catalog.versions.checkstyle.get()
         checkstyle = true
 
-        codenarcVersion = retrieve("codenarcVersion")
+        codenarcVersion = catalog.versions.codenarc.get()
         codenarc = true
     }
 

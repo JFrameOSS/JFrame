@@ -1,0 +1,117 @@
+[versions]
+# ======= Quality tools =======
+spotbugs = "4.10.5"
+pmd = "7.29.0"
+checkstyle = "14.4.0"
+codenarc = "4.0.0"
+
+# ======= Shared (jframe-core + both frameworks) =======
+jackson = "3.3.0"
+jackson-annotations = "2.23"
+slf4j = "2.0.20"
+# Spring Boot's platform owns every `io.opentelemetry:*` coordinate, so JFrame only versions what Boot
+# does not manage. The instrumentation version MUST belong to the release train targeting the
+# OpenTelemetry API version Spring Boot pins (instrumentation-bom 2.28.1 imports opentelemetry-bom
+# 1.62.0, which Spring Boot 4.1.2 pins). Enforced by the otelVersionGuard task.
+opentelemetry-instrumentation = "2.28.1"
+opentelemetry-semconv = "1.45.0"
+commons-lang = "3.22.0"
+commons-collections = "4.6.0"
+hamcrest = "3.0"
+jspecify = "1.0.1"
+datasource-proxy = "1.11.1"
+swagger = "2.2.56"
+mapstruct = "1.6.3"
+logback = "1.6.8"
+
+# ======= Jakarta APIs =======
+jakarta-annotation = "3.0.0"
+jakarta-persistence = "3.2.0"
+jakarta-servlet = "6.1.0"
+jakarta-wsrs = "4.0.0"
+jakarta-validation = "3.1.1"
+
+# ======= Spring =======
+spring-boot = "4.1.2"
+spring-dependency-management = "1.1.7"
+springdoc = "3.2.0"
+httpclient5 = "5.6.5"
+aspectj = "1.9.27"
+
+# ======= Quarkus =======
+# Separately pinned SmallRye/MicroProfile artifacts follow the quarkus-bom of the version below.
+quarkus = "3.40.1.2"
+smallrye-config = "3.17.2"
+smallrye-openapi = "4.3.5"
+microprofile-openapi = "4.1.1"
+resteasy = "7.0.6.Final"
+
+# ======= Test =======
+junit = "6.1.3"
+mockito = "5.24.0"
+json-schema-validator = "3.0.9"
+
+# ======= Plugins =======
+quality = "6.1.0"
+spotbugsPlugin = "6.5.13"
+cyclonedx = "3.6.1"
+lombokPlugin = "9.8.3"
+spotless = "8.11.0"
+jandexPlugin = "4.0.0"
+
+[libraries]
+jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson-annotations" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+opentelemetry-spring-boot-starter = { module = "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter", version.ref = "opentelemetry-instrumentation" }
+opentelemetry-semconv = { module = "io.opentelemetry.semconv:opentelemetry-semconv", version.ref = "opentelemetry-semconv" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang" }
+commons-collections4 = { module = "org.apache.commons:commons-collections4", version.ref = "commons-collections" }
+hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+datasource-proxy = { module = "net.ttddyy:datasource-proxy", version.ref = "datasource-proxy" }
+swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version.ref = "swagger" }
+mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
+mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
+jakarta-persistence-api = { module = "jakarta.persistence:jakarta.persistence-api", version.ref = "jakarta-persistence" }
+jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api", version.ref = "jakarta-servlet" }
+jakarta-wsrs-api = { module = "jakarta.ws.rs:jakarta.ws.rs-api", version.ref = "jakarta-wsrs" }
+jakarta-validation-api = { module = "jakarta.validation:jakarta.validation-api", version.ref = "jakarta-validation" }
+
+springdoc-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version.ref = "httpclient5" }
+aspectjweaver = { module = "org.aspectj:aspectjweaver", version.ref = "aspectj" }
+
+quarkus-arc = { module = "io.quarkus:quarkus-arc", version.ref = "quarkus" }
+quarkus-arc-deployment = { module = "io.quarkus:quarkus-arc-deployment", version.ref = "quarkus" }
+quarkus-core = { module = "io.quarkus:quarkus-core", version.ref = "quarkus" }
+quarkus-core-deployment = { module = "io.quarkus:quarkus-core-deployment", version.ref = "quarkus" }
+quarkus-hibernate-orm-panache = { module = "io.quarkus:quarkus-hibernate-orm-panache", version.ref = "quarkus" }
+quarkus-opentelemetry = { module = "io.quarkus:quarkus-opentelemetry", version.ref = "quarkus" }
+quarkus-security = { module = "io.quarkus:quarkus-security", version.ref = "quarkus" }
+quarkus-smallrye-openapi = { module = "io.quarkus:quarkus-smallrye-openapi", version.ref = "quarkus" }
+smallrye-config = { module = "io.smallrye.config:smallrye-config", version.ref = "smallrye-config" }
+smallrye-config-core = { module = "io.smallrye.config:smallrye-config-core", version.ref = "smallrye-config" }
+smallrye-openapi-core = { module = "io.smallrye:smallrye-open-api-core", version.ref = "smallrye-openapi" }
+smallrye-openapi-jaxrs = { module = "io.smallrye:smallrye-open-api-jaxrs", version.ref = "smallrye-openapi" }
+microprofile-openapi-api = { module = "org.eclipse.microprofile.openapi:microprofile-openapi-api", version.ref = "microprofile-openapi" }
+resteasy-core = { module = "org.jboss.resteasy:resteasy-core", version.ref = "resteasy" }
+
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+quality = { id = "ru.vyarus.quality", version.ref = "quality" }
+cyclonedx = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
+spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugsPlugin" }
+lombok = { id = "io.freefair.lombok", version.ref = "lombokPlugin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+jandex = { id = "com.github.vlsi.jandex", version.ref = "jandexPlugin" }

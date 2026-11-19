@@ -1,0 +1,91 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":semanticCommits"
+  ],
+  "baseBranchPatterns": [
+    "develop"
+  ],
+  "rebaseWhen": "behind-base-branch",
+  "labels": [
+    "type:dependencies"
+  ],
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "timezone": "Europe/Amsterdam",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "before 6am on monday"
+    ]
+  },
+  "enabledManagers": [
+    "gradle",
+    "gradle-wrapper",
+    "github-actions",
+    "mise"
+  ],
+  "ignoreUnstable": true,
+  "ignoredVersions": [
+    "/[.-](alpha|beta|rc|cr|m|milestone)[.-]?\\d*$/i"
+  ],
+  "packageRules": [
+    {
+      "description": "Bundle all non-major updates into one PR",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest",
+        "pin",
+        "pinDigest"
+      ],
+      "groupName": "all non-major",
+      "groupSlug": "all-non-major"
+    },
+    {
+      "description": "Majors need dashboard approval",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "OTel instrumentation must match Spring Boot's OTel pin (otelVersionGuard)",
+      "groupName": "spring boot + otel",
+      "matchPackageNames": [
+        "org.springframework.boot",
+        "io.spring.dependency-management",
+        "io.opentelemetry.instrumentation{/,}**",
+        "io.opentelemetry.semconv{/,}**"
+      ]
+    },
+    {
+      "description": "Quarkus, SmallRye, MicroProfile and RESTEasy move together",
+      "groupName": "quarkus",
+      "matchPackageNames": [
+        "io.quarkus{/,}**",
+        "io.smallrye{/,}**",
+        "org.eclipse.microprofile{/,}**",
+        "org.jboss.resteasy{/,}**"
+      ]
+    },
+    {
+      "description": "Mise tool versions stay tag-only, no digest pinning",
+      "matchManagers": [
+        "mise"
+      ],
+      "pinDigests": false
+    }
+  ],
+  "constraints": {
+    "java": "25"
+  }
+}

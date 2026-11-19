@@ -1,0 +1,13 @@
+# Git hooks. Installed by `mise run install` (runs `lefthook install`).
+pre-commit:
+  jobs:
+    - name: gitleaks
+      run: mise x -- gitleaks git --pre-commit --staged --redact --no-banner
+    - name: spotless
+      glob: ["*.java", "*.kts"]
+      run: ./gradlew spotlessCheck -PdisableAutoFormat
+
+pre-push:
+  jobs:
+    - name: build
+      run: ./gradlew build -PdisableAutoFormat

@@ -16,6 +16,7 @@
         <exclude name="AccessorMethodGeneration"/>
         <exclude name="ArrayIsStoredDirectly"/>
         <exclude name="GuardLogStatement"/>
+        <exclude name="OnDemandImport"/> <!-- PMD 7.28+; star imports allowed, matches checkstyle AvoidStarImport being off -->
 <!--        <exclude name="JUnitAssertionsShouldIncludeMessage"/>-->
         <exclude name="JUnit4SuitesShouldUseSuiteAnnotation"/>
 <!--        <exclude name="JUnitTestsShouldIncludeAssert"/>-->
@@ -36,6 +37,7 @@
         <exclude name="LocalHomeNamingConvention"/> <!-- earlier j2ee group-->
         <exclude name="LocalInterfaceSessionNamingConvention"/> <!-- earlier j2ee group-->
         <exclude name="LocalVariableCouldBeFinal"/>
+        <exclude name="LocalVariableDeclarationShouldBeAtStartOfBlock"/> <!-- PMD 7.28+; conflicts with declare-near-use style -->
         <exclude name="LongVariable"/>
         <exclude name="MDBAndSessionBeanNamingConvention"/> <!-- earlier j2ee group-->
         <exclude name="OnlyOneReturn"/> <!-- disabled in favour of checkstyle ReturnCount check -->

@@ -1,109 +1,228 @@
-name: CI
+name: CI/CD
 on:
   push:
-    branches:
-      - master
-      - develop
-    tags:
-      - '*.*.*'
+    branches: [develop, master, 'release/**', 'hotfix/**']
+    tags: ['*.*.*']
   pull_request:
-    branches:
-      - master
-      - develop
+    types: [opened, synchronize, reopened, labeled]
+    branches: [develop, master, 'release/**', 'hotfix/**']
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  build:
+  # =============================================================================
+  # FORMAT - spotless check (fast fail, branches only)
+  # =============================================================================
+  format:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') == false
+    timeout-minutes: 10
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Read Java version
-        id: java-version
-        run: |
-          version=$(grep 'java' mise.toml | sed 's/.*"temurin-\(.*\)"/\1/')
-          echo "version=$version" >> $GITHUB_OUTPUT
-          echo "Java version: $version"
-
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - name: Set up Java & Gradle
+        uses: ./.github/actions/setup-java-gradle
         with:
-          distribution: 'temurin'
-          java-version: ${{ steps.java-version.outputs.version }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-        with:
-          cache-read-only: false
+          cache-read-only: 'true'
 
       - name: Check formatting
         run: ./gradlew spotlessCheck -PdisableAutoFormat
 
+  # =============================================================================
+  # BUILD - compile main + test sources, deprecation gate (only job writing Gradle cache on push)
+  # =============================================================================
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Java & Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
       - name: Build
+        env:
+          BRANCH: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
         run: |
           echo "=== Starting clean build ==="
-          echo "Branch: ${GITHUB_REF#refs/heads/}"
-          echo "Commit: ${GITHUB_SHA::7}"
+          echo "Branch: $BRANCH"
+          echo "Commit: ${COMMIT::7}"
           set -o pipefail
-          ./gradlew clean build cyclonedxBom -PdisableAutoFormat --warning-mode all 2>&1 | tee build-output.log
+          ./gradlew clean assemble testClasses -PdisableAutoFormat --warning-mode all 2>&1 | tee build-output.log
           echo "=== Build completed successfully ==="
 
       - name: Check for new deprecation warnings
-        run: |
-          WARNINGS=$(grep -i "has been deprecated\|This will fail with an error\|is scheduled to be removed" build-output.log | sort -u || true)
-          if [ -z "$WARNINGS" ]; then
-            echo "✅ No deprecation warnings found."
-            exit 0
-          fi
-          ALLOWLIST_FILE=".github/gradle-deprecation-allowlist.txt"
-          UNMATCHED=""
-          while IFS= read -r LINE; do
-            MATCHED=false
-            while IFS= read -r PATTERN || [ -n "$PATTERN" ]; do
-              [[ "$PATTERN" =~ ^#.*$ || -z "$PATTERN" ]] && continue
-              ENTRY="${PATTERN%%#*}"
-              ENTRY="${ENTRY%"${ENTRY##*[![:space:]]}"}"
-              if [[ "$LINE" == *"$ENTRY"* ]]; then
-                MATCHED=true
-                break
-              fi
-            done < "$ALLOWLIST_FILE"
-            if [ "$MATCHED" = false ]; then
-              UNMATCHED="${UNMATCHED}${LINE}"$'\n'
-            fi
-          done <<< "$WARNINGS"
-          if [ -n "$UNMATCHED" ]; then
-            echo "❌ New (unallowlisted) deprecation warnings detected:"
-            echo "$UNMATCHED"
-            exit 1
-          fi
-          echo "✅ All deprecation warnings are on the allowlist."
+        run: .github/scripts/deprecation-gate.sh build-output.log
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Upload build log
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: test-results
+          name: build-output
+          path: build-output.log
+          retention-days: 14
+
+  # =============================================================================
+  # TEST - unit tests per module group, results published as checks
+  # =============================================================================
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: core
+            tasks: ':jframe-core:test'
+          - group: spring
+            tasks: ':jframe-spring-core:test :jframe-spring-jpa:test :jframe-spring-otlp:test'
+          - group: quarkus
+            tasks: ':jframe-quarkus-core:test :jframe-quarkus-jpa:test :jframe-quarkus-otlp:test :jframe-quarkus-otlp-deployment:test'
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Java & Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          cache-read-only: 'true'
+
+      - name: Test
+        env:
+          TASKS: ${{ matrix.tasks }}
+        run: |
+          read -r -a tasks <<< "$TASKS"
+          ./gradlew "${tasks[@]}" -PdisableAutoFormat
+
+      - name: Publish unit test results
+        uses: EnricoMi/publish-unit-test-result-action@da5b7be67623cd59bbbd1a0ce4f022050a55605f # v2.26.0
+        if: always()
+        with:
+          files: '**/build/test-results/**/*.xml'
+          check_name: Unit tests (${{ matrix.group }})
+          comment_mode: off
+
+      - name: Upload test results
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: test-results-${{ matrix.group }}
           path: |
             **/build/test-results/test/*.xml
             **/build/reports/tests/test/
           retention-days: 30
 
+  # =============================================================================
+  # QUALITY - checkstyle, PMD, SpotBugs, otelVersionGuard (everything in check except tests)
+  # =============================================================================
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Java & Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          cache-read-only: 'true'
+
+      - name: Static analysis
+        run: ./gradlew check -x test -PdisableAutoFormat
+
+      - name: Upload quality reports
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: quality-reports
+          path: |
+            **/build/reports/checkstyle/
+            **/build/reports/pmd/
+            **/build/reports/spotbugs/
+            **/build/reports/codenarc/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # =============================================================================
+  # SBOM - CycloneDX bill of materials
+  # =============================================================================
+  sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Java & Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          cache-read-only: 'true'
+
+      - name: Generate SBOM
+        run: ./gradlew cyclonedxBom -PdisableAutoFormat
+
       - name: Upload SBOM
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom
           path: build/reports/cyclonedx/bom.json
           retention-days: 90
 
+  # =============================================================================
+  # PUBLISH DRY RUN - POM, javadoc and sources jars (signing skipped without keys)
+  # =============================================================================
+  publish-dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Java & Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          cache-read-only: 'true'
+
+      - name: Publish to Maven local
+        run: ./gradlew publishToMavenLocal -PdisableAutoFormat
+
+  # =============================================================================
+  # RELEASE - verify tag, full build, publish to Maven Central, GitHub Release (version tags only)
+  # =============================================================================
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
@@ -113,26 +232,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read Java version
-        id: java-version
-        run: |
-          version=$(grep 'java' mise.toml | sed 's/.*"temurin-\(.*\)"/\1/')
-          echo "version=$version" >> $GITHUB_OUTPUT
-          echo "Java version: $version"
-
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - name: Set up Java & Gradle
+        uses: ./.github/actions/setup-java-gradle
         with:
-          distribution: 'temurin'
-          java-version: ${{ steps.java-version.outputs.version }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-        with:
-          cache-read-only: false
+          cache-read-only: 'false'
 
       - name: Verify version matches tag
+        env:
+          TAG_VERSION: ${{ github.ref_name }}
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/}
           PROPERTIES_VERSION=$(grep "^version=" gradle.properties | cut -d'=' -f2)
 
           echo "=== Version Verification ==="
@@ -147,8 +255,9 @@ jobs:
           echo "✅ Version verification passed"
 
       - name: Verify doc versions match tag
+        env:
+          TAG_VERSION: ${{ github.ref_name }}
         run: |
-          TAG_VERSION=${{ github.ref_name }}
           PATTERN="io\.github\.jframeoss:jframe-[a-z-]*:[0-9]"
           FAILED=false
           for FILE in README.md docs/getting-started.md; do
@@ -159,7 +268,7 @@ jobs:
                 echo "❌ $FILE: stale coordinate '$MATCH' (expected version $TAG_VERSION)"
                 FAILED=true
               fi
-            done < <(grep -oP "$PATTERN[0-9.]*" "$FILE" 2>/dev/null || true)
+            done < <(grep -oP "${PATTERN}[0-9.]*" "$FILE" 2>/dev/null || true)
           done
           if [ "$FAILED" = true ]; then
             exit 1
@@ -167,13 +276,23 @@ jobs:
           echo "✅ All doc coordinates match tag $TAG_VERSION"
 
       - name: Build
+        env:
+          TAG_VERSION: ${{ github.ref_name }}
         run: |
-          echo "=== Building release ${{ github.ref_name }} ==="
+          echo "=== Building release $TAG_VERSION ==="
           ./gradlew build cyclonedxBom -PdisableAutoFormat
           echo "=== Build completed successfully ==="
 
+      - name: Publish unit test results
+        uses: EnricoMi/publish-unit-test-result-action@da5b7be67623cd59bbbd1a0ce4f022050a55605f # v2.26.0
+        if: always()
+        with:
+          files: '**/build/test-results/**/*.xml'
+          check_name: Release unit tests
+          comment_mode: off
+
       - name: Upload Test Results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: release-test-results
@@ -183,7 +302,7 @@ jobs:
           retention-days: 90
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: success()
         with:
           name: release-sbom
@@ -203,14 +322,36 @@ jobs:
 
       - name: Build Changelog
         id: build_changelog
-        uses: requarks/changelog-action@b78a3354a01f4a1affb484b9264b506a815c46b1 # v1.10.3
+        uses: requarks/changelog-action@7ce6be4c4d2233ae2a943694ca34f23aeafa1054 # v1.11.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           writeToFile: false
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
           body: ${{ steps.build_changelog.outputs.changes }}
           files: build/reports/cyclonedx/bom.json
+
+  # =============================================================================
+  # CI OK - single required check aggregating all jobs (failure/cancelled block, skipped passes)
+  # =============================================================================
+  ci-ok:
+    name: CI OK
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [format, build, test, quality, sbom, publish-dry-run, publish]
+    permissions: {}
+
+    steps:
+      - name: Fail on upstream failure or cancellation
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          if jq -e 'any(.[]; .result == "failure" or .result == "cancelled")' <<< "$RESULTS" > /dev/null; then
+            jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | "\(.key): \(.value.result)"' <<< "$RESULTS"
+            exit 1
+          fi
+          echo "All upstream jobs passed or were skipped"

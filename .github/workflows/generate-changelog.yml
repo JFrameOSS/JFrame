@@ -19,6 +19,7 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -27,20 +28,23 @@ jobs:
 
       - name: Determine Tags
         id: tags
+        env:
+          INPUT_TO_TAG: ${{ inputs.to_tag }}
+          INPUT_FROM_TAG: ${{ inputs.from_tag }}
         run: |
           # Fetch all tags to ensure we have the complete history
           git fetch --tags --force
 
           # Default TO_TAG to the latest tag if input is empty
-          if [ -n "${{ inputs.to_tag }}" ]; then
-            TO="${{ inputs.to_tag }}"
+          if [ -n "$INPUT_TO_TAG" ]; then
+            TO="$INPUT_TO_TAG"
           else
             TO=$(git describe --tags --abbrev=0)
           fi
           
           # Default FROM_TAG to the previous tag if input is empty
-          if [ -n "${{ inputs.from_tag }}" ]; then
-            FROM="${{ inputs.from_tag }}"
+          if [ -n "$INPUT_FROM_TAG" ]; then
+            FROM="$INPUT_FROM_TAG"
           else
             # Get the tag before the TO tag
             # We look for the closest tag reachable from TO's parent
@@ -51,12 +55,12 @@ jobs:
           echo "FROM: $FROM"
           echo "TO: $TO"
 
-          echo "from_tag=$FROM" >> $GITHUB_OUTPUT
-          echo "to_tag=$TO" >> $GITHUB_OUTPUT
+          echo "from_tag=$FROM" >> "$GITHUB_OUTPUT"
+          echo "to_tag=$TO" >> "$GITHUB_OUTPUT"
 
       - name: Generate Changelog
         id: changelog
-        uses: requarks/changelog-action@b78a3354a01f4a1affb484b9264b506a815c46b1 # v1.10.3
+        uses: requarks/changelog-action@7ce6be4c4d2233ae2a943694ca34f23aeafa1054 # v1.11.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fromTag: ${{ steps.tags.outputs.from_tag }}
@@ -64,7 +68,9 @@ jobs:
           writeToFile: false
 
       - name: Output Changelog
+        env:
+          CHANGES: ${{ steps.changelog.outputs.changes }}
         run: |
           echo "================ CHANGELOG ================"
-          echo "${{ steps.changelog.outputs.changes }}"
+          echo "$CHANGES"
           echo "==========================================="

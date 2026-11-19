@@ -1,0 +1,24 @@
+# Licence policy: LGPL and GPL-with-classpath-exception are reviewed, not blocked.
+license:
+    ignored:
+        - LGPL-2.0
+        - LGPL-2.0-only
+        - LGPL-2.0-or-later
+        - LGPL-2.1
+        - LGPL-2.1-only
+        - LGPL-2.1-or-later
+        - LGPL-3.0
+        - LGPL-3.0-only
+        - LGPL-3.0-or-later
+        - GPL-2.0-with-classpath-exception
+        - WTFPL
+# Build tooling and tooling-only lockfiles are not shipped.
+scan:
+    skip-dirs:
+        - "**/build"
+        - ".gradle"
+        - ".opencode"
+        - ".run"
+    skip-files:
+        - "**/buildscript-gradle.lockfile"
+        - "**/settings-gradle.lockfile"

@@ -3,3 +3,4 @@
 # Format: <substring>  # <plugin> <version observed>
 val name: Type by project  # com.github.vlsi.jandex 4.0.0
 Using a `Provider` where a `boolean` is expected  # ru.vyarus.quality 6.1.0
+The Configuration.setVisible(boolean) method has been deprecated  # com.github.spotbugs 6.5.13

@@ -5,8 +5,8 @@
 **Enterprise-grade utilities for Spring Boot and Quarkus applications**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Spring Boot](https://img.shields.io/badge/spring--boot-4.1.0-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/quarkus-3.38.2-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
+[![Spring Boot](https://img.shields.io/badge/spring--boot-4.1.2-brightgreen.svg?logo=springboot)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/quarkus-3.40.1.2-blue.svg?logo=quarkus&logoColor=white)](https://quarkus.io/)
 [![Java](https://img.shields.io/badge/java-21-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.java.net/projects/jdk/21/)
 
 [Features](#-features) •

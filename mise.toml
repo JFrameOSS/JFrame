@@ -1,2 +1,11 @@
 [tools]
 java = "temurin-25.0"
+"aqua:rhysd/actionlint" = "1.7.12"
+"aqua:aquasecurity/trivy" = "0.76.2"
+"aqua:gitleaks/gitleaks" = "8.30.1"
+lefthook = "2.2.2"
+
+[tasks]
+install = { description = "Install toolchain and git hooks", run = "mise install && mise x -- lefthook install" }
+check = { description = "Run Gradle check (tests included)", run = "./gradlew check -PdisableAutoFormat" }
+lock = { description = "Resolve and write dependency lockfiles", run = "./gradlew resolveAndLockAll --write-locks -PdisableAutoFormat" }

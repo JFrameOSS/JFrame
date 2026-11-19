@@ -1,0 +1,33 @@
+- name: type:security
+  color: b60205
+  description: Security fix or hardening
+- name: type:dependencies
+  color: 5319e7
+  description: Dependency update
+- name: type:breaking
+  color: d93f0b
+  description: Breaking change for consumers
+- name: area:core
+  color: 1d76db
+  description: jframe-core
+- name: area:spring
+  color: 0052cc
+  description: jframe-spring modules
+- name: area:quarkus
+  color: 006b75
+  description: jframe-quarkus modules
+- name: area:infra
+  color: 7057ff
+  description: Infrastructure, CI and build tooling
+- name: triage:pending
+  color: ededed
+  description: Awaiting triage
+- name: triage:needs-info
+  color: d4c5f9
+  description: Reporter must add details before work starts
+- name: status:pinned
+  color: 006b75
+  description: Keep open; never marked stale
+- name: status:stale
+  color: cfd3d7
+  description: No recent activity
