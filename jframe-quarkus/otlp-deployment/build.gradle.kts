@@ -7,4 +7,5 @@ dependencies {
     // published POM; the Quarkus extension resolver needs them on the deployment classpath.
     implementation(libs.quarkus.core.deployment)
     implementation(libs.quarkus.arc.deployment)
+    implementation(libs.quarkus.opentelemetry.deployment)
 }

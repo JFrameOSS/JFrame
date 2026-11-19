@@ -45,7 +45,7 @@ On exception: `span.recordException()`, `span.setStatus(ERROR)`, rethrow.
 
 ## Configuration
 
-Prefix: `jframe.otlp` (OpenTelemetryConfig, @ApplicationScoped, lazy init with ReentrantLock)
+Prefix: `jframe.otlp` (OpenTelemetryConfig, `@ConfigMapping`, validated at startup)
 
 | Property | Default | Description |
 |----------|---------|-------------|

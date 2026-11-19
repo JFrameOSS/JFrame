@@ -13,10 +13,12 @@ dependencies {
     // Jackson annotations — compileOnly (transitive from jframe-core, not visible via quarkus-core chain)
     compileOnly(libs.jackson.annotations)
 
-    // Quarkus APIs — compileOnly (provided by consumer's Quarkus runtime)
-    compileOnly(libs.quarkus.arc)
-    compileOnly(libs.quarkus.core)
-    compileOnly(libs.quarkus.opentelemetry)
+    // Runtime extensions this extension builds on — api so consumers get them transitively
+    // (deployment counterparts are declared in otlp-deployment).
+    api(libs.quarkus.arc)
+    api(libs.quarkus.core)
+    api(libs.quarkus.opentelemetry)
+    // Optional: SecurityIdentity is resolved via Instance<>; consumers opt into security themselves.
     compileOnly(libs.quarkus.security)
 
     // Test dependencies
@@ -25,7 +27,6 @@ dependencies {
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)
     testImplementation(libs.smallrye.config)
-    testImplementation(libs.quarkus.opentelemetry)
     testImplementation(libs.quarkus.security)
     testRuntimeOnly(libs.junit.platform.launcher)
 }

@@ -91,6 +91,7 @@ quarkus-core = { module = "io.quarkus:quarkus-core", version.ref = "quarkus" }
 quarkus-core-deployment = { module = "io.quarkus:quarkus-core-deployment", version.ref = "quarkus" }
 quarkus-hibernate-orm-panache = { module = "io.quarkus:quarkus-hibernate-orm-panache", version.ref = "quarkus" }
 quarkus-opentelemetry = { module = "io.quarkus:quarkus-opentelemetry", version.ref = "quarkus" }
+quarkus-opentelemetry-deployment = { module = "io.quarkus:quarkus-opentelemetry-deployment", version.ref = "quarkus" }
 quarkus-security = { module = "io.quarkus:quarkus-security", version.ref = "quarkus" }
 quarkus-smallrye-openapi = { module = "io.quarkus:quarkus-smallrye-openapi", version.ref = "quarkus" }
 smallrye-config = { module = "io.smallrye.config:smallrye-config", version.ref = "smallrye-config" }

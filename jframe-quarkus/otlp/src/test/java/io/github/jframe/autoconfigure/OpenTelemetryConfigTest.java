@@ -2,10 +2,13 @@ package io.github.jframe.autoconfigure;
 
 import io.github.jframe.tracing.OtlpDefaults;
 import io.github.support.UnitTest;
+import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
+import java.util.Map;
 import java.util.Set;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,12 +22,8 @@ import static org.hamcrest.Matchers.is;
 /**
  * Unit tests for {@link OpenTelemetryConfig}.
  *
- * <p>Verifies configuration reading via MicroProfile Config API including:
- * <ul>
- * <li>Default values when no system properties are set</li>
- * <li>Custom value overrides via system properties (highest-priority MicroProfile Config source)</li>
- * <li>Correct parsing of comma-separated {@code Set<String>} properties</li>
- * </ul>
+ * <p>Builds a real SmallRye config from the {@code @ConfigMapping}: defaults, overrides,
+ * comma-separated sets, and fail-fast validation of malformed values.
  */
 @DisplayName("Config - OpenTelemetryConfig")
 class OpenTelemetryConfigTest extends UnitTest {
@@ -32,19 +31,19 @@ class OpenTelemetryConfigTest extends UnitTest {
     // ======================== HELPERS ========================
 
     private OpenTelemetryConfig buildDefaultConfig() {
-        return new OpenTelemetryConfig();
+        return buildConfig(Map.of());
     }
 
     private OpenTelemetryConfig buildConfigWith(final String key, final String value) {
-        System.setProperty(key, value);
-        return new OpenTelemetryConfig();
+        return buildConfig(Map.of(key, value));
     }
 
-    @AfterEach
-    void clearSystemProperties() {
-        System.getProperties().stringPropertyNames().stream()
-            .filter(name -> name.startsWith("jframe.otlp."))
-            .forEach(System::clearProperty);
+    private OpenTelemetryConfig buildConfig(final Map<String, String> properties) {
+        return new SmallRyeConfigBuilder()
+            .withSources(new PropertiesConfigSource(properties, "test", 500))
+            .withMapping(OpenTelemetryConfig.class)
+            .build()
+            .getConfigMapping(OpenTelemetryConfig.class);
     }
 
     // ======================== DEFAULT VALUES ========================
@@ -437,6 +436,24 @@ class OpenTelemetryConfigTest extends UnitTest {
 
             // Then: Result is empty — not a single blank entry
             assertThat(excluded, is(empty()));
+        }
+    }
+
+    // ======================== STARTUP VALIDATION ========================
+
+
+    @Nested
+    @DisplayName("Startup validation")
+    class StartupValidation {
+
+        @Test
+        @DisplayName("Should fail when building config with malformed sampling-rate")
+        public void shouldFailWhenSamplingRateIsMalformed() {
+            // Given: A non-numeric sampling rate
+            final Map<String, String> properties = Map.of("jframe.otlp.sampling-rate", "abc");
+
+            // When / Then: Config mapping fails at build time, not on first traced call
+            Assertions.assertThrows(RuntimeException.class, () -> buildConfig(properties));
         }
     }
 }

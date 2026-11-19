@@ -461,6 +461,21 @@ public class TracingInterceptorTest extends UnitTest {
             // Then: No span end is called since no span was created
             verify(span, never()).end();
         }
+
+        @Test
+        @DisplayName("Should not resolve target or method when tracing is disabled")
+        public void shouldNotResolveTargetOrMethodWhenTracingIsDisabled() throws Exception {
+            // Given: Tracing is globally disabled
+            when(config.disabled()).thenReturn(true);
+            final InvocationContext context = aContextFor(new SampleService(), SampleService.class.getMethod("doWork"), "result");
+
+            // When: The interceptor processes the method
+            interceptor.aroundInvoke(context);
+
+            // Then: The disabled path does no naming work
+            verify(context, never()).getTarget();
+            verify(context, never()).getMethod();
+        }
     }
 
     // ======================== AC7: EXCEPTION HANDLING ========================
