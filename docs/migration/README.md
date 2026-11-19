@@ -7,6 +7,7 @@ Every breaking or behaviour-changing release has a guide. Read the guides for ea
 | Guide | What changed |
 |-------|--------------|
 | [HTTP Client TLS](./1.9.0-http-client-tls.md) | `HttpClientSSLFactory.createRequestFactory(boolean, String, String, int, int)` removed; use `createRequestFactory(TlsOptions, int, int)` with `defaultTrustStore()`, `customTrustStore(path, password)`, `sslBundle(SslBundle)` or `trustAll()`; `connectTimeoutSeconds` now also sets the socket connect timeout |
+| [Hardening](./1.9.0-hardening.md) | `ErrorResponseWriter.write(..., Status, String, String)` removed; `HttpLogger.logRequest`/`logResponse` take a `PasswordMasker`; outbound logging masks `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie` and fields-to-mask headers as `***`; Quarkus `OutboundLoggingFilter` constructor and header format changed; `DatasourceProxyConfiguration` final with opt-out `jframe.datasource.proxy.enabled`; Spring `tracer` bean backs off; SQL logging suppression now works; Quarkus `OpenTelemetryConfig` is a `@ConfigMapping` interface that fails fast on malformed values; `jframe-quarkus-otlp` exposes Quarkus extensions transitively |
 
 ## 1.8.0
 

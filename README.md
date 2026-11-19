@@ -147,6 +147,8 @@ Newest first. See the [migration index](./docs/migration/README.md) for the full
 
 | Version | Guide | What changed |
 |---------|-------|--------------|
+| 1.9.0 | [Hardening](./docs/migration/1.9.0-hardening.md) | **Breaking** — credential headers masked in outbound logs, `ErrorResponseWriter`/`HttpLogger` signatures, Quarkus `OpenTelemetryConfig` is a `@ConfigMapping` interface |
+| 1.9.0 | [HTTP Client TLS](./docs/migration/1.9.0-http-client-tls.md) | **Breaking** — `HttpClientSSLFactory.createRequestFactory(TlsOptions, int, int)` replaces the boolean signature |
 | 1.8.0 | [Problem Details](./docs/migration/1.8.0-problem-details.md) | **Breaking** — error bodies are RFC 9457 `application/problem+json`; app exception handlers now win over jFrame |
 | 1.6.1 | [Spring Log Export](./docs/migration/1.6.1-spring-log-export.md) | `jframe.otlp.logs.enabled` now works on Spring — log records start exporting |
 | 1.6.0 | [OTLP Opt-In](./docs/migration/1.6.0-otlp-opt-in.md) | Telemetry is opt-in, Opt-In process attributes excluded, `sampling-rate` now honoured |
