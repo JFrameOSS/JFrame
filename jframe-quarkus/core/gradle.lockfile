@@ -2,8 +2,8 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 # To regenerate this file, run: ./gradlew :jframe-quarkus-core:dependencies --write-locks
-ch.qos.logback:logback-classic:1.6.8=testCompileClasspath,testRuntimeClasspath
-ch.qos.logback:logback-core:1.6.8=testCompileClasspath,testRuntimeClasspath
+ch.qos.logback:logback-classic:1.6.8=testCompileClasspath,testPmdAuxClasspath,testRuntimeClasspath
+ch.qos.logback:logback-core:1.6.8=testCompileClasspath,testPmdAuxClasspath,testRuntimeClasspath
 com.aayushatharva.brotli4j:brotli4j:1.24.0=compileClasspath,mainPmdAuxClasspath,testCompileClasspath,testPmdAuxClasspath,testRuntimeClasspath
 com.aayushatharva.brotli4j:service:1.24.0=compileClasspath,mainPmdAuxClasspath,testCompileClasspath,testPmdAuxClasspath,testRuntimeClasspath
 com.ethlo.time:itu:1.17.0=testPmdAuxClasspath,testRuntimeClasspath
@@ -204,7 +204,7 @@ org.reactivestreams:reactive-streams:1.0.4=testCompileClasspath,testPmdAuxClassp
 org.reflections:reflections:0.10.2=checkstyle
 org.slf4j:jul-to-slf4j:1.7.36=pmd
 org.slf4j:slf4j-api:2.0.17=spotbugsSlf4j
-org.slf4j:slf4j-api:2.0.18=testCompileClasspath
+org.slf4j:slf4j-api:2.0.19=testCompileClasspath
 org.slf4j:slf4j-api:2.0.20=compileClasspath,mainPmdAuxClasspath,runtimeClasspath,spotbugs,testPmdAuxClasspath,testRuntimeClasspath
 org.slf4j:slf4j-simple:2.0.17=spotbugsSlf4j
 org.slf4j:slf4j-simple:2.0.20=checkstyle
