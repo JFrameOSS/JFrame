@@ -21,6 +21,12 @@ dependencies {
     // Optional: SecurityIdentity is resolved via Instance<>; consumers opt into security themselves.
     compileOnly(libs.quarkus.security)
 
+    // CVE floor: guava/protobuf are transitive via quarkus-opentelemetry gRPC; quarkus-bom pins older versions.
+    constraints {
+        api(libs.guava)
+        api(libs.protobuf.java)
+    }
+
     // Test dependencies
     testImplementation(libs.jackson.annotations)
     testImplementation(libs.junit.jupiter)
