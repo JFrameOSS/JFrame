@@ -40,7 +40,7 @@ aspectj = "1.9.27"
 
 # ======= Quarkus =======
 # Separately pinned SmallRye/MicroProfile artifacts follow the quarkus-bom of the version below.
-quarkus = "3.40.1.2"
+quarkus = "3.40.2"
 smallrye-config = "3.17.2"
 smallrye-openapi = "4.3.5"
 microprofile-openapi = "4.1.1"
